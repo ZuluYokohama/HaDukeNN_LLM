@@ -1,5 +1,7 @@
 # Reviewer guide
 
+Review notes for HaDukeN //\\\\// HGNLLM Experiments. The command is `sheaf-verify`.
+
 Each objection is a question a skeptical reader should be able to settle from the ledger without rerunning training. `sheaf-verify checklist` prints whether the current store answers it. An objection is answered when its gate's latest record passed, or, for the two integrity objections, when `verify` reported no problem of that kind.
 
 An open objection does not by itself fail `verify`. `bundle` exits non-zero while any objection is open, any gate is not `pass`, or verification found a hash or ledger problem. Read the criterion `detail` in the ledger before treating a pass as a scientific claim. G4 can pass while recording that the two methodology controls disagree, as long as superiority was not claimed. G0's recorded feasibility example fails `g0.vocab_cap` on purpose: `V = 65,536` is flagged against the written cap of 64,000.

@@ -24,7 +24,6 @@ from sheaf_verify.hashing import (
     is_sha256,
     parse_json_bytes,
     reject_symlink,
-    sha256_file,
     sha256_hex,
 )
 from sheaf_verify.policy import MAX_INLINE_BYTES, MAX_TREE_BYTES

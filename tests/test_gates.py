@@ -1,5 +1,6 @@
-from sheaf_verify.synthetic import build
 from tests.support import criterion, latest
+
+from sheaf_verify.synthetic import build
 
 
 def _fail(tmp_path, name, mutate):

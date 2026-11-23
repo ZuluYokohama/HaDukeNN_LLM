@@ -1,5 +1,7 @@
 # Gates
 
+Gate contract for HaDukeN //\\\\// HGNLLM Experiments. The package name is `sheaf-verify`.
+
 A gate passes only when every criterion it writes has passed, and every gate it depends on has a passing ledger record bound to the same manifest and payload hashes. `run` still writes the failures.
 
 The ids follow the architecture spec. H0–H7 are the stages. G0–G6 are the go/no-go lines of H0–H6. H7 has no numeric gate. P0–P6 are the paper-plan phases. Thresholds below are per-gate parameters taken from those documents. A study cannot loosen them by writing a smaller number into its metrics. There is no single seed minimum: pilots use 3, the headline uses 5. The old global `MIN_SEEDS = 5` would have failed a valid 3-seed pilot.

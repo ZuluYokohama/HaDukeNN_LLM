@@ -1,3 +1,3 @@
-"""Private verification harness for hypergraph and sheaf language-model studies."""
+"""Verification harness for HaDukeN HGNLLM experiments."""
 
 __version__ = "0.1.0"

@@ -13,5 +13,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
+      - run: ruff check .
       - run: pytest
       - run: sheaf-verify verify --store fixtures/passing --seal-key-file fixtures/test_seal.key

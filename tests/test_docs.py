@@ -41,16 +41,37 @@ def test_reviewer_guide_lists_every_objection():
         assert objection.id in text
 
 
-def test_tree_grants_no_license_and_has_no_operational_sensor_data():
-    banned = ("Permission is hereby " + "granted", "well" + "bore", "drill" + "ing")
+def test_license_notice_and_export_hygiene():
+    banned = ("Permission is hereby " + "granted", "well" + "bore", "drill" + "ing", "DEVn" + "-1")
+    notice = (ROOT / "NOTICE").read_text(encoding="utf-8")
+    required = (
+        "Required Notice: Copyright (c) 2026 Blake Jones (ZuluYokohama). "
+        "Commercial use requires a separate license from the author; contact via GitHub @ZuluYokohama."
+    )
+    assert required in notice
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+    assert license_text.startswith("# PolyForm Noncommercial License 1.0.0\n")
+    assert "Noncommercial Purposes" in license_text
+    overview = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+    assert "HaDukeN //\\\\// HGNLLM Experiments" in overview
+    assert "partial" in overview
+    assert "65,536" in overview
+    assert "64,000" in overview
+    assert ">fail<" in overview or 'class="status fail"' in overview
+    assert "https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0" in overview
+    assert (ROOT / "docs" / "briefing.html").is_file()
+    assert "iter/g0" in (ROOT / "iterations" / "INDEX.md").read_text(encoding="utf-8")
     skip = {".git", ".pytest_cache", ".venv", "__pycache__"}
+    scanned = {".py", ".md", ".toml", ".yml", ".json", ".html", ".css", ""}
     for path in ROOT.rglob("*"):
         if not path.is_file() or any(part in skip or part.endswith(".egg-info") for part in path.parts):
             continue
+        assert path.suffix.lower() not in {".pt", ".pth", ".ckpt", ".safetensors", ".onnx", ".bin"}, path
         if "fixtures/passing" in path.as_posix():
             continue
-        if path.suffix in {".py", ".md", ".toml", ".yml", ".json", ""} or path.name == "NOTICE":
+        if path.suffix in scanned or path.name == "NOTICE":
             text = path.read_text(encoding="utf-8", errors="ignore")
             for phrase in banned:
                 assert phrase not in text, path
-    assert not (ROOT / "LICENSE").exists()
+            for drive in ("C:" + "\\", "E:" + "\\"):
+                assert drive not in text, path

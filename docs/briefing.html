@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HaDukeN //\\// HGNLLM Experiments — briefing</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="banner">
+    <p class="kicker">Op-order · detailed briefing</p>
+    <h1>HaDukeN //\\// HGNLLM Experiments</h1>
+    <p class="sub">How the harness is organized, and what the current gates actually say.</p>
+    <nav class="local">
+      <a href="index.html">Overview</a>
+      <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
+      <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/GATES.md">GATES.md</a>
+    </nav>
+  </header>
+
+  <h2>OODA</h2>
+  <h3>Observe</h3>
+  <p>The feasibility record counts units on the valid split against GPT-2 BPE: 181,544 versus 249,887 (27.35% fewer), byte fallback 0.048%, build 0.093 CPU-hours, peak RAM 4.83 GB, vocabulary size 65,536. That record is metadata. It is not the text it was counted on.</p>
+  <h3>Orient</h3>
+  <p>The written G0 cap is V ≤ 64,000. 65,536 is 2^16, which is also called 64k in some tokenizer names. The harness does not treat those as the same number. G0 is therefore partial: four limits hold, and the vocabulary line does not. G1, the units-only pilot, has not passed. Nothing downstream of a failed G1 is a result.</p>
+  <h3>Decide</h3>
+  <p>Publish the harness and the recorded metadata. Do not publish a claim that the pilot beat struct32k, and do not publish weights or a tokenizer table to support a claim that is not in the ledger.</p>
+  <h3>Act</h3>
+  <p>Keep experiments on <code>iter/&lt;id&gt;</code> branches. The first is <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a>. A later pilot that wants to clear G1 has to bring hnt64k, struct32k, and the equal-size sw64k control, with three seeds, on raw test bytes.</p>
+
+  <h2>1. Situation</h2>
+  <p>The repository is the verification harness for this line of experiments. A trainer elsewhere registers the bytes it used. The store hashes them, appends gate decisions to a ledger, and lets a reviewer recompute the hashes. The synthetic study under <code>fixtures/passing</code> exercises every gate with toy numbers. Passing that study means the checker runs. It does not mean a research arm won.</p>
+  <p>Friendly constraints: PolyForm Noncommercial 1.0.0, no commercial use without a separate license, contact via GitHub @ZuluYokohama. The tree must stay free of weights, corpus bytes, tokenizer merge tables, credentials, and machine paths.</p>
+
+  <h2>2. Mission</h2>
+  <p>Make each later claim auditable against the same artifact hashes the gate saw, and keep the public status honest: G0 partial, G1 fail, everything else not run.</p>
+
+  <h2>3. Execution</h2>
+  <p>Gates are a dependency graph. A gate passes only when its own criteria pass and every upstream gate has a passing ledger record bound to the current hashes. <code>run</code> still writes failures.</p>
+  <ol class="order">
+    <li><strong>G0.</strong> On the valid split, at least 15% fewer units than GPT-2 BPE, byte fallback at most 1%, vocabulary at most 64,000, build at most 2 CPU-hours and 16 GB. Recorded status: partial, because V=65,536 &gt; 64,000.</li>
+    <li><strong>G1.</strong> hnt64k test bits per byte at or below struct32k plus one sample standard deviation, train FLOPs per byte lower than struct32k and lower than sw64k, and sw64k the same vocabulary size as hnt64k. Three seeds. Status: fail. No pilot number is claimed here.</li>
+    <li><strong>G2.</strong> Spectral and compositional arms beat their named controls. One-sided Welch, Holm, alpha 0.05, three seeds. Not run.</li>
+    <li><strong>G3.</strong> BF16 kernel relative error at most 0.001, and SheafHeat at most 15% of the step. Not run.</li>
+    <li><strong>G4.</strong> Full model beats a tuned baseline by more than two baseline standard deviations at matched all-in FLOPs, including graph build. Headline uses five seeds. Component arms use three and must beat a random-hypergraph control. Not run.</li>
+    <li><strong>G5 and G6.</strong> Scaling slope whose 95% interval excludes zero and is not negative, then a motif or corpus-memory arm that beats A7 at matched compute. Not run.</li>
+    <li><strong>Paper phases P0–P6.</strong> Fairness, ablations, a strong baseline, data, the scaling ladder, speed, and replication. Not run as campaign records.</li>
+  </ol>
+  <p>Seed minima are per gate. Pilots use 3. The headline uses 5. A study cannot write a smaller minimum into its metrics and have the checker accept it.</p>
+
+  <h2>4. Sustainment</h2>
+  <p>The checker does not train, does not launch a kernel, and does not recompute a loss from hidden weights. It recomputes hashes, the ledger, and the arithmetic of submitted seed lists. A convincing trace can still be invented. An independent rerun is the check that the named code produced it.</p>
+  <p>The seal is HMAC-SHA256. Someone who holds the key can write another chain that verifies. After verify, <code>sheaf-verify anchor</code> prints the ledger head so it can be copied by hand or into a file outside the store. That command does not call an external service.</p>
+  <p>What this repository spends: a small synthetic fixture and one metadata record. It does not spend a GPU budget, and it does not store the bytes a GPU would have written.</p>
+
+  <h2>5. Command and signal</h2>
+  <dl class="conditions">
+    <div>
+      <dt>Repository</dt>
+      <dd><a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">github.com/ZuluYokohama/HaDukeNN_LLM</a></dd>
+    </div>
+    <div>
+      <dt>Main</dt>
+      <dd>Harness, <code>iterations/INDEX.md</code>, this briefing. Not an experiment result.</dd>
+    </div>
+    <div>
+      <dt>Iterations</dt>
+      <dd>Branch <code>iter/&lt;id&gt;</code> with <code>BRIEFING.md</code>, <code>MODE_METHOD.md</code>, and <code>results/</code>. Current branch: <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a>.</dd>
+    </div>
+    <div>
+      <dt>Contact</dt>
+      <dd>GitHub @ZuluYokohama. Commercial terms are a separate license.</dd>
+    </div>
+    <div>
+      <dt>Pages</dt>
+      <dd>This directory is static HTML. Publish the <code>docs/</code> folder. No build, no script.</dd>
+    </div>
+  </dl>
+
+  <footer class="colophon">
+    <p>HaDukeN //\\// HGNLLM Experiments. Copyright (c) 2026 Blake Jones (ZuluYokohama). <a href="index.html">Back to the overview</a>.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HaDukeN //\\// HGNLLM Experiments — overview</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="banner">
+    <p class="kicker">Op-order overview · noncommercial</p>
+    <h1>HaDukeN //\\// HGNLLM Experiments</h1>
+    <p class="sub">Verification harness for hypergraph-native language-model work. Package and command: <code>sheaf-verify</code>.</p>
+    <nav class="local">
+      <a href="briefing.html">Detailed briefing</a>
+      <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
+      <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>
+    </nav>
+  </header>
+
+  <h2>Task conditions</h2>
+  <dl class="conditions">
+    <div>
+      <dt>Situation</dt>
+      <dd>The public tree is the harness, synthetic self-checks, and recorded metadata. It is not a trained model and it does not hold a corpus.</dd>
+    </div>
+    <div>
+      <dt>Mission</dt>
+      <dd>Keep every later claim tied to hashes, a ledger, and the gates in <code>GATES.md</code>.</dd>
+    </div>
+    <div>
+      <dt>Constraints</dt>
+      <dd>No weights, no corpus bytes, no tokenizer merge tables, no credentials, and no machine paths in the tree. Training stays on the author's machines.</dd>
+    </div>
+    <div>
+      <dt>License</dt>
+      <dd>PolyForm Noncommercial 1.0.0. Commercial use needs a separate license. Contact GitHub @ZuluYokohama.</dd>
+    </div>
+    <div>
+      <dt>Standard</dt>
+      <dd>G0 is partial. G1 has not passed. Later gates are not claimed.</dd>
+    </div>
+  </dl>
+
+  <h2>Gate status</h2>
+  <p>This table is the campaign picture. <code>fixtures/passing</code> is a synthetic self-check of the harness. It is not this table.</p>
+  <table>
+    <thead>
+      <tr><th>Gate</th><th>Status</th><th>Note</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>G0</td>
+        <td><span class="status partial">partial</span></td>
+        <td>Recorded valid-split counts meet the unit, fallback, CPU-hour, and RAM limits. V=65,536 is over the written cap of 64,000, so the vocabulary line fails.</td>
+      </tr>
+      <tr>
+        <td>G1</td>
+        <td><span class="status fail">fail</span></td>
+        <td>The units-only pilot (hnt64k against struct32k, with the sw64k control) has not passed. No pilot BPB is claimed from this tree.</td>
+      </tr>
+      <tr>
+        <td>G2–G6</td>
+        <td><span class="status idle">not run</span></td>
+        <td>Spectral, kernel, headline, scaling, and motif gates are not claimed.</td>
+      </tr>
+      <tr>
+        <td>H0–H7, P0–P6</td>
+        <td><span class="status idle">not run</span></td>
+        <td>Stage and paper-plan records are not claimed. The harness can check them. This export does not say they passed.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Iteration branches</h2>
+  <p><code>main</code> holds the harness and <code>iterations/INDEX.md</code>. Each experiment is a branch <code>iter/&lt;id&gt;</code> off <code>main</code>.</p>
+  <table>
+    <thead>
+      <tr><th>Id</th><th>Branch</th><th>What it holds</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>g0</td>
+        <td><a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a></td>
+        <td>Feasibility unit counts. G0 partial, because V=65,536 exceeds 64,000.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer class="colophon">
+    <p>HaDukeN //\\// HGNLLM Experiments. Copyright (c) 2026 Blake Jones (ZuluYokohama). <a href="briefing.html">Full briefing</a>.</p>
+  </footer>
+</body>
+</html>

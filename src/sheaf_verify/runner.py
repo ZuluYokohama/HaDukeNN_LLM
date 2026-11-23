@@ -9,7 +9,7 @@ ledger. It does not compare ``created_at``.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sheaf_verify.context import Context
 from sheaf_verify.gates import GATES, Gate
@@ -22,7 +22,7 @@ RESULT_FORMAT = "sheaf-verify.result.v1"
 
 class UtcClock:
     def now(self) -> str:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class SequenceClock:
@@ -33,7 +33,7 @@ class SequenceClock:
 
     def now(self) -> str:
         current = self._stamp
-        parsed = datetime.strptime(current, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        parsed = datetime.strptime(current, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
         self._stamp = (parsed + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         return current
 

@@ -30,8 +30,9 @@ def test_recorded_g0_flags_the_vocab_and_passes_the_other_counts():
 
 
 def test_swapping_the_recorded_g0_into_a_study_fails_only_the_cap(tmp_path):
-    from sheaf_verify.synthetic import build
     from tests.support import criterion, latest
+
+    from sheaf_verify.synthetic import build
 
     def mutate(parts):
         parts["metrics"]["spec"]["g0"] = recorded_g0()

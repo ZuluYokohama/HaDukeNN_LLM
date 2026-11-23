@@ -26,8 +26,8 @@ from sheaf_verify.hashing import (
 from sheaf_verify.policy import (
     ALPHA,
     CONTROL_ARMS,
-    MAX_BOOTSTRAP_DRAWS,
     HEADLINE_SEEDS,
+    MAX_BOOTSTRAP_DRAWS,
     MAX_FLOP_RELATIVE_TOLERANCE,
     MIN_BOOTSTRAP_DRAWS,
     PRIMARY_ARM,

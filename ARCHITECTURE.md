@@ -38,19 +38,19 @@ Statistics use a Student-t tail from the regularized incomplete beta, so SciPy i
 
 ## Design precedents
 
-Ideas below were read and not copied. None of those repositories were modified. Their licenses were not adopted. This tree stays under the notice in `NOTICE`.
+Ideas below were read and not copied. None of those repositories were modified. This tree is HaDukeN //\\\\// HGNLLM Experiments, licensed under the PolyForm Noncommercial License 1.0.0 in `LICENSE`, with the required notice in `NOTICE`. That license text is the official 1.0.0 legal code. It was not taken from another repository's license file.
 
 ### ZuluYokohama/mission-lab, `research/mission_lab_v0_1`
 
 Used. Gates are predicates over a sealed record, and a failed upstream predicate blocks a downstream one. The seal is HMAC-SHA256 with a key id, and the documentation says that is not a public signature. Manifests are canonical JSON. Symlinks are refused. A worker may submit a result, but the controller is what decides the predicate.
 
-Not used. The PolyForm license. The crystal-kernel and equation-graph code. Any trading or protein-structure implementation. The worker, planner, and executor modules as code.
+Not used. That repository's license file. The crystal-kernel and equation-graph code. Any trading or protein-structure implementation. The worker, planner, and executor modules as code.
 
 ### ZuluYokohama/jovin-harness
 
 Used. The ledger is an append-only hash chain. Verification detects an edit, a deletion, and a reorder. A content hash is not treated as a signature. A failed attempt is still a record.
 
-Not used. The PolyForm license. The receipt module as code.
+Not used. That repository's license file. The receipt module as code.
 
 ### ZuluYokohama/btc-mining-sim, `src/btc_mining_sim/research_protocol.py`
 

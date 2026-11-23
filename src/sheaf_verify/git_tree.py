@@ -51,11 +51,11 @@ def _tree_object(node: dict) -> bytes:
     for name, value in node.items():
         if isinstance(value, dict):
             digest = hashlib.sha1(_tree_object(value)).digest()
-            entries.append((name + "/", f"40000 {name}".encode("utf-8"), digest))
+            entries.append((name + "/", f"40000 {name}".encode(), digest))
         else:
             mode, data = value
             blob = f"blob {len(data)}\0".encode("ascii") + data
-            entries.append((name, f"{mode} {name}".encode("utf-8"), hashlib.sha1(blob).digest()))
+            entries.append((name, f"{mode} {name}".encode(), hashlib.sha1(blob).digest()))
     entries.sort(key=lambda item: item[0].encode("utf-8"))
     body = b"".join(header + b"\0" + digest for _, header, digest in entries)
     return f"tree {len(body)}\0".encode("ascii") + body

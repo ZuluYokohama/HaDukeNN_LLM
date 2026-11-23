@@ -12,8 +12,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from sheaf_verify.checks import code_tree_criteria
 from sheaf_verify.checklist import evaluate_checklist
+from sheaf_verify.checks import code_tree_criteria
 from sheaf_verify.gates import GATES
 from sheaf_verify.hashing import SheafError, canonical_bytes, is_sha256, parse_json_bytes, sha256_file, sha256_hex
 from sheaf_verify.ledger import Ledger
