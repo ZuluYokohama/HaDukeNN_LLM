@@ -20,3 +20,4 @@ Keep this table and the iteration list in `docs/index.html` in step. The link fo
 | --- | --- | --- |
 | g0 | [`iter/g0`](https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0) | Feasibility unit counts. G0 partial: V=65,536 is over the written cap of 64,000. |
 | g1-hnt64k | [`iter/g1-hnt64k`](https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1-hnt64k) | Units-only pilot. G1 fail: test BPB 1.452254 is above struct32k + 1 sd (1.329303), and train FLOPs/byte 3.5706e7 is above struct32k and sw64k. |
+| g1b-structured | [`iter/g1b-structured`](https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1b-structured) | Structured hnt40k. G1b fail on BPB (1.477304 > 1.329303). Train FLOPs/byte 1.1929e7 is about 61% below struct32k (3.0882e7) and below the equal-size control. |
