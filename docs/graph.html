@@ -16,6 +16,18 @@
       <a href="briefing.html">Detailed briefing</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/GATES.md">GATES.md</a>
     </nav>
+    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail">
+      <title>Gate status: G0 partial, G1 fail, G1b fail</title>
+      <rect x="0" y="0" width="112" height="64" rx="6" fill="#f3e0c4" stroke="#8a4b08"/>
+      <text x="56" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G0</text>
+      <text x="56" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8a4b08">PARTIAL</text>
+      <rect x="124" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
+      <text x="180" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1</text>
+      <text x="180" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
+      <rect x="248" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
+      <text x="304" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1b</text>
+      <text x="304" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
+    </svg>
   </header>
 
   <h2>Primary comparisons</h2>
@@ -24,7 +36,7 @@
     <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 holds hnt64k to struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 holds the full arm to the tuned baseline at matched all-in FLOPs.</li>
     <li class="compare"><strong>pe_heat vs baseline.</strong> P2 holds the heat and heat+RoPE positional encodings to the tuned modern baseline.</li>
   </ul>
-  <p>Highlighting a gate does not mean the campaign passed it. G0 is partial because V=65,536 is over 64,000. G1 has failed. Later gates are not run.</p>
+  <p>Highlighting a gate does not mean the campaign passed it. G0 is partial because V=65,536 is over 64,000. G1 has failed. G1b, the structured hnt40k follow-up, has also failed on BPB; it is not a separate highlighted node. Later gates are not run.</p>
 
   <h2>Gates</h2>
   <p>Each column depends on an earlier column. G1, H1, G4, and P2 are the highlighted comparison gates.</p>

@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from pathlib import Path
 
 from sheaf_verify.checklist import OBJECTIONS
@@ -95,3 +97,20 @@ def test_license_notice_and_export_hygiene():
                 assert phrase not in text, path
             for drive in ("C:" + "\\", "E:" + "\\"):
                 assert drive not in text, path
+
+
+def test_docs_budget_rejects_external_scripts_and_oversized_trees():
+    script = ROOT / ".github" / "scripts" / "docs_budget.py"
+    completed = subprocess.run(
+        [sys.executable, str(script)],
+        cwd=ROOT.parent,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    for name in ("index.html", "briefing.html", "graph.html"):
+        page = (ROOT / "docs" / name).read_text(encoding="utf-8")
+        assert "G1b" in page
+        assert 'class="status-strip"' in page
+        assert "<script" not in page.lower()
