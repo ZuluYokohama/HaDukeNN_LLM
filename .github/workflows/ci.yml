@@ -1,0 +1,74 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest --cov=sheaf_verify --cov-report=term-missing --cov-report=xml --cov-fail-under=85
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: sheaf-verify verify --store fixtures/passing --seal-key-file fixtures/test_seal.key
+
+  gate-graph:
+    name: gate-graph
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest
+        env:
+          SHEAF_GATE_TRACE: gate-trace.jsonl
+      - run: python -m sheaf_verify.gate_coverage gate-trace.jsonl --matrix gate-coverage.md --json gate-coverage.json
+        if: always()
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate-coverage-matrix
+          path: |
+            gate-coverage.md
+            gate-coverage.json
+            gate-trace.jsonl
+
+  required:
+    name: required
+    needs: [lint, unit, verify, gate-graph]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "lint, unit, verify, and gate-graph passed"

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+gate-trace.jsonl
+gate-coverage.md
+gate-coverage.json
+.sheaf/
+dist/
+*.egg-info/
+reviewer-bundle/
+*.pyc

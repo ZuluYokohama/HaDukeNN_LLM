@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sheaf-verify"
+version = "0.1.0"
+description = "Verification harness for HaDukeN HGNLLM experiments."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "Blake Jones"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.8"]
+
+[project.scripts]
+sheaf-verify = "sheaf_verify.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["sheaf_verify"]
+branch = false
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+extend-exclude = ["fixtures"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+# Gate messages are full sentences on one line so a ledger grep matches the source.
+ignore = ["E501"]

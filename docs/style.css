@@ -1,0 +1,184 @@
+:root {
+  --ink: #1b1914;
+  --muted: #5c564c;
+  --paper: #f3efe4;
+  --sheet: #faf7f0;
+  --rule: #1b1914;
+  --partial: #8a4b08;
+  --partial-bg: #f3e0c4;
+  --fail: #8d1d1d;
+  --fail-bg: #f6d5d0;
+  --idle: #3f3b34;
+  --idle-bg: #e4dfd4;
+  --pass: #1d4a32;
+  --pass-bg: #d5eadc;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--paper); color: var(--ink); }
+
+body {
+  margin: 0 auto;
+  max-width: 52rem;
+  padding: 2.2rem 1.3rem 4rem;
+  font: 17px/1.5 "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+}
+
+header.banner {
+  border-top: 8px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 0.8rem 0 1rem;
+  margin-bottom: 1.4rem;
+}
+
+.kicker {
+  margin: 0;
+  font: 12px/1.4 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 0.25rem 0 0.15rem;
+  font-size: 1.85rem;
+  line-height: 1.15;
+  font-weight: 650;
+}
+
+h2 {
+  margin: 1.8rem 0 0.45rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.15rem;
+}
+
+h3 { margin: 1.1rem 0 0.2rem; font-size: 1.02rem; }
+
+p { margin: 0.45rem 0 0.7rem; }
+
+a { color: inherit; }
+
+.sub { margin: 0; color: var(--muted); }
+
+nav.local {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.2rem;
+  margin: 0.7rem 0 0;
+  font: 14px/1.4 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.6rem 0 1rem;
+  font-size: 0.95rem;
+}
+
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #c9c1b2;
+}
+
+th {
+  font: 12px/1.3 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.status {
+  display: inline-block;
+  min-width: 5.2rem;
+  padding: 0.05rem 0.4rem;
+  font: 12px/1.4 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+}
+
+.status.partial { color: var(--partial); background: var(--partial-bg); }
+.status.fail { color: var(--fail); background: var(--fail-bg); }
+.status.idle { color: var(--idle); background: var(--idle-bg); }
+.status.pass { color: var(--pass); background: var(--pass-bg); }
+
+dl.conditions { margin: 0.4rem 0 1rem; }
+dl.conditions div {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.4rem 0.8rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #c9c1b2;
+}
+dt {
+  font: 12px/1.4 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 0.15rem;
+}
+dd { margin: 0; }
+
+ol.order { padding-left: 1.2rem; }
+ol.order li { margin: 0.35rem 0; }
+
+footer.colophon {
+  margin-top: 2.4rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+ul.comparisons { list-style: none; padding: 0; margin: 0.4rem 0 1rem; }
+ul.comparisons li {
+  margin: 0 0 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+}
+ul.comparisons li.compare {
+  border-color: var(--partial);
+  background: var(--partial-bg);
+}
+
+.control {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(4.2rem, 1fr));
+  gap: 0.4rem 0.3rem;
+  margin: 0.6rem 0 1rem;
+  overflow-x: auto;
+}
+.node {
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  padding: 0.35rem 0.2rem;
+  text-align: center;
+  font: 13px/1.3 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+.node small { display: block; font: 11px/1.25 Palatino, Georgia, serif; color: var(--muted); }
+.node.compare {
+  border-color: var(--partial);
+  background: var(--partial-bg);
+  font-weight: 650;
+}
+pre.mermaid {
+  overflow-x: auto;
+  padding: 0.8rem;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  font: 13px/1.35 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+@media (max-width: 640px) {
+  body { padding: 1.2rem 0.9rem 3rem; }
+  dl.conditions div { grid-template-columns: 1fr; gap: 0.1rem; }
+  h1 { font-size: 1.45rem; }
+  .control { grid-template-columns: repeat(3, minmax(4.2rem, 1fr)); }
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HaDukeN //\\// HGNLLM Experiments — control graph</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="banner">
+    <p class="kicker">Control graph · no script</p>
+    <h1>HaDukeN //\\// HGNLLM Experiments</h1>
+    <p class="sub">Dependency edges run left to right. Highlighted gates carry the primary comparisons.</p>
+    <nav class="local">
+      <a href="index.html">Overview</a>
+      <a href="briefing.html">Detailed briefing</a>
+      <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/GATES.md">GATES.md</a>
+    </nav>
+  </header>
+
+  <h2>Primary comparisons</h2>
+  <ul class="comparisons">
+    <li class="compare"><strong>hnt vs equal-size control.</strong> G1: hnt64k against sw64k, the equal-size superword-BPE control, at one vocabulary size.</li>
+    <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 holds hnt64k to struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 holds the full arm to the tuned baseline at matched all-in FLOPs.</li>
+    <li class="compare"><strong>pe_heat vs baseline.</strong> P2 holds the heat and heat+RoPE positional encodings to the tuned modern baseline.</li>
+  </ul>
+  <p>Highlighting a gate does not mean the campaign passed it. G0 is partial because V=65,536 is over 64,000. G1 has failed. Later gates are not run.</p>
+
+  <h2>Gates</h2>
+  <p>Each column depends on an earlier column. G1, H1, G4, and P2 are the highlighted comparison gates.</p>
+  <div class="control">
+    <div class="node" style="grid-column:1;grid-row:1">P0<small>Fairness</small></div>
+    <div class="node" style="grid-column:1;grid-row:3">G0<small>Units</small></div>
+    <div class="node" style="grid-column:2;grid-row:1">P1<small>Ablations</small></div>
+    <div class="node" style="grid-column:2;grid-row:2">P3<small>Data</small></div>
+    <div class="node" style="grid-column:2;grid-row:3">H0<small>Corpus</small></div>
+    <div class="node compare" style="grid-column:2;grid-row:4">G1<small>hnt / sw64k</small></div>
+    <div class="node" style="grid-column:2;grid-row:6">G3<small>Kernels</small></div>
+    <div class="node compare" style="grid-column:3;grid-row:1">P2<small>pe_heat</small></div>
+    <div class="node compare" style="grid-column:3;grid-row:4">H1<small>GPT-2 bytes</small></div>
+    <div class="node" style="grid-column:3;grid-row:5">G2<small>Spectral</small></div>
+    <div class="node" style="grid-column:3;grid-row:6">H3<small>Kernel stage</small></div>
+    <div class="node" style="grid-column:3;grid-row:7">P5<small>Speed</small></div>
+    <div class="node" style="grid-column:4;grid-row:5">H2<small>Stage</small></div>
+    <div class="node compare" style="grid-column:4;grid-row:6">G4<small>matched FLOPs</small></div>
+    <div class="node" style="grid-column:5;grid-row:5">H4<small>Headline</small></div>
+    <div class="node" style="grid-column:5;grid-row:6">G5<small>Slope</small></div>
+    <div class="node" style="grid-column:6;grid-row:5">H5<small>Scaling</small></div>
+    <div class="node" style="grid-column:6;grid-row:6">P4<small>Ladder</small></div>
+    <div class="node" style="grid-column:6;grid-row:7">G6<small>Motif</small></div>
+    <div class="node" style="grid-column:7;grid-row:7">H6<small>Stage</small></div>
+    <div class="node" style="grid-column:8;grid-row:7">H7<small>lm-eval</small></div>
+    <div class="node" style="grid-column:9;grid-row:7">P6<small>Replication</small></div>
+  </div>
+
+  <h2>Mermaid</h2>
+  <p>GitHub renders this block in <code>GATES.md</code>. The source here is the same text. Dotted arrows mark the three comparisons. Solid arrows are the dependency edges the coverage check has to see both open and blocked.</p>
+  <pre class="mermaid">flowchart TD
+  subgraph comparisons["Primary comparisons"]
+    direction LR
+    hntCtl["hnt vs equal-size control"]
+    bestArm["best arm vs struct32k / GPT-2"]
+    peHeat["pe_heat vs baseline"]
+  end
+  hntCtl -.-> G1
+  bestArm -.-> G1
+  bestArm -.-> H1
+  bestArm -.-> G4
+  peHeat -.-> P2
+
+  P0 --> P1 --> P2
+  P0 --> P3
+  G0 --> H0
+  G0 --> G1 --> H1
+  G1 --> G2 --> H2
+  G0 --> G3 --> H3
+  G3 --> P5
+  G2 --> G4
+  G3 --> G4
+  G4 --> H4
+  G4 --> G5
+  G5 --> H5
+  G5 --> P4
+  G5 --> G6 --> H6 --> H7 --> P6
+
+  classDef primary fill:#f3e0c4,stroke:#8a4b08,color:#1b1914,stroke-width:2px
+  class G1,H1,G4,P2,hntCtl,bestArm,peHeat primary
+</pre>
+
+  <footer class="colophon">
+    <p>HaDukeN //\\// HGNLLM Experiments. <a href="index.html">Overview</a>.</p>
+  </footer>
+</body>
+</html>

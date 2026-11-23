@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sheaf-verify.hypergraph.v1",
+  "type": "object",
+  "required": ["format", "built_from_split", "document_ids", "vertices", "hyperedges", "randomized"],
+  "properties": {
+    "format": {"const": "sheaf-verify.hypergraph.v1"},
+    "built_from_split": {"const": "train"},
+    "document_ids": {"type": "array", "items": {"type": "string"}},
+    "randomized": {"type": "boolean"},
+    "randomization_seed": {"type": "integer"},
+    "vertices": {"type": "array"},
+    "hyperedges": {"type": "array"},
+    "complex": {"type": "object"},
+    "sheaf": {"type": "object"}
+  }
+}
