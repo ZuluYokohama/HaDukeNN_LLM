@@ -66,9 +66,17 @@ jobs:
             gate-coverage.json
             gate-trace.jsonl
 
-  required:
-    name: required
-    needs: [lint, unit, verify, gate-graph]
+  docs-budget:
+    name: docs-budget
     runs-on: ubuntu-latest
     steps:
-      - run: echo "lint, unit, verify, and gate-graph passed"
+      - uses: actions/checkout@v4
+      - name: docs size and external scripts
+        run: python3 .github/scripts/docs_budget.py
+
+  required:
+    name: required
+    needs: [lint, unit, verify, gate-graph, docs-budget]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "lint, unit, verify, gate-graph, and docs-budget passed"

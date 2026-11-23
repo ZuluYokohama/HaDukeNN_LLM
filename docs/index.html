@@ -17,6 +17,18 @@
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>
     </nav>
+    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail">
+      <title>Gate status: G0 partial, G1 fail, G1b fail</title>
+      <rect x="0" y="0" width="112" height="64" rx="6" fill="#f3e0c4" stroke="#8a4b08"/>
+      <text x="56" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G0</text>
+      <text x="56" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8a4b08">PARTIAL</text>
+      <rect x="124" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
+      <text x="180" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1</text>
+      <text x="180" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
+      <rect x="248" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
+      <text x="304" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1b</text>
+      <text x="304" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
+    </svg>
   </header>
 
   <h2>Task conditions</h2>
@@ -39,12 +51,13 @@
     </div>
     <div>
       <dt>Standard</dt>
-      <dd>G0 is partial. G1 has not passed. Later gates are not claimed.</dd>
+      <dd>G0 is partial. G1 has failed. G1b has failed. Later gates are not claimed.</dd>
     </div>
   </dl>
 
   <h2>Gate status</h2>
   <p>This table is the campaign picture. <code>fixtures/passing</code> is a synthetic self-check of the harness. It is not this table.</p>
+  <div class="table-scroll">
   <table>
     <thead>
       <tr><th>Gate</th><th>Status</th><th>Note</th></tr>
@@ -58,7 +71,12 @@
       <tr>
         <td>G1</td>
         <td><span class="status fail">fail</span></td>
-        <td>The units-only pilot (hnt64k against struct32k, with the sw64k control) has not passed. No pilot BPB is claimed from this tree.</td>
+        <td>hnt64k test BPB 1.452254 is above struct32k + 1 sd (1.329303). Train FLOPs/byte 3.5706e7 is above struct32k (3.0882e7) and sw64k (3.5156e7).</td>
+      </tr>
+      <tr>
+        <td>G1b</td>
+        <td><span class="status fail">fail</span></td>
+        <td>Structured hnt40k test BPB 1.477304 is above the same threshold, 1.329303. Train FLOPs/byte 1.1929e7 is about 61% below struct32k and below the equal-size control. The FLOPs side passes. The gate fails.</td>
       </tr>
       <tr>
         <td>G2–G6</td>
@@ -72,9 +90,10 @@
       </tr>
     </tbody>
   </table>
+  </div>
 
   <h2>Primary comparisons</h2>
-  <p>These are the comparisons the control graph is built to score. The campaign has not passed them. G0 is partial and G1 has failed. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
+  <p>These are the comparisons the control graph is built to score. The campaign has not passed them. G0 is partial, G1 has failed, and G1b has failed. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
   <ul class="comparisons">
     <li class="compare"><strong>hnt vs equal-size control.</strong> G1 compares hnt64k with sw64k, the equal-size superword-BPE control, at the same vocabulary size.</li>
     <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 compares hnt64k with struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 compares the full arm with the tuned baseline at matched all-in FLOPs.</li>
@@ -83,6 +102,7 @@
 
   <h2>Iteration branches</h2>
   <p><code>main</code> holds the harness and <code>iterations/INDEX.md</code>. Each experiment is a branch <code>iter/&lt;id&gt;</code> off <code>main</code>.</p>
+  <div class="table-scroll">
   <table>
     <thead>
       <tr><th>Id</th><th>Branch</th><th>What it holds</th></tr>
@@ -105,6 +125,7 @@
       </tr>
     </tbody>
   </table>
+  </div>
 
   <footer class="colophon">
     <p>HaDukeN //\\// HGNLLM Experiments. Copyright (c) 2026 Blake Jones (ZuluYokohama). <a href="briefing.html">Full briefing</a>.</p>
