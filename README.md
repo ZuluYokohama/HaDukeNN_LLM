@@ -8,6 +8,21 @@ The harness does not train a model. A trainer, running on its own machine, regis
 
 Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Commercial use requires a separate license from the author. See `NOTICE`. Contact via GitHub [@ZuluYokohama](https://github.com/ZuluYokohama).
 
+## Public priority record
+
+Annotated tag `v0.1.0-priority` points at the commit in this fingerprint. The tag message carries the same four lines. This section was added in the following commit, so `git archive` of the tag hashes the tree that does not yet include this section.
+
+```
+commit: 7403b03b699ab02e0cbaac15d738bb7da345e257
+utc: 2026-11-23T21:55:18Z
+git-archive-sha256: 64583710435b2831eb660401910205436e38aacefe379df4d7c39a5e80fc9c74
+sheaf-verify-ledger-head: sheaf-verify.anchor.v1 307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4
+```
+
+Reproduce the archive hash with `git archive --format=tar v0.1.0-priority | sha256sum`. The ledger line is `sheaf-verify anchor --store fixtures/passing` on that commit.
+
+The tag is an SSH-signed annotated tag. The key available here is `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0` (Cursor Agent). It is not a personal key of Blake Jones.
+
 ## Install
 
 ```bash
