@@ -13,6 +13,7 @@
     <p class="sub">Verification harness for hypergraph-native language-model work. Package and command: <code>sheaf-verify</code>.</p>
     <nav class="local">
       <a href="briefing.html">Detailed briefing</a>
+      <a href="graph.html">Control graph</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>
     </nav>
@@ -71,6 +72,14 @@
       </tr>
     </tbody>
   </table>
+
+  <h2>Primary comparisons</h2>
+  <p>These are the comparisons the control graph is built to score. The campaign has not passed them. G0 is partial and G1 has failed. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
+  <ul class="comparisons">
+    <li class="compare"><strong>hnt vs equal-size control.</strong> G1 compares hnt64k with sw64k, the equal-size superword-BPE control, at the same vocabulary size.</li>
+    <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 compares hnt64k with struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 compares the full arm with the tuned baseline at matched all-in FLOPs.</li>
+    <li class="compare"><strong>pe_heat vs baseline.</strong> P2 scores the heat and heat+RoPE positional encodings against the tuned modern baseline.</li>
+  </ul>
 
   <h2>Iteration branches</h2>
   <p><code>main</code> holds the harness and <code>iterations/INDEX.md</code>. Each experiment is a branch <code>iter/&lt;id&gt;</code> off <code>main</code>.</p>

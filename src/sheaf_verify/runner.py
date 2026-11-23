@@ -12,6 +12,7 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from sheaf_verify.context import Context
+from sheaf_verify.gate_trace import emit
 from sheaf_verify.gates import GATES, Gate
 from sheaf_verify.hashing import SheafError, canonical_bytes
 from sheaf_verify.ledger import Ledger
@@ -63,11 +64,29 @@ def evaluate_one(gate: Gate, ctx: Context, records: list[dict]) -> dict:
             criteria.extend(item.as_dict() for item in extra)
     bound = ctx.bound(gate.binds)
     passed = bool(criteria) and all(item["passed"] for item in criteria) and set(bound) == set(gate.binds)
-    return {
+    decision = {
         "bound": bound,
         "criteria": criteria,
         "gate_id": gate.id,
         "status": "pass" if passed else "fail",
+        "upstream": upstream,
+    }
+    emit(_trace_event(decision))
+    return decision
+
+
+def _trace_event(decision: dict) -> dict:
+    own = [item for item in decision["criteria"] if not str(item.get("id", "")).startswith("upstream.")]
+    upstream = {}
+    for item in decision["criteria"]:
+        ident = str(item.get("id", ""))
+        if ident.startswith("upstream."):
+            upstream[ident.removeprefix("upstream.")] = bool(item.get("passed"))
+    return {
+        "gate_id": decision["gate_id"],
+        "own_evaluated": bool(own),
+        "own_failed": any(not item.get("passed") for item in own),
+        "status": decision["status"],
         "upstream": upstream,
     }
 

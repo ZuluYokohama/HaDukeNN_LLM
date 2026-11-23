@@ -1,0 +1,30 @@
+flowchart TD
+  subgraph comparisons["Primary comparisons"]
+    direction LR
+    hntCtl["hnt vs equal-size control"]
+    bestArm["best arm vs struct32k / GPT-2"]
+    peHeat["pe_heat vs baseline"]
+  end
+  hntCtl -.-> G1
+  bestArm -.-> G1
+  bestArm -.-> H1
+  bestArm -.-> G4
+  peHeat -.-> P2
+
+  P0 --> P1 --> P2
+  P0 --> P3
+  G0 --> H0
+  G0 --> G1 --> H1
+  G1 --> G2 --> H2
+  G0 --> G3 --> H3
+  G3 --> P5
+  G2 --> G4
+  G3 --> G4
+  G4 --> H4
+  G4 --> G5
+  G5 --> H5
+  G5 --> P4
+  G5 --> G6 --> H6 --> H7 --> P6
+
+  classDef primary fill:#f3e0c4,stroke:#8a4b08,color:#1b1914,stroke-width:2px
+  class G1,H1,G4,P2,hntCtl,bestArm,peHeat primary

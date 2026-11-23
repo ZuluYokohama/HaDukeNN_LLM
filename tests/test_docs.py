@@ -61,6 +61,26 @@ def test_license_notice_and_export_hygiene():
     assert "https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0" in overview
     assert (ROOT / "docs" / "briefing.html").is_file()
     assert "iter/g0" in (ROOT / "iterations" / "INDEX.md").read_text(encoding="utf-8")
+    diagram = (ROOT / "docs" / "control-graph.mmd").read_text(encoding="utf-8").strip()
+    assert diagram in (ROOT / "GATES.md").read_text(encoding="utf-8")
+    graph = (ROOT / "docs" / "graph.html").read_text(encoding="utf-8")
+    assert diagram in graph
+    for phrase in ("pe_heat", "equal-size", "struct32k", "GPT-2", 'class="compare"'):
+        assert phrase in graph
+        assert phrase in overview
+    contributing = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    assert "main is protected" in contributing
+    assert "pull request" in contributing
+    template = (ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
+    for phrase in (
+        "Gates touched",
+        "Evidence files",
+        "Ledger head before",
+        "Ledger head after",
+        "amendment",
+        "weights",
+    ):
+        assert phrase in template
     skip = {".git", ".pytest_cache", ".venv", "__pycache__"}
     scanned = {".py", ".md", ".toml", ".yml", ".json", ".html", ".css", ""}
     for path in ROOT.rglob("*"):

@@ -6,6 +6,43 @@ A gate passes only when every criterion it writes has passed, and every gate it 
 
 The ids follow the architecture spec. H0–H7 are the stages. G0–G6 are the go/no-go lines of H0–H6. H7 has no numeric gate. P0–P6 are the paper-plan phases. Thresholds below are per-gate parameters taken from those documents. A study cannot loosen them by writing a smaller number into its metrics. There is no single seed minimum: pilots use 3, the headline uses 5. The old global `MIN_SEEDS = 5` would have failed a valid 3-seed pilot.
 
+## Control graph
+
+Solid arrows are dependency edges. Dotted arrows are not edges. They mark the primary comparisons: hnt versus the equal-size control, the best arm versus struct32k and GPT-2 at matched bytes and FLOPs, and pe_heat versus the baseline. G1, H1, G4, and P2 are the gates those comparisons land on. The same diagram is on the briefing site at `docs/graph.html`.
+
+```mermaid
+flowchart TD
+  subgraph comparisons["Primary comparisons"]
+    direction LR
+    hntCtl["hnt vs equal-size control"]
+    bestArm["best arm vs struct32k / GPT-2"]
+    peHeat["pe_heat vs baseline"]
+  end
+  hntCtl -.-> G1
+  bestArm -.-> G1
+  bestArm -.-> H1
+  bestArm -.-> G4
+  peHeat -.-> P2
+
+  P0 --> P1 --> P2
+  P0 --> P3
+  G0 --> H0
+  G0 --> G1 --> H1
+  G1 --> G2 --> H2
+  G0 --> G3 --> H3
+  G3 --> P5
+  G2 --> G4
+  G3 --> G4
+  G4 --> H4
+  G4 --> G5
+  G5 --> H5
+  G5 --> P4
+  G5 --> G6 --> H6 --> H7 --> P6
+
+  classDef primary fill:#f3e0c4,stroke:#8a4b08,color:#1b1914,stroke-width:2px
+  class G1,H1,G4,P2,hntCtl,bestArm,peHeat primary
+```
+
 ```
 PILOT_SEEDS = 3
 HEADLINE_SEEDS = 5

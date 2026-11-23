@@ -13,6 +13,7 @@
     <p class="sub">How the harness is organized, and what the current gates actually say.</p>
     <nav class="local">
       <a href="index.html">Overview</a>
+      <a href="graph.html">Control graph</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/GATES.md">GATES.md</a>
     </nav>
@@ -47,6 +48,7 @@
     <li><strong>Paper phases P0–P6.</strong> Fairness, ablations, a strong baseline, data, the scaling ladder, speed, and replication. Not run as campaign records.</li>
   </ol>
   <p>Seed minima are per gate. Pilots use 3. The headline uses 5. A study cannot write a smaller minimum into its metrics and have the checker accept it.</p>
+  <p>Three comparisons are marked on the <a href="graph.html">control graph</a>. <strong>hnt vs equal-size control</strong> is hnt64k against sw64k. <strong>best arm vs struct32k / GPT-2</strong> is the matched-byte and matched-FLOP comparison, on G1, H1, and G4. <strong>pe_heat vs baseline</strong> is the heat and heat+RoPE positional encodings against the tuned modern baseline, on P2. Marking them does not mean this campaign passed them.</p>
 
   <h2>4. Sustainment</h2>
   <p>The checker does not train, does not launch a kernel, and does not recompute a loss from hidden weights. It recomputes hashes, the ledger, and the arithmetic of submitted seed lists. A convincing trace can still be invented. An independent rerun is the check that the named code produced it.</p>
