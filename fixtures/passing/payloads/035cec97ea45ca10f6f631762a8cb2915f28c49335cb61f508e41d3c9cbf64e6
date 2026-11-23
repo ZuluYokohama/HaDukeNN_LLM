@@ -1,0 +1,1 @@
+{"clean_outputs":["c0","c1","c2","c3"],"edges_consulted":[{"edge_ids":[],"predict_at":0},{"edge_ids":["e0"],"predict_at":1},{"edge_ids":["e0","e1"],"predict_at":2},{"edge_ids":["e0","e1"],"predict_at":3}],"format":"sheaf-verify.causality.v1","horizon":2,"perturbation_positions":[3],"perturbed_outputs":["c0","c1","c2","c3x"]}

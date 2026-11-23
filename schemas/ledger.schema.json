@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sheaf-verify.ledger.v1",
+  "type": "object",
+  "required": ["format", "seq", "prev_sha256", "gate_id", "status", "bound", "upstream", "criteria", "created_at", "signature", "record_sha256"],
+  "properties": {
+    "format": {"const": "sheaf-verify.ledger.v1"},
+    "seq": {"type": "integer", "minimum": 0},
+    "prev_sha256": {"type": ["string", "null"]},
+    "gate_id": {"type": "string"},
+    "status": {"enum": ["pass", "fail"]},
+    "bound": {"type": "object"},
+    "upstream": {"type": "array"},
+    "criteria": {"type": "array"},
+    "created_at": {"type": "string"},
+    "signature": {"type": ["object", "null"]},
+    "record_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

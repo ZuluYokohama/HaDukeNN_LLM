@@ -1,3 +1,95 @@
-# New repo
+# sheaf-verify
 
-This repo was created by a Cursor cloud agent.
+Private verification harness for Blake Jones's hypergraph and sheaf language-model studies.
+
+The harness does not train a model. A trainer, running on its own machine, registers the bytes it actually used. This repository stores manifests, a hash-chained ledger, and synthetic fixtures. It does not store model weights, corpora from a real study, or credentials.
+
+Copyright (c) 2026 Blake Jones. All rights reserved. See `NOTICE`. No license is granted.
+
+## Install
+
+```bash
+pip install -e ".[dev]"
+pytest
+sheaf-verify verify --store fixtures/passing --seal-key-file fixtures/test_seal.key
+```
+
+Python 3.11 or newer. The runtime dependencies are the standard library. pytest is the only development dependency.
+
+The file `fixtures/test_seal.key` is a public test vector, `sheaf-verify-public-test-vector`. It is not a production key. A production key stays off the trainer and off this repository. Copy `ledger/head.json` to a place that key cannot rewrite: anyone who holds the key can build a new chain that verifies.
+
+## What a trainer runs
+
+From the training checkout, with artifacts outside this store:
+
+```bash
+sheaf-verify register --store .sheaf --kind raw_data --role corpus.train --path data/train.bin \
+  --metadata '{"document_ids":["doc-001"],"order":0,"split":"train"}'
+sheaf-verify register --store .sheaf --kind raw_data --role corpus.valid --path data/valid.bin \
+  --metadata '{"document_ids":["doc-101"],"order":1,"split":"valid"}'
+sheaf-verify register --store .sheaf --kind raw_data --role corpus.test --path data/test.bin \
+  --metadata '{"document_ids":["doc-201"],"order":2,"split":"test"}'
+
+sheaf-verify register --store .sheaf --kind vocabulary --role vocabulary --path vocab.json \
+  --input <train-manifest-sha256>
+sheaf-verify register --store .sheaf --kind hypergraph --role hypergraph --path graph.json \
+  --input <train-manifest-sha256>
+sheaf-verify register --store .sheaf --kind hypergraph --role hypergraph.random --path graph-random.json \
+  --input <train-manifest-sha256>
+
+sheaf-verify register-tree --store .sheaf --role code --path .
+sheaf-verify register --store .sheaf --kind kernel --role kernel --path kernels/apply.py \
+  --metadata '{"backend":"cpu","entry":"apply"}'
+sheaf-verify register-env --store .sheaf --python 3.12.3 --cuda 12.4 --driver 550.54.14 --gpu "NVIDIA example"
+sheaf-verify register --store .sheaf --kind config --role config --path config.json
+sheaf-verify register --store .sheaf --kind seeds --role seeds --path seeds.json
+sheaf-verify register --store .sheaf --kind claim --role claim --path claim.json
+
+sheaf-verify register-external --store .sheaf --role checkpoint.hypergraph \
+  --payload-sha256 <sha256-of-checkpoint-bytes> --size-bytes <nbytes> \
+  --locator external://trainer/checkpoints/hypergraph \
+  --input <code-sha> --input <config-sha> --input <seeds-sha> --input <kernel-sha>
+
+sheaf-verify register --store .sheaf --kind log --role log.hypergraph --path logs/hypergraph.log \
+  --input <checkpoint-manifest-sha256>
+sheaf-verify register --store .sheaf --kind trace --role trace.causality --path causality.json \
+  --input <hypergraph-manifest-sha256>
+sheaf-verify register --store .sheaf --kind metrics --role metrics --path metrics.json \
+  --input <train-sha> --input <valid-sha> --input <test-sha> --input <seeds-sha> --input <vocab-sha>
+sheaf-verify register --store .sheaf --kind figure --role figure --path figure.svg \
+  --metadata '{"plots":"bpb","metrics_payload_sha256":"<metrics-payload-sha>"}' \
+  --input <metrics-manifest-sha256>
+
+sheaf-verify run --store .sheaf --seal-key-file ~/.sheaf-seal-key
+sheaf-verify verify --store .sheaf --seal-key-file ~/.sheaf-seal-key
+sheaf-verify bundle --store .sheaf --seal-key-file ~/.sheaf-seal-key --out reviewer-bundle
+```
+
+Repeat the checkpoint and log registration for `superword_bpe` and `randomized_hypergraph`. A CUDA, OpenCL, or C kernel must set `host_reference_sha256` to the payload hash of an input manifest that holds the host reference source. The harness records that binding. It does not launch the kernel.
+
+`run` writes every gate, including failures, then registers a result manifest. Exit 0 means every gate passed. Exit 1 means a gate failed and the ledger still holds the failure. Exit 2 means the command itself was refused.
+
+`verify` recomputes hashes, the ledger, and gate replay. It exits 1 on a mismatch. A scientifically failed study can still verify: the failure is what the ledger says. `bundle` exits 1 unless verification is clean, every gate passed, and every checklist objection is answered.
+
+`--strict` fails when a filesystem checkpoint path is missing. An `external://` locator stays a note either way, because the weight bytes live on the trainer.
+
+## Layout
+
+```
+src/sheaf_verify/    library and the sheaf-verify command
+tests/               pytest suite
+fixtures/passing/    synthetic study, regenerated by python -m sheaf_verify.synthetic
+schemas/             JSON Schema drafts for the stored records
+```
+
+A store contains `manifests/`, `payloads/`, `snapshots/`, and `ledger/`. Checkpoint bytes are not a payload. `.sheaf/` is the default store path and is gitignored.
+
+Read `ARCHITECTURE.md` for the hash and ledger rules, `GATES.md` for the pass conditions, and `REVIEWER_GUIDE.md` for the objections a reviewer is expected to raise.
+
+## Gaps
+
+`ARCH_SPEC`, `PAPER_PLAN`, and `REPORT` were not available in this workspace, so the gate names are the contract in `GATES.md` rather than a transcription of those files. The paper stages P0–P4 are the harness's reading of a methods paper: freeze the claim, fix the data protocol, fix units and controls, match the training, then evaluate. The numeric thresholds (`MIN_SEEDS = 5`, tolerance `0.05`, alpha `0.05`) are harness constants, not estimates from a result file.
+
+The causality trace and the per-seed BPB are checks of submitted records. A trainer can still submit a trace that was not produced by the named code. An independent rerun is still required. The git commit id, when present, is recorded and not recomputed unless that checkout is still present. The git tree SHA-1 and the SHA-256 listing are what `verify` recomputes from the snapshot.
+
+The seal is HMAC-SHA256, not an Ed25519 signature.

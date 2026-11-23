@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sheaf-verify.manifest.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "kind", "role", "payload_sha256", "size_bytes", "storage", "locator", "inputs", "metadata", "registered_at"],
+  "properties": {
+    "format": {"const": "sheaf-verify.manifest.v1"},
+    "kind": {"type": "string"},
+    "role": {"type": "string"},
+    "payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "storage": {"enum": ["inline", "external"]},
+    "locator": {"type": "string"},
+    "inputs": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+    "metadata": {"type": "object"},
+    "registered_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"}
+  }
+}

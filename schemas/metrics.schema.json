@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sheaf-verify.metrics.v1",
+  "type": "object",
+  "required": ["format", "arms", "bootstrap_draws", "bootstrap_seed", "seed_design", "superiority"],
+  "properties": {
+    "format": {"const": "sheaf-verify.metrics.v1"},
+    "arms": {"type": "object"},
+    "bootstrap_draws": {"type": "integer"},
+    "bootstrap_seed": {"type": "integer"},
+    "flop_relative_tolerance": {"type": "number"},
+    "seed_design": {"enum": ["independent", "paired"]},
+    "reported": {"type": "object"},
+    "superiority": {"type": "object"}
+  }
+}
