@@ -1,5 +1,7 @@
 # Iterations
 
+Index for HaDukeN //\\\\// HGNLLM Experiments. The package name stays `sheaf-verify`.
+
 `main` holds the harness and this index. Each experiment lives on its own branch `iter/<id>`, cut from `main`. The branch adds:
 
 | Path | Contents |
