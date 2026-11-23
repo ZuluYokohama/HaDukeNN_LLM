@@ -1,3 +1,4 @@
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -99,6 +100,15 @@ def test_license_notice_and_export_hygiene():
                 assert drive not in text, path
 
 
+def _docs_budget():
+    script = ROOT / ".github" / "scripts" / "docs_budget.py"
+    spec = importlib.util.spec_from_file_location("docs_budget", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_docs_budget_rejects_external_scripts_and_oversized_trees():
     script = ROOT / ".github" / "scripts" / "docs_budget.py"
     completed = subprocess.run(
@@ -114,3 +124,18 @@ def test_docs_budget_rejects_external_scripts_and_oversized_trees():
         assert "G1b" in page
         assert 'class="status-strip"' in page
         assert "<script" not in page.lower()
+
+
+def test_docs_budget_parses_script_src_attributes():
+    budget = _docs_budget()
+    padded = '<script src=" https://cdn.example.com/app.js"></script>'
+    masked = '<script data-src="local.js" src="https://cdn.example.com/app.js"></script>'
+    local = "<script src='app.js'></script>"
+    protocol = '<script src="//cdn.example.com/app.js"></script>'
+    assert budget.script_sources(padded) == ["https://cdn.example.com/app.js"]
+    assert budget.is_external_script(budget.script_sources(padded)[0])
+    assert budget.script_sources(masked) == ["https://cdn.example.com/app.js"]
+    assert budget.is_external_script(budget.script_sources(masked)[0])
+    assert budget.script_sources(local) == ["app.js"]
+    assert budget.is_external_script("app.js") is False
+    assert budget.is_external_script(budget.script_sources(protocol)[0])

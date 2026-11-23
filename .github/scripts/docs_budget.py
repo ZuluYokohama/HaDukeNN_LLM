@@ -3,15 +3,43 @@
 
 from __future__ import annotations
 
-import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] / "docs"
 TOTAL_LIMIT = 1_000_000
 PAGE_LIMIT = 300 * 1024
-SCRIPT_TAG = re.compile(r"<script\b([^>]*)>", re.IGNORECASE)
-SCRIPT_SRC = re.compile(r"""\bsrc\s*=\s*(['"]?)([^'"\s>]+)\1""", re.IGNORECASE)
+
+
+class _ScriptSrcParser(HTMLParser):
+    """Collect real ``src`` attributes from script tags, including void tags."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.sources: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "script":
+            return
+        for name, value in attrs:
+            if name.lower() == "src" and value is not None:
+                self.sources.append(value.strip())
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+
+
+def script_sources(text: str) -> list[str]:
+    parser = _ScriptSrcParser()
+    parser.feed(text)
+    parser.close()
+    return parser.sources
+
+
+def is_external_script(url: str) -> bool:
+    normalized = url.strip().lower()
+    return normalized.startswith(("http://", "https://", "//")) or "://" in normalized
 
 
 def main() -> int:
@@ -28,14 +56,8 @@ def main() -> int:
         if size > PAGE_LIMIT:
             print(f"{page.relative_to(ROOT.parent)} is {size} bytes, over {PAGE_LIMIT}", file=sys.stderr)
             return 1
-        text = page.read_text(encoding="utf-8")
-        for match in SCRIPT_TAG.finditer(text):
-            source = SCRIPT_SRC.search(match.group(1))
-            if source is None:
-                continue
-            url = source.group(2)
-            external = url.startswith(("http://", "https://", "//")) or "://" in url
-            if external:
+        for url in script_sources(page.read_text(encoding="utf-8")):
+            if is_external_script(url):
                 print(f"{page.relative_to(ROOT.parent)} loads an external script: {url}", file=sys.stderr)
                 return 1
     print(f"docs/ {total} bytes across {len(files)} files; no external scripts")
