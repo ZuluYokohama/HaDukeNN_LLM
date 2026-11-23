@@ -1,109 +1,195 @@
 # Gates
 
-A gate passes only when every criterion it writes has passed, and every gate it depends on has a passing ledger record bound to the same manifest and payload hashes. `run` still writes the failures. Thresholds below are harness constants. A study cannot loosen them by writing a smaller number into its metrics.
+A gate passes only when every criterion it writes has passed, and every gate it depends on has a passing ledger record bound to the same manifest and payload hashes. `run` still writes the failures.
+
+The ids follow the architecture spec. H0–H7 are the stages. G0–G6 are the go/no-go lines of H0–H6. H7 has no numeric gate. P0–P6 are the paper-plan phases. Thresholds below are per-gate parameters taken from those documents. A study cannot loosen them by writing a smaller number into its metrics. There is no single seed minimum: pilots use 3, the headline uses 5. The old global `MIN_SEEDS = 5` would have failed a valid 3-seed pilot.
 
 ```
-MIN_SEEDS = 5
+PILOT_SEEDS = 3
+HEADLINE_SEEDS = 5
+G0_MIN_UNIT_REDUCTION = 0.15
+G0_MAX_BYTE_FALLBACK_PERCENT = 1
+G0_VOCAB_CAP = 64000
+G0_RECORDED_VOCAB = 65536
+G0_MAX_BUILD_CPU_HOURS = 2
+G0_MAX_BUILD_RAM_GB = 16
+G1_SD_MARGIN = 1
+G3_MAX_REL_ERR = 0.001
+G3_MAX_SHEAFHEAT_FRACTION = 0.15
+G4_MIN_BASELINE_SD = 2
+P4_SEEDS_15M = 3
+P4_SEEDS_30M = 3
+P4_SEEDS_60M = 2
+P4_SEEDS_120M = 1
 MAX_FLOP_RELATIVE_TOLERANCE = 0.05
 ALPHA = 0.05
 MIN_BOOTSTRAP_DRAWS = 1000
 MAX_BOOTSTRAP_DRAWS = 100000
 ```
 
-The order is the topological order of the graph.
+`MAX_FLOP_RELATIVE_TOLERANCE` is the harness reading of the word "matched" where the spec does not give a numeric band. `ALPHA` is the one-sided threshold for G2 and G4. The methodology block inside G4 still recomputes a two-tailed Welch test, a bootstrap interval, and Hedges' g; that two-tailed bar is stricter than the one-sided spec test and is not a second alpha.
 
-## P0 Claim freeze
+The order below is the topological order of the graph.
 
-Binds `claim`. No dependencies.
+## P0 Fairness
 
-The payload is either a `sheaf-verify.claim.v1` object or plain UTF-8 of at least 20 characters. A structured claim needs a hypothesis id, a description of at least 20 characters, metric `bpb`, direction `less`, alpha equal to `ALPHA`, and a primary contrast that is one of the control arms. The payload must not contain a 64-character hex digest.
+Binds the claim, metrics, code, environment, config, seeds, kernel, the three checkpoints, and the three logs. No dependencies.
 
-## G0 Corpus identity and disjoint splits
+The claim is frozen before the metrics exist and does not quote the metrics hash. A structured claim needs a hypothesis id, a description of at least 20 characters, metric `bpb`, direction `less`, alpha equal to `ALPHA`, and a primary contrast that is one of the control arms. The payload must not contain a 64-character hex digest.
 
-Binds `corpus.train`, `corpus.valid`, `corpus.test`. No dependencies.
+The fairness record logs bytes/s, FLOPs, and MFU. `schedule_complete` is true. `baseline_wall_interpolated` is false: a mid-schedule wall comparison is not a result.
 
-The three payload hashes differ. Document ids are unique inside a split and pairwise disjoint across splits. Each split is non-empty. Metadata orders are integers with train < valid < test.
+The code snapshot matches the listing, and the recomputed git tree SHA-1 matches the manifest. Environment fields are non-blank and are not `unknown`, `none`, or `n/a`. Config is a non-empty JSON object. Each checkpoint is external and cites the code, config, seeds, and kernel manifests. Each log is non-empty and cites its checkpoint.
 
-## H4 Seeds
+## G0 Unit reduction on WT103 valid
 
-Binds `seeds`, `metrics`. No dependencies.
+Binds `metrics`. No dependencies.
 
-The design is `independent` (pairwise disjoint seed lists) or `paired` (one shared list). Each arm has at least `MIN_SEEDS` distinct integer seeds. `bpb_per_seed` has the same length. Metrics cite the seeds manifest and repeat the design.
+The `sheaf-verify.g0.v1` record is either `synthetic` or `recorded_metadata`, and `not_data` is true. A recorded record's note says it is not corpus bytes. Counts are for the valid split against GPT-2 BPE.
 
-## H5 Code, kernel, environment, config, checkpoints, and logs
+- Fewer units: `1 - valid_units / gpt2_bpe_valid_units >= G0_MIN_UNIT_REDUCTION` (15%).
+- Byte fallback: `byte_fallback_percent <= G0_MAX_BYTE_FALLBACK_PERCENT` (1%).
+- Vocabulary: `vocab_size <= G0_VOCAB_CAP` (64,000). The written gate says `V ≤ 64k`. The feasibility build recorded `V = 65,536` (`G0_RECORDED_VOCAB`), which is 2^16 and is also called 64k in tokenizer sizes. Those two readings disagree. The harness uses the literal cap 64,000 and flags 65,536. It does not treat 65,536 as inside the cap.
+- Build: `build_cpu_hours <= G0_MAX_BUILD_CPU_HOURS` (2) and `peak_ram_gb <= G0_MAX_BUILD_RAM_GB` (16).
 
-Binds `code`, `environment`, `config`, `kernel`, `metrics`, `checkpoint.hypergraph`, `checkpoint.superword_bpe`, `checkpoint.randomized_hypergraph`, and the three `log.*` roles. No dependencies.
+`fixtures/g0-recorded/` is that feasibility record: 27.35% fewer units on valid (181,544 vs 249,887), 0.048% fallback, 0.093 CPU-h, 4.83 GB peak, `V = 65,536`. It is recorded metadata, not data. The vocab criterion fails. The other four pass.
 
-The code snapshot matches the listing, and the recomputed git tree SHA-1 matches the manifest. Environment fields `python`, `cuda`, `driver`, `gpu`, and `platform` are non-blank and are not `unknown`, `none`, or `n/a`. Config is a non-empty JSON object. Each checkpoint is external, is not also stored as a payload, and cites the code, config, seeds, and kernel manifests. Each log is non-empty and cites its checkpoint.
+## H0 Corpus stats
+
+Binds `metrics`, both hypergraphs, and the three corpora. Depends on G0.
+
+The stage card says work `Corpus stats` and gate `G0`. Train, validation, and test payload hashes differ. Document ids are unique inside a split and pairwise disjoint across splits. Each split is non-empty. Metadata orders are integers with train < valid < test. Both hypergraphs are built from train only. An attached 2-complex must satisfy the boundary identity.
+
+## G1 Units-only pilot
+
+Binds `metrics`, the three corpora, and `vocabulary`. Depends on G0.
+
+Arms `hnt64k`, `struct32k`, and `sw64k` are required. This is the units-only pilot: hnt64k against struct32k, with sw64k as the equal-size superword-BPE control.
+
+- Each arm has at least `PILOT_SEEDS` (3) per-seed BPB values. The gate counts those lists. It does not read a minimum out of the metrics file.
+- hnt64k mean test BPB_corpus `<=` struct32k mean `+ G1_SD_MARGIN` (1) sample standard deviation of struct32k.
+- hnt64k `train_flops_per_byte` is strictly lower than struct32k and strictly lower than sw64k.
+- sw64k `vocab_size` equals hnt64k.
+- hnt64k `graph_build_flops` is positive. The training-FLOP comparison above does not fold that number in; the all-in comparison is G4.
+- Train bytes equal the train corpus. The BPB denominator is `raw_corpus_bytes`. Scored bytes equal the test corpus.
+
+The same gate also checks the methodology trio (`hypergraph`, `superword_bpe`, `randomized_hypergraph`): totals equal train plus graph build, graph arms charge a positive graph build, superword-BPE records graph build as 0, train bytes match, the relative span of totals is within `MAX_FLOP_RELATIVE_TOLERANCE`, BPB uses raw test bytes, and the vocabulary is one shared size with a superword-BPE arm present.
+
+## H1 Units-only pilot stage
+
+Binds `metrics`. Depends on G1.
+
+The stage card says work `Units-only pilot` and gate `G1`. GPT-2 BPE is present beside hnt64k and is trained on the same number of bytes. The spec's H1 comparison is A1 against GPT-2 BPE, struct32k, and equal-size superword BPE. G1's numeric line does not require beating GPT-2 BPE.
+
+## G2 Spectral and compositional embeddings
+
+Binds `metrics`. Depends on G1.
+
+Two comparisons, each with at least `PILOT_SEEDS` seeds:
+
+- `a2_spectral` against `shuffled_degree`
+- `a3_compositional` against `random_dag`
+
+Each must have a lower mean BPB than its control. The one-sided Welch p-values must survive Holm at `ALPHA`.
+
+## H2 Spectral and compositional stage
+
+Binds `metrics`. Depends on G2.
+
+The stage card says work `Spectral and compositional embeddings` and gate `G2`. The numeric gate is G2.
+
+## G3 Kernel microbench
+
+Binds `metrics` and `kernel`. Depends on G0.
+
+`dtype` is `bf16`. Relative error against the recorded reference is at most `G3_MAX_REL_ERR` (0.001). SheafHeat's share of the step is at most `G3_MAX_SHEAFHEAT_FRACTION` (0.15). These are checks of the submitted microbench record. The harness does not launch the kernel.
 
 Kernel metadata needs `backend` (`cpu`, `cuda`, `opencl`, or `c`) and `entry`. A device backend must set `host_reference_sha256` to a different payload hash that belongs to one of the kernel manifest's inputs.
 
-## G1 Matched FLOPs and train bytes
+## H3 Kernel stage
 
-Binds `corpus.train`, `metrics`. Depends on G0.
+Binds `metrics`. Depends on G3.
 
-For every arm, `total = train + graph_build`, all non-negative. Graph arms have `graph_build > 0`. The superword-BPE arm has `graph_build = 0`. The relative span of the three totals is at most the declared tolerance, which itself must sit in `[0, 0.05]`. Every `train_bytes` equals the train corpus size. Metrics cite all three corpus manifests.
+The stage card says work `Kernels K2/K4 and CUDA graph` and gate `G3`.
 
-## H0 Train-only hypergraph
+## P1 Finish ablations
 
-Binds `hypergraph`, `hypergraph.random`, and the three corpora. Depends on G0.
+Binds `metrics`. Depends on P0.
 
-Both graphs are `sheaf-verify.hypergraph.v1`, `built_from_split` is `train`, document ids are a subset of the train split, and inputs cite the train manifest and not the valid or test manifests. Vertices and hyperedge positions agree. If a `complex` block is present, the boundary identity holds: the maximum absolute entry of B1 B2 is 0. A missing complex is recorded and does not fail this criterion.
+The record lists `s4d`, `hybrid`, `sheaf_reg`, `random_rewire`, `spectral_init`, `shape_matched`, and `enhanced_wallmatch`. Those names are the paper plan's remaining ablation list. The harness checks that the list was submitted. It does not rerun the arms.
 
-## H1 Equal-size vocabulary and superword-BPE
+## P2 Strong baseline
 
-Binds the three corpora, `vocabulary`, and `metrics`. Depends on G0.
+Binds `metrics`. Depends on P1.
 
-Unit strings are unique. Every arm's `vocab_size` equals that count. The superword-BPE arm is present. Vocabulary inputs cite the train corpus and not valid or test.
+A tuned modern baseline is named. The PE controls are sinusoidal, RoPE, ALiBi, NoPE, heat, and heat+RoPE. The G4 headline seed list has at least `HEADLINE_SEEDS` (5). A declared `headline_seeds` smaller than 5 fails even if some other field looks complete.
 
-## H6 Raw-byte BPB and identical scored bytes
+## P3 Data
 
-Binds `corpus.test`, `metrics`. Depends on G0.
+Binds `metrics`. Depends on P0.
 
-Each arm's denominator is `raw_corpus_bytes`. `raw_bytes` and `scored_bytes` both equal the test corpus size. The mean of `bpb_per_seed` equals `total_bits / raw_bytes` within `1e-9`. Scored-byte counts are identical across arms.
+A full WikiText-103 epoch is recorded. FineWeb-Edu validation BPB is a positive number. `record_class` is `synthetic` or `recorded_metadata`, and `not_data` is true. The synthetic fixture's FineWeb number is not a measured FineWeb run.
 
-## H2 Causality
+## P5 Speed
 
-Binds `hypergraph`, `trace.causality`. Depends on H0.
+Binds `metrics`. Depends on G3.
 
-The trace leaves a future position after `horizon`. Perturbations are strictly after the horizon. Outputs at and before the horizon are unchanged. Every probed future position changes. Consulted hyperedges end at or before `predict_at`, and there is one entry per position. The trace cites the study hypergraph. If a `sheaf` block is present, every listed pair of paths composes to the same restriction map. A missing sheaf is recorded and does not fail this criterion.
+`cuda_graph_all_arms` is true, and `time_to_target_bpb_s` is positive. The paper plan applies the whole-step CUDA graph to every arm, including the baseline.
 
-## H3 Randomized hypergraph control
+## G4 Full HNT at matched all-in FLOPs
 
-Binds both graphs and `metrics`. Depends on H0.
+Binds `metrics`, `seeds`, `claim`, and both hypergraphs. Depends on G2 and G3.
 
-`randomized` is false on the study graph and true on the control. Incidence hashes differ. Vertex counts, hyperedge counts, and cardinality histograms match. The metrics arm repeats the control's incidence hash, order, histogram, and `randomization_seed`.
+Headline and tuned-modern baseline each have at least `HEADLINE_SEEDS` (5) BPB values. The BPB gain (baseline mean minus headline mean) is greater than `G4_MIN_BASELINE_SD` (2) baseline sample standard deviations. Headline all-in FLOPs equal train FLOPs plus a positive graph build, and the two all-in totals match within `MAX_FLOP_RELATIVE_TOLERANCE`.
 
-## H7 Statistics
+Components `spectral`, `compositional`, `attention_bias`, and `sheaf_heat` each beat a `random_hypergraph` control on at least `PILOT_SEEDS` (3) seeds. One-sided Welch p-values survive Holm at `ALPHA`.
 
-Binds `metrics`, `seeds`, `claim`. Depends on H4 and H6.
+The methodology seed lists on the seeds artifact also use `HEADLINE_SEEDS`. A 3-seed methodology list fails here and does not fail G1. Reported Welch, bootstrap, and effect-size fields, when present, must match the recomputation. A superiority claim fails when the superword-BPE contrast and the randomized-hypergraph contrast disagree. A study that claims nothing still records the disagreement and can pass G4.
 
-`bootstrap_draws` is inside the declared range. For independent seeds the harness computes Welch's test; for paired seeds, the paired t test. Both contrasts are computed: hypergraph against superword-BPE, and hypergraph against the randomized hypergraph. The bootstrap is a percentile interval of the mean difference with linear interpolation at `(n - 1) * p`. Hedges' g uses the small-sample correction `1 - 3 / (4(n1 + n2) - 9)`. The sign is mean(primary) minus mean(control). A negative BPB difference favors the hypergraph.
+## H4 Ablations and headline
 
-If the metrics contain a `reported` block, its `t`, `df`, `p`, `low`, `high`, and `g` must match the recomputation within `1e-8` times the scale. If the block is absent, the ledger values are the report.
+Binds `metrics`, `hypergraph`, and `trace.causality`. Depends on G4.
 
-`superiority.claimed` may be false, and the gate can still pass. If it is true, the named contrast must have `p < ALPHA`, a bootstrap high end below 0, and Hedges' g below 0, and the other control must agree. Disagreement fails the gate. When the claim is structured, `superiority.against` must equal the preregistered contrast.
+The stage card says work `A4-A7 and leave-one-out` and gate `G4`. The causality trace must cite the study hypergraph. Perturbing a future position leaves past outputs unchanged and changes the probed future positions. Consulted edges end at or before the predicted position. An attached sheaf block must agree on converging restriction paths.
 
-## P1 Data protocol
+## G5 Scaling slope
 
-Binds `claim`, `metrics`. Depends on P0 and G0.
+Binds `metrics`. Depends on G4.
 
-The claim's `registered_at` is strictly earlier than the metrics manifest. The claim payload does not contain the metrics payload hash.
+Sizes are 15M, 30M, 60M, and 120M parameters. Gain is positive at every size. The ordinary-least-squares slope of gain against log(parameters) has a 95% Student-t interval that excludes 0, and the slope is not negative. The parenthetical in the spec is the interval test. The sentence "does not shrink to zero" is the non-negative slope plus the positive gains. A significant negative slope fails even though its interval excludes 0.
 
-## P2 Units and controls
+## H5 Scaling stage
 
-Depends on H0, H1, H2, and H3.
+Binds `metrics`. Depends on G5.
 
-The metrics arms are exactly `hypergraph`, `superword_bpe`, and `randomized_hypergraph`.
+The stage card says work `Scaling 15-120M and FineWeb-Edu` and gate `G5`. The FineWeb-Edu field from P3 must still be present.
 
-## P3 Matched training
+## P4 Scaling ladder
 
-Depends on G1, H4, and H5.
+Binds `metrics`. Depends on G5.
 
-All three checkpoints are external.
+Seed counts on the same four sizes meet the paper-plan schedule: `P4_SEEDS_15M = 3`, `P4_SEEDS_30M = 3`, `P4_SEEDS_60M = 2`, `P4_SEEDS_120M = 1`. These are not the headline minimum. A 120M arm with one seed can pass P4 and still fail G4 if that arm is presented as the headline.
 
-## P4 Evaluation, statistics, and figure
+## G6 Motif head and corpus memory
 
-Binds `metrics`, `seeds`, `claim`, `figure`. Depends on H6, H7, P0, P1, P2, and P3.
+Binds `metrics`. Depends on G5.
 
-Figure metadata has `plots` equal to `bpb` and `metrics_payload_sha256` equal to the metrics payload hash. The figure cites the metrics manifest. The payload starts with `<svg` or `<?xml`.
+The arm is `motif_head` or `corpus_memory`. Its BPB is lower than A7, and all-in FLOPs match A7 within `MAX_FLOP_RELATIVE_TOLERANCE`.
+
+## H6 Motif-head stage
+
+Binds `metrics`. Depends on G6.
+
+The stage card says work `Hyperedge output head and corpus-memory arm` and gate `G6`.
+
+## H7 lm-eval and write-up
+
+Binds `metrics` and `figure`. Depends on H6.
+
+The stage card says work `lm-eval and write-up` and gate `none`. lm-eval tasks are listed and `headline` is false: downstream evals at this scale are reported, not headlined. The figure metadata cites the metrics payload, the figure provenance cites the metrics manifest, and the payload starts with an SVG or XML marker.
+
+## P6 Evals and replication
+
+Binds `metrics`. Depends on H7.
+
+`replication_recorded` is true and `replication_note` has at least 20 characters. The note is a submitted record. The harness does not contact another machine.

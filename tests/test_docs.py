@@ -10,11 +10,29 @@ def test_gate_ids_and_thresholds_are_in_the_gate_doc():
     text = (ROOT / "GATES.md").read_text(encoding="utf-8")
     for gate in GATES:
         assert gate.id in text
-    assert "MIN_SEEDS = 5" in text
-    assert "MAX_FLOP_RELATIVE_TOLERANCE = 0.05" in text
-    assert "ALPHA = 0.05" in text
-    assert "MIN_BOOTSTRAP_DRAWS = 1000" in text
-    assert "MAX_BOOTSTRAP_DRAWS = 100000" in text
+    for line in (
+        "PILOT_SEEDS = 3",
+        "HEADLINE_SEEDS = 5",
+        "G0_MIN_UNIT_REDUCTION = 0.15",
+        "G0_MAX_BYTE_FALLBACK_PERCENT = 1",
+        "G0_VOCAB_CAP = 64000",
+        "G0_RECORDED_VOCAB = 65536",
+        "G0_MAX_BUILD_CPU_HOURS = 2",
+        "G0_MAX_BUILD_RAM_GB = 16",
+        "G1_SD_MARGIN = 1",
+        "G3_MAX_REL_ERR = 0.001",
+        "G3_MAX_SHEAFHEAT_FRACTION = 0.15",
+        "G4_MIN_BASELINE_SD = 2",
+        "P4_SEEDS_15M = 3",
+        "P4_SEEDS_30M = 3",
+        "P4_SEEDS_60M = 2",
+        "P4_SEEDS_120M = 1",
+        "MAX_FLOP_RELATIVE_TOLERANCE = 0.05",
+        "ALPHA = 0.05",
+        "MIN_BOOTSTRAP_DRAWS = 1000",
+        "MAX_BOOTSTRAP_DRAWS = 100000",
+    ):
+        assert line in text
 
 
 def test_reviewer_guide_lists_every_objection():

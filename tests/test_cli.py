@@ -36,3 +36,20 @@ def test_cli_verify_and_bundle(tmp_path: Path):
     assert (tmp_path / "bundle" / "REPORT.md").is_file()
     assert (tmp_path / "bundle" / "ledger" / "ledger.jsonl").is_file()
     assert not (tmp_path / "bundle" / "ledger" / ".lock").exists()
+
+
+def test_anchor_prints_the_head_outside_the_store(tmp_path: Path):
+    store = build(tmp_path / "store")
+    head = json.loads((store.root / "ledger" / "head.json").read_text(encoding="utf-8"))
+    printed = _run(
+        ["anchor", "--store", str(store.root), "--out", str(tmp_path / "anchor.txt")],
+        tmp_path,
+    )
+    assert printed.returncode == 0, printed.stderr
+    assert printed.stdout.strip() == f"sheaf-verify.anchor.v1 {head['head_sha256']}"
+    assert (tmp_path / "anchor.txt").read_text(encoding="utf-8").strip() == printed.stdout.strip()
+    refused = _run(
+        ["anchor", "--store", str(store.root), "--out", str(store.root / "ledger" / "anchor.txt")],
+        tmp_path,
+    )
+    assert refused.returncode == 2

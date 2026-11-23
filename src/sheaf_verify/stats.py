@@ -188,6 +188,60 @@ def _betacf(a: float, b: float, x: float) -> float:
     raise SheafError("incomplete beta continued fraction did not converge")
 
 
+def one_sided_less(test: TTest) -> float:
+    """Lower-tail probability. The stored Welch p-value is two-tailed."""
+    if math.isinf(test.t):
+        return 0.0 if test.t < 0 else 1.0
+    if test.t <= 0:
+        return min(1.0, test.p / 2.0)
+    return min(1.0, 1.0 - test.p / 2.0)
+
+
+def student_t_critical(two_tailed_p: float, df: float) -> float:
+    """Positive t such that the two-tailed p-value equals ``two_tailed_p``."""
+    if not 0.0 < two_tailed_p < 1.0:
+        raise SheafError("critical value needs a two-tailed probability in (0, 1)")
+    lo = 0.0
+    hi = 1.0
+    while student_t_two_tailed(hi, df) > two_tailed_p:
+        hi *= 2.0
+        if hi > 1e6:
+            raise SheafError("Student-t critical value did not bracket")
+    for _ in range(80):
+        mid = (lo + hi) / 2.0
+        if student_t_two_tailed(mid, df) > two_tailed_p:
+            lo = mid
+        else:
+            hi = mid
+    return hi
+
+
+def slope_interval(xs: list[float], ys: list[float]) -> tuple[float, float, float]:
+    """Ordinary-least-squares slope and its 95% Student-t interval.
+
+    Returns ``(slope, low, high)``. A perfect line has a zero-width interval
+    at the slope, which excludes 0 whenever the slope itself is not 0.
+    """
+    n = len(xs)
+    if n != len(ys) or n < 3:
+        raise SheafError("slope needs at least three paired observations")
+    mx = mean(xs)
+    my = mean(ys)
+    sxx = math.fsum((item - mx) ** 2 for item in xs)
+    if sxx == 0.0:
+        raise SheafError("slope is undefined when x does not vary")
+    slope = math.fsum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    intercept = my - slope * mx
+    sse = math.fsum((y - (intercept + slope * x)) ** 2 for x, y in zip(xs, ys))
+    scale = max(1.0, math.fsum(item * item for item in ys))
+    if sse <= 1e-18 * scale:
+        return slope, slope, slope
+    df = n - 2
+    se = math.sqrt((sse / df) / sxx)
+    critical = student_t_critical(0.05, float(df))
+    return slope, slope - critical * se, slope + critical * se
+
+
 def _percentile(sorted_values: list[float], probability: float) -> float:
     if len(sorted_values) == 1:
         return sorted_values[0]

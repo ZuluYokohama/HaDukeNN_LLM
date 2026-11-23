@@ -22,6 +22,8 @@ Roles are dotted identifiers such as `corpus.train` and `checkpoint.hypergraph`.
 
 The optional seal is HMAC-SHA256 over the canonical body with the signature and the record hash removed. The record hash then covers the body including the signature. The key id is `HMAC-SHA256(key, "sheaf-verify.key-id.v1")` and is not the key. This is not a public-key signature. A holder of the key can write a different chain that verifies. Unsigned records are rejected unless `--allow-unsigned` is set. A chain cannot mix signed and unsigned lines.
 
+`sheaf-verify anchor` prints `sheaf-verify.anchor.v1` and the `head_sha256` from `ledger/head.json`. `--out` appends that same line to a path outside the store. Printing the line, or copying the file onto another machine by hand, is the out-of-band anchor. The command reads the head file and, when asked, writes the path you name. It does not call a timestamp service, a notary, or any other network service. The anchor matters only if the copy is kept where the seal key cannot rewrite it. `verify` is still what checks the chain.
+
 ## Gates and replay
 
 The graph is declared in `src/sheaf_verify/gates.py` and drawn in `GATES.md`. `run` evaluates every gate in topological order and appends the decision, pass or fail. A gate passes only when every criterion passed and every upstream dependency has a passing ledger record whose bound manifest and payload hashes are the hashes bound now. Re-running an upstream gate without re-running the downstream gate makes `verify` fail, because replay recomputes the latest decision against the full ledger.
@@ -30,7 +32,7 @@ After the gates, `run` registers a `result` manifest. Its payload names the outc
 
 ## What the checks do not do
 
-They do not execute the model, the CUDA or OpenCL kernel, or a second training run. H2 checks a submitted causality trace. H6 and H7 recompute BPB identities and the Welch or paired test, the bootstrap interval, and Hedges' g from the submitted per-seed numbers. A trace or a seed list can be invented. The harness makes that invention explicit and comparable. It does not make it true.
+They do not execute the model, the CUDA or OpenCL kernel, or a second training run. H4 checks a submitted causality trace. G1 checks the raw-byte BPB identity. G2 and G4 recompute one-sided Welch tests. G4 also recomputes the two-tailed Welch or paired test, the bootstrap interval, and Hedges' g from the submitted per-seed numbers. A trace or a seed list can be invented. The harness makes that invention explicit and comparable. It does not make it true.
 
 Statistics use a Student-t tail from the regularized incomplete beta, so SciPy is not a dependency. Bootstrap draws use `random.Random` with the recorded seed. On CPython that sequence is deterministic.
 
@@ -52,7 +54,7 @@ Not used. The PolyForm license. The receipt module as code.
 
 ### ZuluYokohama/btc-mining-sim, `src/btc_mining_sim/research_protocol.py`
 
-Used. A claim can be a preregistered hypothesis whose canonical JSON is the hashed payload (`sheaf-verify.claim.v1`), frozen before metrics exist. Corpus splits carry integer orders and must satisfy train < valid < test, the chronological half of that file's holdout check, in addition to disjoint document ids. A superiority claim fails when the superword-BPE contrast and the randomized-hypergraph contrast disagree. Agreement is required only for a claim of superiority. A study that claims nothing still records the disagreement and can pass H7. That is the "controls disagree, so the result is not supported" rule, applied to the two controls this harness already computes. The seal comparison uses `hmac.compare_digest`.
+Used. A claim can be a preregistered hypothesis whose canonical JSON is the hashed payload (`sheaf-verify.claim.v1`), frozen before metrics exist. Corpus splits carry integer orders and must satisfy train < valid < test, the chronological half of that file's holdout check, in addition to disjoint document ids. A superiority claim fails when the superword-BPE contrast and the randomized-hypergraph contrast disagree. Agreement is required only for a claim of superiority. A study that claims nothing still records the disagreement and can pass G4. That is the "controls disagree, so the result is not supported" rule, applied to the two controls this harness already computes. The seal comparison uses `hmac.compare_digest`.
 
 Not used. SHA-256d, midstate caching, AsicBoost, difficulty retargeting, the mempool, Merkle coinbase branches, mining strategies, and the mission-lab bridge that drives those campaigns. Circular-shift and permutation nulls over paired numeric series. Pearson correlation and mean squared error. Those belong to a mining-math simulator, not to a bits-per-byte study.
 
@@ -60,7 +62,7 @@ Not used. SHA-256d, midstate caching, AsicBoost, difficulty retargeting, the mem
 
 Used. A hypergraph manifest may carry an oriented 2-complex (`num_vertices`, `edges`, `faces`). H0 then checks the boundary identity, the maximum absolute entry of B1 times B2, which `FaceComplex.verify_boundary_identity` checks in that branch. The check here is a few dozen lines of integer arithmetic. It does not import that class.
 
-A study hypergraph may also carry a sheaf block: state ids, operations with a string restriction map, and one or more pairs of paths. H2 composes the maps and fails when converging paths disagree. That is the loop-closure idea in `network_engine/sheaf/cocycle.py`. The composition is the obvious substitution of string maps. The process-graph classes, NumPy stalks, and cocycle subgraph report were not imported.
+A study hypergraph may also carry a sheaf block: state ids, operations with a string restriction map, and one or more pairs of paths. H4 composes the maps and fails when converging paths disagree. That is the loop-closure idea in `network_engine/sheaf/cocycle.py`. The composition is the obvious substitution of string maps. The process-graph classes, NumPy stalks, and cocycle subgraph report were not imported.
 
 A kernel whose `backend` is `cuda`, `opencl`, or `c` must name `host_reference_sha256`, and that hash must be the payload of an input manifest. The branch's device code is OpenCL in `packages/ne_adreno_gpu/ne_adreno_gpu/kernels.cl` and C in `packages/ne_oryon_kernels/csrc/sheaf_kernels.c`. No `.cu` file is on that branch. The harness still accepts `cuda` as a backend name so a later CUDA source is bound the same way: source hash in the manifest, host reference as a separate payload, no launch. CPU kernels are their own reference.
 

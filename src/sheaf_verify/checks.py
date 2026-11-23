@@ -27,9 +27,9 @@ from sheaf_verify.policy import (
     ALPHA,
     CONTROL_ARMS,
     MAX_BOOTSTRAP_DRAWS,
+    HEADLINE_SEEDS,
     MAX_FLOP_RELATIVE_TOLERANCE,
     MIN_BOOTSTRAP_DRAWS,
-    MIN_SEEDS,
     PRIMARY_ARM,
     REQUIRED_ARMS,
 )
@@ -433,7 +433,7 @@ def random_control_criteria(real: dict, random_graph: dict, metrics: dict) -> li
     return criteria
 
 
-def seed_criteria(seeds: dict, metrics: dict) -> list[Criterion]:
+def seed_criteria(seeds: dict, metrics: dict, *, minimum: int = HEADLINE_SEEDS) -> list[Criterion]:
     if not isinstance(seeds, dict) or seeds.get("format") != SEEDS_FORMAT:
         return [bad("seeds.format", "seeds format is not sheaf-verify.seeds.v1")]
     design = seeds.get("design")
@@ -460,9 +460,9 @@ def seed_criteria(seeds: dict, metrics: dict) -> list[Criterion]:
             criteria.append(bad(f"seeds.unique.{name}", "seeds repeat inside the arm"))
         else:
             criteria.append(ok(f"seeds.unique.{name}", f"{len(values)} distinct seeds"))
-        if len(values) < MIN_SEEDS:
+        if len(values) < minimum:
             count_ok = False
-            criteria.append(bad(f"seeds.count.{name}", f"{len(values)} seeds is below the minimum {MIN_SEEDS}"))
+            criteria.append(bad(f"seeds.count.{name}", f"{len(values)} seeds is below the minimum {minimum}"))
         else:
             criteria.append(ok(f"seeds.count.{name}", f"{len(values)} seeds"))
         lists[name] = values
@@ -482,7 +482,7 @@ def seed_criteria(seeds: dict, metrics: dict) -> list[Criterion]:
         else:
             criteria.append(bad("seeds.paired", "paired arms do not use the same seed list"))
     if count_ok and len(lists) == 3:
-        criteria.append(ok("seeds.minimum", f"every arm has at least {MIN_SEEDS} seeds"))
+        criteria.append(ok("seeds.minimum", f"every arm has at least {minimum} seeds"))
     return criteria
 
 

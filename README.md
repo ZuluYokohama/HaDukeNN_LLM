@@ -16,7 +16,13 @@ sheaf-verify verify --store fixtures/passing --seal-key-file fixtures/test_seal.
 
 Python 3.11 or newer. The runtime dependencies are the standard library. pytest is the only development dependency.
 
-The file `fixtures/test_seal.key` is a public test vector, `sheaf-verify-public-test-vector`. It is not a production key. A production key stays off the trainer and off this repository. Copy `ledger/head.json` to a place that key cannot rewrite: anyone who holds the key can build a new chain that verifies.
+The file `fixtures/test_seal.key` is a public test vector, `sheaf-verify-public-test-vector`. It is not a production key. A production key stays off the trainer and off this repository. After `verify` succeeds, anchor the ledger head outside the store. Anyone who holds the key can build a new chain that verifies, so the printed hash has to live where that key cannot rewrite it:
+
+```bash
+sheaf-verify anchor --store .sheaf --out ~/sheaf-anchors.txt
+```
+
+That command only reads `ledger/head.json` and, if you pass `--out`, appends one line to a file outside the store. It does not contact an external service. Printing the line is the same anchor.
 
 ## What a trainer runs
 
@@ -62,6 +68,7 @@ sheaf-verify register --store .sheaf --kind figure --role figure --path figure.s
 
 sheaf-verify run --store .sheaf --seal-key-file ~/.sheaf-seal-key
 sheaf-verify verify --store .sheaf --seal-key-file ~/.sheaf-seal-key
+sheaf-verify anchor --store .sheaf --out ~/sheaf-anchors.txt
 sheaf-verify bundle --store .sheaf --seal-key-file ~/.sheaf-seal-key --out reviewer-bundle
 ```
 
@@ -88,8 +95,8 @@ Read `ARCHITECTURE.md` for the hash and ledger rules, `GATES.md` for the pass co
 
 ## Gaps
 
-`ARCH_SPEC`, `PAPER_PLAN`, and `REPORT` were not available in this workspace, so the gate names are the contract in `GATES.md` rather than a transcription of those files. The paper stages P0–P4 are the harness's reading of a methods paper: freeze the claim, fix the data protocol, fix units and controls, match the training, then evaluate. The numeric thresholds (`MIN_SEEDS = 5`, tolerance `0.05`, alpha `0.05`) are harness constants, not estimates from a result file.
+`GATES.md` now follows the architecture spec and the paper plan. G0 is the valid-split unit reduction (15% fewer than GPT-2 BPE, byte fallback at most 1%, vocabulary at most 64,000, build at most 2 CPU-hours and 16 GB). The feasibility build's `V = 65,536` is flagged against that cap in `fixtures/g0-recorded/`; that file is recorded metadata, not data. G1 is hnt64k test BPB_corpus at or below struct32k plus one standard deviation, with lower train FLOPs per byte than struct32k and the equal-size sw64k control. H0–H7 are the spec stages, and P0–P6 are the paper-plan phases. Pilots use `PILOT_SEEDS = 3`. The headline uses `HEADLINE_SEEDS = 5`. A single `MIN_SEEDS = 5` is not applied to G1.
+
+The seal is still HMAC-SHA256, not an Ed25519 signature. `sheaf-verify anchor` prints the ledger head so it can be copied out of band. It does not add a timestamp service.
 
 The causality trace and the per-seed BPB are checks of submitted records. A trainer can still submit a trace that was not produced by the named code. An independent rerun is still required. The git commit id, when present, is recorded and not recomputed unless that checkout is still present. The git tree SHA-1 and the SHA-256 listing are what `verify` recomputes from the snapshot.
-
-The seal is HMAC-SHA256, not an Ed25519 signature.

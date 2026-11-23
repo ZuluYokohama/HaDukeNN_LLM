@@ -12,6 +12,7 @@ from pathlib import Path
 from sheaf_verify.checks import cardinality_histogram, incidence_sha256
 from sheaf_verify.hashing import canonical_bytes, sha256_hex
 from sheaf_verify.runner import SequenceClock, run
+from sheaf_verify.spec_gates import STAGES
 from sheaf_verify.store import Store
 
 TEST_KEY = b"sheaf-verify-public-test-vector"
@@ -314,12 +315,171 @@ def _metrics(samples: dict[str, list[float]], random_graph: dict) -> dict:
         "flop_relative_tolerance": 0.05,
         "format": "sheaf-verify.metrics.v1",
         "seed_design": "independent",
+        "spec": _spec(),
         "superiority": {
             "against": "superword_bpe",
             "arm": "hypergraph",
             "claimed": False,
             "metric": "bpb",
         },
+    }
+
+
+def _pilot_arm(bpb: list[float], flops: float, vocab: int, graph: int) -> dict:
+    return {
+        "bpb_per_seed": bpb,
+        "eval": {
+            "denominator": "raw_corpus_bytes",
+            "raw_bytes": len(TEST),
+            "scored_bytes": len(TEST),
+        },
+        "graph_build_flops": graph,
+        "train_bytes": len(TRAIN),
+        "train_flops_per_byte": flops,
+        "vocab_size": vocab,
+    }
+
+
+def _spec() -> dict:
+    return {
+        "format": "sheaf-verify.spec.v1",
+        "g0": {
+            "build_cpu_hours": 0.5,
+            "byte_fallback_percent": 0.1,
+            "comparison": "gpt2_bpe",
+            "fewer_units_percent": 20.0,
+            "format": "sheaf-verify.g0.v1",
+            "gpt2_bpe_valid_units": 1000,
+            "note": "Synthetic gate inputs. Not a corpus and not a training run.",
+            "not_data": True,
+            "peak_ram_gb": 8.0,
+            "record_class": "synthetic",
+            "split": "valid",
+            "valid_units": 800,
+            "vocab_size": 64000,
+        },
+        "g1": {
+            "arms": {
+                "gpt2_bpe": _pilot_arm([1.5, 1.6, 1.7], 16.0, 50257, 0),
+                "hnt64k": _pilot_arm([1.0, 1.1, 1.2], 10.0, 64000, 8000),
+                "struct32k": _pilot_arm([1.3, 1.4, 1.5], 14.0, 32768, 0),
+                "sw64k": _pilot_arm([1.25, 1.35, 1.45], 12.0, 64000, 0),
+            },
+        },
+        "g2": {
+            "comparisons": [
+                {
+                    "bpb_per_seed": [1.0, 1.1, 0.9],
+                    "control": "shuffled_degree",
+                    "control_bpb_per_seed": [2.0, 2.1, 1.9],
+                    "name": "a2_spectral",
+                },
+                {
+                    "bpb_per_seed": [1.0, 1.05, 0.95],
+                    "control": "random_dag",
+                    "control_bpb_per_seed": [2.0, 2.05, 1.95],
+                    "name": "a3_compositional",
+                },
+            ],
+        },
+        "g3": {"dtype": "bf16", "rel_err": 0.0001, "sheafheat_step_fraction": 0.10},
+        "g4": {
+            "baseline": {
+                "all_in_flops": 108000,
+                "bpb_per_seed": [1.90, 2.00, 2.10, 1.95, 2.05],
+                "graph_build_flops": 0,
+                "name": "tuned_modern",
+                "train_flops": 108000,
+            },
+            "components": [
+                {
+                    "bpb_per_seed": [1.0, 1.1, 0.9],
+                    "control": "random_hypergraph",
+                    "control_bpb_per_seed": [1.8, 1.9, 1.7],
+                    "name": "attention_bias",
+                },
+                {
+                    "bpb_per_seed": [1.0, 1.05, 0.95],
+                    "control": "random_hypergraph",
+                    "control_bpb_per_seed": [2.0, 2.05, 1.95],
+                    "name": "compositional",
+                },
+                {
+                    "bpb_per_seed": [1.0, 1.1, 0.9],
+                    "control": "random_hypergraph",
+                    "control_bpb_per_seed": [1.8, 1.9, 1.7],
+                    "name": "sheaf_heat",
+                },
+                {
+                    "bpb_per_seed": [1.0, 1.1, 0.9],
+                    "control": "random_hypergraph",
+                    "control_bpb_per_seed": [2.0, 2.1, 1.9],
+                    "name": "spectral",
+                },
+            ],
+            "headline": {
+                "all_in_flops": 108000,
+                "bpb_per_seed": [1.40, 1.50, 1.45, 1.55, 1.35],
+                "graph_build_flops": 8000,
+                "name": "hnt",
+                "train_flops": 100000,
+            },
+        },
+        "g5": {
+            "sizes": [
+                {"gain": 0.01, "params": 15000000, "seeds": 3},
+                {"gain": 0.02, "params": 30000000, "seeds": 3},
+                {"gain": 0.03, "params": 60000000, "seeds": 2},
+                {"gain": 0.04, "params": 120000000, "seeds": 1},
+            ],
+        },
+        "g6": {
+            "a7_all_in_flops": 100000,
+            "a7_bpb": 1.40,
+            "all_in_flops": 100000,
+            "arm": "motif_head",
+            "bpb": 1.20,
+        },
+        "h7": {
+            "headline": False,
+            "note": "Secondary. Not the bits-per-byte headline.",
+            "tasks": ["lambada", "hellaswag"],
+        },
+        "p0": {
+            "baseline_wall_interpolated": False,
+            "bytes_per_s": 1000.0,
+            "flops": 108000,
+            "mfu": 0.2,
+            "schedule_complete": True,
+        },
+        "p1": {
+            "arms": [
+                "enhanced_wallmatch",
+                "hybrid",
+                "random_rewire",
+                "s4d",
+                "shape_matched",
+                "sheaf_reg",
+                "spectral_init",
+            ],
+        },
+        "p2": {
+            "headline_seeds": 5,
+            "modern_baseline": True,
+            "pe_controls": ["sinusoidal", "rope", "alibi", "nope", "heat", "heat_rope"],
+        },
+        "p3": {
+            "fineweb_edu_val_bpb": 1.4,
+            "not_data": True,
+            "record_class": "synthetic",
+            "wt103_full_epoch": True,
+        },
+        "p5": {"cuda_graph_all_arms": True, "time_to_target_bpb_s": 100.0},
+        "p6": {
+            "replication_note": "Synthetic second-machine note. Not a real rerun.",
+            "replication_recorded": True,
+        },
+        "stages": {stage: {"gate": gate, "work": work} for stage, (work, gate) in STAGES.items()},
     }
 
 

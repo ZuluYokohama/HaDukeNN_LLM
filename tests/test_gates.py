@@ -11,7 +11,10 @@ def test_passing_study(tmp_path):
     store = build(tmp_path / "store")
     rows = latest(store)
     assert all(row["status"] == "pass" for row in rows.values())
-    agreement = criterion(rows["H7"], "stats.control_agreement")
+    assert criterion(rows["G0"], "g0.vocab_cap")["passed"] is True
+    assert criterion(rows["G1"], "g1.bpb")["passed"] is True
+    assert criterion(rows["G1"], "g1.seeds.hnt64k")["passed"] is True
+    agreement = criterion(rows["G4"], "stats.control_agreement")
     assert agreement["passed"] is True
     assert "disagree" in agreement["detail"]
 
@@ -57,8 +60,8 @@ def test_wrong_reported_statistic_fails_h7(tmp_path):
             "hypergraph_vs_superword_bpe": {"df": 0, "g": 0, "high": 0, "low": 0, "p": 0, "t": 0},
         }
     rows = _fail(tmp_path, "reported", mutate)
-    assert rows["H7"]["status"] == "fail"
-    assert criterion(rows["H7"], "stats.reported.hypergraph_vs_superword_bpe")["passed"] is False
+    assert rows["G4"]["status"] == "fail"
+    assert criterion(rows["G4"], "stats.reported.hypergraph_vs_superword_bpe")["passed"] is False
 
 
 def test_missing_bpe_arm_fails_h1(tmp_path):
@@ -75,44 +78,44 @@ def test_same_incidence_fails_h3(tmp_path):
         from sheaf_verify.checks import incidence_sha256
         arm["incidence_sha256"] = incidence_sha256(parts["random"])
     rows = _fail(tmp_path, "incidence", mutate)
-    assert criterion(rows["H3"], "random.incidence")["passed"] is False
+    assert criterion(rows["G4"], "random.incidence")["passed"] is False
 
 
 def test_token_denominator_fails_h6(tmp_path):
     def mutate(parts):
         parts["metrics"]["arms"]["hypergraph"]["eval"]["denominator"] = "tokens"
     rows = _fail(tmp_path, "denom", mutate)
-    assert criterion(rows["H6"], "bpb.denominator.hypergraph")["passed"] is False
+    assert criterion(rows["G1"], "bpb.denominator.hypergraph")["passed"] is False
 
 
 def test_unequal_scored_bytes_fail_h6(tmp_path):
     def mutate(parts):
         parts["metrics"]["arms"]["hypergraph"]["eval"]["scored_bytes"] = 8
     rows = _fail(tmp_path, "scored", mutate)
-    assert rows["H6"]["status"] == "fail"
+    assert rows["G1"]["status"] == "fail"
 
 
 def test_future_perturbation_fails_h2(tmp_path):
     def mutate(parts):
         parts["trace"]["perturbed_outputs"][0] = "changed"
     rows = _fail(tmp_path, "causal", mutate)
-    assert criterion(rows["H2"], "causality.past")["passed"] is False
+    assert criterion(rows["H4"], "causality.past")["passed"] is False
 
 
 def test_vacuous_probe_fails_h2(tmp_path):
     def mutate(parts):
         parts["trace"]["perturbed_outputs"][3] = "c3"
     rows = _fail(tmp_path, "vacuous", mutate)
-    assert criterion(rows["H2"], "causality.probe")["passed"] is False
+    assert criterion(rows["H4"], "causality.probe")["passed"] is False
 
 
 def test_superiority_fails_when_controls_disagree(tmp_path):
     def mutate(parts):
         parts["metrics"]["superiority"]["claimed"] = True
     rows = _fail(tmp_path, "claim", mutate)
-    assert criterion(rows["H7"], "stats.superiority")["passed"] is True
-    assert criterion(rows["H7"], "stats.control_agreement")["passed"] is False
-    assert rows["H7"]["status"] == "fail"
+    assert criterion(rows["G4"], "stats.superiority")["passed"] is True
+    assert criterion(rows["G4"], "stats.control_agreement")["passed"] is False
+    assert rows["G4"]["status"] == "fail"
 
 
 def test_broken_complex_fails_h0(tmp_path):
@@ -126,14 +129,14 @@ def test_open_sheaf_loop_fails_h2(tmp_path):
     def mutate(parts):
         parts["hypergraph"]["sheaf"]["operations"][1]["morphism"] = {"a": "c"}
     rows = _fail(tmp_path, "loop", mutate)
-    assert criterion(rows["H2"], "sheaf.loop_closure")["passed"] is False
+    assert criterion(rows["H4"], "sheaf.loop_closure")["passed"] is False
 
 
 def test_cuda_kernel_without_host_reference_fails_h5(tmp_path):
     def mutate(parts):
         parts["kernel_meta"] = {"backend": "cuda", "entry": "apply"}
     rows = _fail(tmp_path, "cuda", mutate)
-    assert criterion(rows["H5"], "kernel.host_reference")["passed"] is False
+    assert criterion(rows["G3"], "kernel.host_reference")["passed"] is False
 
 
 def test_cuda_kernel_with_host_reference_passes(tmp_path):
@@ -142,7 +145,7 @@ def test_cuda_kernel_with_host_reference_passes(tmp_path):
         parts["host_reference"] = b"def apply_reference(tokens):\n    return list(tokens)\n"
     store = build(tmp_path / "cuda-ok", mutate=mutate)
     rows = latest(store)
-    assert rows["H5"]["status"] == "pass"
+    assert rows["G3"]["status"] == "pass"
     assert all(row["status"] == "pass" for row in rows.values())
 
 
@@ -170,4 +173,22 @@ def test_claim_registered_after_metrics_fails_p1(tmp_path):
     )
     run(store, key=TEST_KEY)
     rows = latest(store)
-    assert criterion(rows["P1"], "stage.claim_before_metrics")["passed"] is False
+    assert criterion(rows["P0"], "stage.claim_before_metrics")["passed"] is False
+
+
+def test_two_pilot_seeds_fail_g1(tmp_path):
+    def mutate(parts):
+        for arm in parts["metrics"]["spec"]["g1"]["arms"].values():
+            arm["bpb_per_seed"] = arm["bpb_per_seed"][:2]
+    rows = _fail(tmp_path, "pilot-seeds", mutate)
+    assert rows["G1"]["status"] == "fail"
+    assert criterion(rows["G1"], "g1.seeds.hnt64k")["passed"] is False
+
+
+def test_three_headline_seeds_fail_g4_only(tmp_path):
+    def mutate(parts):
+        parts["metrics"]["spec"]["g4"]["headline"]["bpb_per_seed"] = [1.40, 1.50, 1.45]
+    rows = _fail(tmp_path, "headline-seeds", mutate)
+    assert rows["G1"]["status"] == "pass"
+    assert rows["G4"]["status"] == "fail"
+    assert criterion(rows["G4"], "g4.seeds.headline")["passed"] is False
