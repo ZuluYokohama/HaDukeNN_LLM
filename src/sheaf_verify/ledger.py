@@ -9,15 +9,42 @@ configured, covers the same body.
 from __future__ import annotations
 
 import contextlib
-import fcntl
 import json
 import os
 import re
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
 from sheaf_verify.hashing import SheafError, canonical_bytes, is_sha256, sha256_hex
 from sheaf_verify.seal import ALGORITHM, mac_matches, sign
+
+if sys.platform == "win32":
+    import msvcrt
+
+    def _lock(handle) -> None:
+        # Lock one byte at offset 0. Windows allows a lock past end of file, so
+        # the lock file stays empty, as verify requires. LK_LOCK gives up after
+        # about ten seconds, so keep retrying until the holder releases it.
+        handle.seek(0)
+        while True:
+            try:
+                msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+                return
+            except OSError:
+                continue
+
+    def _unlock(handle) -> None:
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+else:
+    import fcntl
+
+    def _lock(handle) -> None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+
+    def _unlock(handle) -> None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 LEDGER_FORMAT = "sheaf-verify.ledger.v1"
 HEAD_FORMAT = "sheaf-verify.head.v1"
@@ -36,11 +63,11 @@ class Ledger:
     def exclusive(self) -> Iterator[None]:
         self.directory.mkdir(parents=True, exist_ok=True)
         with self.lock_path.open("a+b") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            _lock(handle)
             try:
                 yield
             finally:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                _unlock(handle)
 
     def records(self) -> list[dict]:
         if not self.path.is_file():

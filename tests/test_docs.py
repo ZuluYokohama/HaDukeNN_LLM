@@ -84,7 +84,7 @@ def test_license_notice_and_export_hygiene():
         "weights",
     ):
         assert phrase in template
-    skip = {".git", ".pytest_cache", ".venv", "__pycache__"}
+    skip = {".git", ".pytest_cache", ".ruff_cache", ".venv", "__pycache__"}
     scanned = {".py", ".md", ".toml", ".yml", ".json", ".html", ".css", ""}
     for path in ROOT.rglob("*"):
         if not path.is_file() or any(part in skip or part.endswith(".egg-info") for part in path.parts):
