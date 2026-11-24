@@ -133,6 +133,19 @@ The feasibility counts are iteration `g0` on branch `iter/g0`. That branch is li
 
 `docs/` is a static site: `index.html` is the overview op-order, `briefing.html` is the detailed briefing. There is no build step and no JavaScript. GitHub Pages can publish the `docs/` folder on the default branch.
 
+## Recorded results
+
+WikiText-103 test bits per byte. Lower is better. These are measured campaign numbers. They are not the synthetic `fixtures/passing` ledger, and that ledger is unchanged.
+
+- G0 is partial. The recorded valid-split counts meet the unit, fallback, CPU-hour, and RAM limits. V=65,536 is over the written cap of 64,000.
+- G1 failed. hnt64k test BPB 1.452254 is above struct32k plus one standard deviation (1.329303). Train FLOPs/byte 3.5706e7 is above struct32k and sw64k.
+- G1b failed on BPB. Structured hnt40k test BPB 1.477304 is above 1.329303. Train FLOPs/byte 1.1929e7 is about 61% below struct32k, so only the FLOPs side moved.
+- G1c passed as a compute-matched comparison, n=3 seeds. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. This is a compute-efficiency win, not a per-byte modeling win.
+- g1d is the equal-data follow-up. struct32k trained on 348.3M bytes, the same train bytes hnt40k-struct-v2 saw, scored 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. That beats hnt by 0.075 at equal data.
+- g1g is a FLOPs-matched hnt run at 1.0756e16 train FLOPs, the same budget as g1d. It is pending. No result is recorded.
+
+Caveats for G1c, g1d, and the pending g1g comparison: n=3, one model size, WikiText-103 only, and 39.9M versus 23.2M total parameters with the same 10.62M non-embedding. G1c does not reverse G1 or G1b. There is no `iter/g1c`, `iter/g1d`, or `iter/g1g` branch in this repository.
+
 ## Gaps
 
 `GATES.md` now follows the architecture spec and the paper plan. G0 is the valid-split unit reduction (15% fewer than GPT-2 BPE, byte fallback at most 1%, vocabulary at most 64,000, build at most 2 CPU-hours and 16 GB). The feasibility build's `V = 65,536` is flagged against that cap in `fixtures/g0-recorded/`; that file is recorded metadata, not data. G1 is hnt64k test BPB_corpus at or below struct32k plus one standard deviation, with lower train FLOPs per byte than struct32k and the equal-size sw64k control. H0–H7 are the spec stages, and P0–P6 are the paper-plan phases. Pilots use `PILOT_SEEDS = 3`. The headline uses `HEADLINE_SEEDS = 5`. A single `MIN_SEEDS = 5` is not applied to G1.

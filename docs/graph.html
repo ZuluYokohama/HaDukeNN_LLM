@@ -17,18 +17,22 @@
       <a href="briefing.html">Detailed briefing</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/GATES.md">GATES.md</a>
     </nav>
-    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail">
-      <title>Gate status: G0 partial, G1 fail, G1b fail</title>
-      <rect x="0" y="0" width="112" height="64" rx="6" fill="var(--partial-bg)" stroke="var(--partial)"/>
-      <text x="56" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G0</text>
-      <text x="56" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--partial)">PARTIAL</text>
-      <rect x="124" y="0" width="112" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
-      <text x="180" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1</text>
-      <text x="180" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
-      <rect x="248" y="0" width="112" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
-      <text x="304" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1b</text>
-      <text x="304" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.">
+      <title>Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.</title>
+      <rect x="0" y="0" width="84" height="64" rx="6" fill="var(--partial-bg)" stroke="var(--partial)"/>
+      <text x="42" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G0</text>
+      <text x="42" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--partial)">PARTIAL</text>
+      <rect x="92" y="0" width="84" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
+      <text x="134" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1</text>
+      <text x="134" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+      <rect x="184" y="0" width="84" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
+      <text x="226" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1b</text>
+      <text x="226" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+      <rect x="276" y="0" width="84" height="64" rx="6" fill="var(--pass-bg)" stroke="var(--pass)"/>
+      <text x="318" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1c</text>
+      <text x="318" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--pass)">PASS</text>
     </svg>
+    <p class="strip-note">G1c pass is compute-matched, not a per-byte modeling win. g1d beats hnt at equal data. g1g is pending.</p>
   </header>
 
   <h2>Primary comparisons</h2>
@@ -37,7 +41,7 @@
     <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 holds hnt64k to struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 holds the full arm to the tuned baseline at matched all-in FLOPs.</li>
     <li class="compare"><strong>pe_heat vs baseline.</strong> P2 holds the heat and heat+RoPE positional encodings to the tuned modern baseline.</li>
   </ul>
-  <p>Highlighting a gate does not mean the campaign passed it. G0 is partial because V=65,536 is over 64,000. G1 has failed. G1b, the structured hnt40k follow-up, has also failed on BPB; it is not a separate highlighted node. Later gates are not run.</p>
+  <p>Highlighting a gate does not mean the campaign passed it. G0 is partial because V=65,536 is over 64,000. G1 has failed. G1b, the structured hnt40k follow-up, has also failed on BPB; it is not a separate highlighted node. G1c passes only as a compute-matched comparison on WikiText-103, n=3: hnt40k-struct-v2 test bits per byte 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs, sw40k-struct-v2 control 1.322698 ± 0.006710, struct32k 1.322354, GPT-2 tokenizer arm 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). g1d's data-matched struct32k, 348.3M bytes, is 1.194155 ± 0.000824 at 1.0756e16 train FLOPs and beats hnt by 0.075 at equal data, so the G1c pass is a compute-efficiency win, not a per-byte modeling win. g1g, the FLOPs-matched hnt run at 1.0756e16, is pending and has no result. Caveats: n=3, one model size, WikiText-103 only, 39.9M versus 23.2M total parameters, same 10.62M non-embedding. Later gates are not run.</p>
 
   <h2>Gates</h2>
   <p>Each column depends on an earlier column. G1, H1, G4, and P2 are the highlighted comparison gates.</p>

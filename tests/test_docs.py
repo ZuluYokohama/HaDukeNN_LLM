@@ -139,3 +139,60 @@ def test_docs_budget_parses_script_src_attributes():
     assert budget.script_sources(local) == ["app.js"]
     assert budget.is_external_script("app.js") is False
     assert budget.is_external_script(budget.script_sources(protocol)[0])
+
+
+_RESULTS = (
+    "G1c",
+    "compute-matched",
+    "1.269376",
+    "0.004417",
+    "1.2061e7",
+    "4.2006e15",
+    "1.322698",
+    "0.006710",
+    "1.322354",
+    "1.328219",
+    "-0.0533",
+    "7.1e-4",
+    "g1d",
+    "1.194155",
+    "0.000824",
+    "348.3M",
+    "1.0756e16",
+    "0.075",
+    "compute-efficiency",
+    "per-byte",
+    "g1g",
+    "pending",
+    "no result",
+    "n=3",
+    "WikiText-103",
+    "39.9M",
+    "23.2M",
+    "10.62M",
+)
+
+
+def test_recorded_results_name_the_compute_match_and_the_pending_run():
+    pages = [
+        ROOT / "docs" / "index.html",
+        ROOT / "docs" / "briefing.html",
+        ROOT / "docs" / "graph.html",
+        ROOT / "README.md",
+        ROOT / "iterations" / "INDEX.md",
+        ROOT / "iterations" / "g1b-structured" / "BRIEFING.md",
+    ]
+    for path in pages:
+        text = path.read_text(encoding="utf-8")
+        folded = text.casefold()
+        for phrase in _RESULTS:
+            assert phrase.casefold() in folded, f"{path.name} missing {phrase}"
+        assert "g1c pass" in folded
+    hnt = 1.269376
+    control = 1.322698
+    matched = 1.194155
+    assert round(hnt - control, 4) == -0.0533
+    assert round(hnt - matched, 3) == 0.075
+    assert hnt <= 1.329303
+    bytes_m = (4.2006e15 / 1.2061e7) / 1e6
+    assert abs(bytes_m - 348.3) < 0.05

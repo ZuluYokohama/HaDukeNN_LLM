@@ -136,6 +136,7 @@ th {
 .status.fail { color: var(--fail); background: var(--fail-bg); }
 .status.idle { color: var(--idle); background: var(--idle-bg); }
 .status.pass { color: var(--pass); background: var(--pass-bg); }
+.status.note { color: var(--ink); background: var(--sheet); }
 
 dl.conditions { margin: 0.4rem 0 1rem; }
 dl.conditions div {
@@ -221,6 +222,13 @@ svg.status-strip {
   height: auto;
   display: block;
   margin: 0.85rem 0 0.15rem;
+}
+
+.strip-note {
+  margin: 0.4rem 0 0;
+  max-width: 36rem;
+  color: var(--ink);
+  font: 13px/1.45 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
 }
 
 .table-scroll {
