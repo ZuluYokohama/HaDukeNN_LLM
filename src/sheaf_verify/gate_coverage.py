@@ -7,6 +7,11 @@ failed has not exercised its own fail path. That observation does count as
 the dependency edge being blocked.
 
 A dependency edge is tested when some run satisfies it and some run blocks it.
+
+Each trace event carries a tri-state ``outcome``: ``pass``, ``fail`` (own
+criteria ran and one failed), or ``blocked`` (own criteria never ran because a
+dependency had no passing record). Older traces without ``outcome`` are
+classified the same way from ``status``, ``own_evaluated``, and ``upstream``.
 """
 
 from __future__ import annotations
@@ -17,6 +22,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from sheaf_verify.gate_trace import trace_outcome
 from sheaf_verify.gates import GATES
 
 
@@ -40,6 +46,7 @@ def load_events(path: Path) -> list[dict]:
 def assess(events: list[dict]) -> Report:
     passes: dict[str, set[str]] = {gate.id: set() for gate in GATES}
     fails: dict[str, set[str]] = {gate.id: set() for gate in GATES}
+    blocked_gates: dict[str, set[str]] = {gate.id: set() for gate in GATES}
     satisfied: dict[tuple[str, str], set[str]] = {}
     blocked: dict[tuple[str, str], set[str]] = {}
     for gate in GATES:
@@ -60,11 +67,14 @@ def assess(events: list[dict]) -> Report:
                 satisfied[key].add(test)
             elif open_edge is False:
                 blocked[key].add(test)
-        if not event.get("own_evaluated"):
+        outcome = event_outcome(event, upstream)
+        if outcome == "blocked":
+            blocked_gates[gate_id].add(test)
+        elif not event.get("own_evaluated"):
             continue
-        if event.get("status") == "pass" and not event.get("own_failed"):
+        elif outcome == "pass" and not event.get("own_failed"):
             passes[gate_id].add(test)
-        elif event.get("status") == "fail" and event.get("own_failed"):
+        elif outcome == "fail" and event.get("own_failed"):
             fails[gate_id].add(test)
     problems = []
     gate_rows = []
@@ -74,10 +84,15 @@ def assess(events: list[dict]) -> Report:
         if not fails[gate.id]:
             problems.append(f"{gate.id} fail path has no test that exercises its own criteria")
         gate_rows.append({
+            "blocked": _files(blocked_gates[gate.id]),
             "fail": _files(fails[gate.id]),
             "gate": gate.id,
             "pass": _files(passes[gate.id]),
-            "tests": {"fail": sorted(fails[gate.id]), "pass": sorted(passes[gate.id])},
+            "tests": {
+                "blocked": sorted(blocked_gates[gate.id]),
+                "fail": sorted(fails[gate.id]),
+                "pass": sorted(passes[gate.id]),
+            },
         })
     edge_rows = []
     for gate in GATES:
@@ -101,8 +116,9 @@ def render_matrix(report: Report) -> str:
     lines = [
         "# Gate coverage matrix",
         "",
-        "Columns are the gate, the pass path, the fail path, and the test file that exercised it.",
+        "Columns are the gate, the pass path, the fail path, the blocked path, and the test file that exercised it.",
         "A fail counts only when the gate's own criteria ran and one of them failed.",
+        "A blocked run is one where an upstream gate had no passing record, so the gate's own criteria never ran.",
         "",
     ]
     if report.trace_error:
@@ -117,12 +133,15 @@ def render_matrix(report: Report) -> str:
         lines.append("Every gate has a pass test and a fail test. Every dependency edge was satisfied and blocked.")
         lines.append("")
     lines.extend([
-        "| Gate | Pass | Fail | Test file |",
-        "| --- | --- | --- | --- |",
+        "| Gate | Pass | Fail | Blocked | Test file |",
+        "| --- | --- | --- | --- | --- |",
     ])
     for row in report.gates:
-        files = _join(row["pass"], row["fail"])
-        lines.append(f"| {row['gate']} | {_cell(row['pass'])} | {_cell(row['fail'])} | {files} |")
+        blocked = row.get("blocked", [])
+        files = _join(_join_list(row["pass"], row["fail"]), blocked)
+        lines.append(
+            f"| {row['gate']} | {_cell(row['pass'])} | {_cell(row['fail'])} | {_cell(blocked)} | {files} |"
+        )
     lines.extend([
         "",
         "| Edge | Satisfied | Blocked | Test file |",
@@ -164,6 +183,25 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(report.problems), file=sys.stderr)
         return 1
     return 0
+
+
+def event_outcome(event: dict, upstream: dict | None = None) -> str:
+    """Return the event's tri-state outcome, deriving it for older traces."""
+    outcome = event.get("outcome")
+    if outcome in ("pass", "fail", "blocked"):
+        return outcome
+    if upstream is None:
+        upstream = event.get("upstream") if isinstance(event.get("upstream"), dict) else {}
+    return trace_outcome(
+        str(event.get("status")),
+        bool(event.get("own_evaluated")),
+        bool(event.get("own_failed")),
+        upstream,
+    )
+
+
+def _join_list(left: list[str], right: list[str]) -> list[str]:
+    return sorted(set(left) | set(right))
 
 
 def _files(nodeids: set[str]) -> list[str]:

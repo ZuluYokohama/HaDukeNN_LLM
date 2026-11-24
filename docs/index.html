@@ -18,8 +18,8 @@
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>
     </nav>
-    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.">
-      <title>Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.</title>
+    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g, g1h, g1i measured.">
+      <title>Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g, g1h, g1i measured.</title>
       <rect x="0" y="0" width="84" height="64" rx="6" fill="var(--partial-bg)" stroke="var(--partial)"/>
       <text x="42" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G0</text>
       <text x="42" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--partial)">PARTIAL</text>
@@ -33,7 +33,7 @@
       <text x="318" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1c</text>
       <text x="318" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--pass)">PASS</text>
     </svg>
-    <p class="strip-note">G1c pass is compute-matched, not a per-byte modeling win. g1d beats hnt at equal data. g1g is pending.</p>
+    <p class="strip-note">G1c pass is compute-matched, not a per-byte modeling win. g1d beats hnt at equal data. g1g beats g1d at equal FLOPs; g1h shows the structured path carries that win.</p>
   </header>
 
   <h2>Task conditions</h2>
@@ -56,7 +56,7 @@
     </div>
     <div>
       <dt>Standard</dt>
-      <dd>G0 is partial. G1 has failed. G1b has failed. G1c passes only as a compute-matched comparison. g1d beats that arm at equal data. g1g is pending. Later gates are not claimed.</dd>
+      <dd>G0 is partial. G1 has failed. G1b has failed. G1c passes only as a compute-matched comparison. g1d beats that arm at equal data. g1g beats g1d at equal FLOPs, and g1h shows the structured path carries that win. Later gates are not claimed.</dd>
     </div>
   </dl>
 
@@ -86,7 +86,7 @@
       <tr>
         <td>G1c</td>
         <td><span class="status pass">pass</span></td>
-        <td>Compute-matched, WikiText-103 test bits per byte, n=3 seeds. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. One model size. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. This is a compute-efficiency win, not a per-byte modeling win.</td>
+        <td>Compute-matched, WikiText-103 test bits per byte, n=3 seeds. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. One model size. Parameter totals are verified against the per-seed trainer records (the trainer itself is not in this repository): hnt40k-struct-v2 39,943,040, struct32k 23,204,736, and plain hnt40k 25,981,824, each with 10,621,824 non-embedding. Every run applied RoPE. The trainer's structured model path applies RoPE only and ignores <code>--pe heat</code>, so no heat positional encoding has been tested. This is a compute-efficiency win, not a per-byte modeling win.</td>
       </tr>
       <tr>
         <td>g1d</td>
@@ -95,8 +95,23 @@
       </tr>
       <tr>
         <td>g1g</td>
-        <td><span class="status idle">pending</span></td>
-        <td>FLOPs-matched hnt run at 1.0756e16 train FLOPs, the same budget as g1d. Still running. No result is recorded.</td>
+        <td><span class="status note">measured</span></td>
+        <td>g1g, hnt40k-struct-v2 FLOPs-matched to g1d at 1.0756e16 train FLOPs, scored 1.174315 ± 0.000564 (seeds 1.174805, 1.173698, 1.174444). That is 0.019839 below g1d (Welch p 1.3e-5), so hnt wins at equal compute. It also saw 891.7M train bytes, about 1.65 epochs against g1d's 0.64, so part of that gap may be data exposure.</td>
+      </tr>
+      <tr>
+        <td>g1h</td>
+        <td><span class="status note">measured</span></td>
+        <td>g1h, plain hnt40k with the structured path off (struct none, mean compose, low-rank residual, no spectral init) at the same 1.0756e16 train FLOPs, scored 1.197637 ± 0.000517 (seeds 1.198146, 1.197111, 1.197653). That is 0.023321 above g1g (p 8.4e-7) and 0.003482 above g1d (p 0.006): at equal compute and the same tokenizer, the structured path carries the win.</td>
+      </tr>
+      <tr>
+        <td>g1i</td>
+        <td><span class="status note">measured</span></td>
+        <td>g1i, the same plain hnt40k at g1d's 348.35M train bytes (9.350e15 train FLOPs), scored 1.211442 ± 0.003395 (seeds 1.210431, 1.215228, 1.208666). That is 0.017287 above g1d (p 0.0094), so at equal bytes the hnt tokenizer without the structured path loses to struct32k.</td>
+      </tr>
+      <tr>
+        <td>A3</td>
+        <td><span class="status idle">running</span></td>
+        <td>A3, the random-cluster control (hnt40k with random clusters, FLOPs-matched), is running. No result is recorded.</td>
       </tr>
       <tr>
         <td>G2–G6</td>
@@ -113,11 +128,11 @@
   </div>
 
   <h2>Primary comparisons</h2>
-  <p>These are the comparisons the control graph is built to score. G0 is partial. G1 has failed. G1b has failed. G1c passes on a compute-matched budget and does not pass as a per-byte model: g1d's struct32k is 0.075 bits per byte lower at the same 348.3M bytes. g1g is pending and has no result. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
+  <p>These are the comparisons the control graph is built to score. G0 is partial. G1 has failed. G1b has failed. G1c passes on a compute-matched budget and does not pass as a per-byte model: g1d's struct32k is 0.075 bits per byte lower at the same 348.3M bytes. g1g beats g1d by 0.019839 at equal train FLOPs. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
   <ul class="comparisons">
     <li class="compare"><strong>hnt vs equal-size control.</strong> G1 compares hnt64k with sw64k, the equal-size superword-BPE control, at the same vocabulary size.</li>
     <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 compares hnt64k with struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 compares the full arm with the tuned baseline at matched all-in FLOPs.</li>
-    <li class="compare"><strong>pe_heat vs baseline.</strong> P2 scores the heat and heat+RoPE positional encodings against the tuned modern baseline.</li>
+    <li class="compare"><strong>pe_heat vs baseline.</strong> P2 scores the heat and heat+RoPE positional encodings against the tuned modern baseline. It has not been run: every recorded run applied RoPE.</li>
   </ul>
 
   <h2>Iteration branches</h2>
@@ -146,7 +161,7 @@
     </tbody>
   </table>
   </div>
-  <p>G1c, g1d, and g1g are not <code>iter/</code> branches in this repository. Their numbers are in the gate table. g1g is pending and has no result.</p>
+  <p>G1c is not an <code>iter/</code> branch in this repository. g1d, g1g, g1h, and g1i are folders under <code>iterations/</code> on <code>main</code>. Their numbers are in the gate table.</p>
 
   <footer class="colophon">
     <p>HaDukeN //\\// HGNLLM Experiments. Copyright (c) 2026 Blake Jones (ZuluYokohama). <a href="briefing.html">Full briefing</a>.</p>

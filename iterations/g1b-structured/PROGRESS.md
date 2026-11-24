@@ -2,7 +2,7 @@
 
 Publication note: drive letters and the training-machine name in this log were omitted before publication. Counts, times, and gate results are unchanged.
 
-Later public results are the 2026-11-23 amendment in `BRIEFING.md` and the docs site. This log stops when the G1c chain was launched. It does not contain the G1c, g1d, or g1g numbers, and it does not contain a g1g result. g1g is pending.
+Later public results are the 2026-11-23 amendment in `BRIEFING.md` and the docs site. This log stops when the G1c chain was launched. It does not contain the G1c, g1d, g1g, g1h, or g1i numbers. Those are in `iterations/g1d` through `iterations/g1i` and on the docs site.
 
 
 - 14:25 builds done (hnt40k units, sw40k superword, members, clusters spectral/random) on the data drive.
@@ -30,5 +30,5 @@ Later public results are the 2026-11-23 amendment in `BRIEFING.md` and the docs 
 - 15:29:07-15:29:25 (the training machine clock) Chrome closed gracefully: 10 processes (0.90 GB commit; the earlier 16 GB instance had already gone), 1 window "CloseMainWindow -> True", 0 remaining after 15 s, no Stop-Process needed. Commit free 23.78 -> 24.79 GB. A local log was written (path omitted). No other apps touched.
 - GPU 0 check: nvidia-smi -q: Utilization GPU 100 %, Memory 0 %, Processes None, no throttle reasons. 5 s bf16 4096^3 matmul: 2,380 matmuls in 5.004 s = 65.37 TFLOP/s (normal). Afterwards util read 0 %, 21 MiB, P1. Conclusion: stale counter; GPU treated as idle.
 - Speed fix (numerically equivalent forward): v2 slowness was the backward of G[slot] (index_put accumulate into 12 rows; profiler 235.9 ms of 377.7 ms CUDA per 5 steps). Replaced by _SlotGather (index_select forward, bitwise-equal output; backward onehot^T @ grad in fp64; G-grad max abs diff 5.4e-4 on max 267.7 vs old path). Also base gather -> index_select. Profile (16x256 micro, fwd+bwd+AdamW): slot+full 82.3 -> 45.2 ms (49,783 -> 90,612 units/s); mean+lowrank 29.4 -> 27.6 ms. CPU test still sum p = 1 (within 5e-7), leak 0.0. Note: hnt40k-struct-v2 s13 ran with the old gather.
-- Queue now has a memory guard (mem_guard.ps1: kills train_paper.py and stops queue if commit free < 4 GB, 2 s poll), --budget-flops mode, prefix/root params.
+- Queue now has a memory guard (mem_guard.ps1: kills the trainer and stops queue if commit free < 4 GB, 2 s poll), --budget-flops mode, prefix/root params.
 - 15:33:27 (the training machine) chain launched: finish v2 (g1b root), then G1c (prefix g1c, data-drive path omitted, budget 4,200,626,191,859,712 FLOPs = exact G1 struct32k train FLOPs; 3 seeds each of hnt40k-struct-v2, sw40k-struct-v2). Idle check before: 0 %, 21 MiB x5; commit free 24.86 GB.

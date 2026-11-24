@@ -8,7 +8,9 @@ The ids follow the architecture spec. H0–H7 are the stages. G0–G6 are the go
 
 ## Control graph
 
-Solid arrows are dependency edges. Dotted arrows are not edges. They mark the primary comparisons: hnt versus the equal-size control, the best arm versus struct32k and GPT-2 at matched bytes and FLOPs, and pe_heat versus the baseline. G1, H1, G4, and P2 are the gates those comparisons land on. The same diagram is on the briefing site at `docs/graph.html`.
+Solid arrows are dependency edges. Dotted arrows are not edges. They mark the primary comparisons: hnt versus the equal-size control, the best arm versus struct32k and GPT-2 at matched bytes and FLOPs, and pe_heat versus the baseline. G1, H1, G4, and P2 are the gates those comparisons land on. The same diagram is on the briefing site at `docs/graph.html`. The diagram is generated from `gates.GATES` by `python -m sheaf_verify.control_graph --write`; CI runs `--check` and a test fails when `docs/control-graph.mmd`, this block, or `docs/graph.html` drift from the code.
+
+The gate trace used by the coverage check is tri-state. `pass` and `fail` mean the gate's own criteria ran. `blocked` means an upstream gate had no passing record bound to the same hashes, so the gate's own criteria never ran. The ledger keeps the binary `status`; `blocked` exists only in the trace and the coverage matrix.
 
 ```mermaid
 flowchart TD
@@ -24,12 +26,16 @@ flowchart TD
   bestArm -.-> G4
   peHeat -.-> P2
 
-  P0 --> P1 --> P2
-  P0 --> P3
   G0 --> H0
-  G0 --> G1 --> H1
-  G1 --> G2 --> H2
-  G0 --> G3 --> H3
+  G0 --> G1
+  G1 --> H1
+  G1 --> G2
+  G2 --> H2
+  G0 --> G3
+  G3 --> H3
+  P0 --> P1
+  P1 --> P2
+  P0 --> P3
   G3 --> P5
   G2 --> G4
   G3 --> G4
@@ -37,10 +43,13 @@ flowchart TD
   G4 --> G5
   G5 --> H5
   G5 --> P4
-  G5 --> G6 --> H6 --> H7 --> P6
+  G5 --> G6
+  G6 --> H6
+  H6 --> H7
+  H7 --> P6
 
   classDef primary fill:#f3e0c4,stroke:#8a4b08,color:#1b1914,stroke-width:2px
-  class G1,H1,G4,P2,hntCtl,bestArm,peHeat primary
+  class G1,H1,P2,G4,hntCtl,bestArm,peHeat primary
 ```
 
 ```
@@ -161,7 +170,7 @@ The record lists `s4d`, `hybrid`, `sheaf_reg`, `random_rewire`, `spectral_init`,
 
 Binds `metrics`. Depends on P1.
 
-A tuned modern baseline is named. The PE controls are sinusoidal, RoPE, ALiBi, NoPE, heat, and heat+RoPE. The G4 headline seed list has at least `HEADLINE_SEEDS` (5). A declared `headline_seeds` smaller than 5 fails even if some other field looks complete.
+A tuned modern baseline is named. The PE controls are sinusoidal, RoPE, ALiBi, NoPE, heat, and heat+RoPE. No recorded campaign run has tested a heat encoding: every G1-family run so far applied RoPE. The G4 headline seed list has at least `HEADLINE_SEEDS` (5). A declared `headline_seeds` smaller than 5 fails even if some other field looks complete.
 
 ## P3 Data
 

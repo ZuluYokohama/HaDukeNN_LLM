@@ -22,12 +22,15 @@ Keep this table and the iteration list in `docs/index.html` in step. The link fo
 | g1-hnt64k | [`iter/g1-hnt64k`](https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1-hnt64k) | Units-only pilot. G1 fail: test BPB 1.452254 is above struct32k + 1 sd (1.329303), and train FLOPs/byte 3.5706e7 is above struct32k and sw64k. |
 | g1b-structured | [`iter/g1b-structured`](https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1b-structured) | Structured hnt40k. G1b fail on BPB (1.477304 > 1.329303). Train FLOPs/byte 1.1929e7 is about 61% below struct32k (3.0882e7) and below the equal-size control. |
 
-G1c, g1d, and g1g do not have `iter/` branches here. The same numbers are in `docs/index.html`, `docs/briefing.html`, and the README. WikiText-103 test bits per byte. The measured rows are n=3.
+G1c does not have an `iter/` branch here. g1d, g1g, g1h, and g1i have folders under `iterations/` on `main`. The same numbers are in `docs/index.html`, `docs/briefing.html`, and the README. WikiText-103 test bits per byte. The measured rows are n=3.
 
 | id | Status |
 | --- | --- |
 | G1c | G1c pass, compute-matched. hnt40k-struct-v2 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. sw40k-struct-v2 control 1.322698 ± 0.006710. struct32k 1.322354. GPT-2 tokenizer arm 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). Compute-efficiency win, not a per-byte modeling win. |
 | g1d | Data-matched struct32k at 348.3M bytes, the same train bytes hnt saw: 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. Beats hnt by 0.075 at equal data. |
-| g1g | Pending. FLOPs-matched hnt at 1.0756e16 train FLOPs. Still running. No result is recorded. |
+| g1g | g1g, hnt40k-struct-v2 FLOPs-matched to g1d at 1.0756e16 train FLOPs, scored 1.174315 ± 0.000564 (seeds 1.174805, 1.173698, 1.174444). That is 0.019839 below g1d (Welch p 1.3e-5), so hnt wins at equal compute. It also saw 891.7M train bytes, about 1.65 epochs against g1d's 0.64, so part of that gap may be data exposure. |
+| g1h | g1h, plain hnt40k with the structured path off (struct none, mean compose, low-rank residual, no spectral init) at the same 1.0756e16 train FLOPs, scored 1.197637 ± 0.000517 (seeds 1.198146, 1.197111, 1.197653). That is 0.023321 above g1g (p 8.4e-7) and 0.003482 above g1d (p 0.006): at equal compute and the same tokenizer, the structured path carries the win. |
+| g1i | g1i, the same plain hnt40k at g1d's 348.35M train bytes (9.350e15 train FLOPs), scored 1.211442 ± 0.003395 (seeds 1.210431, 1.215228, 1.208666). That is 0.017287 above g1d (p 0.0094), so at equal bytes the hnt tokenizer without the structured path loses to struct32k. |
+| A3 | A3, the random-cluster control (hnt40k with random clusters, FLOPs-matched), is running. No result is recorded. |
 
-Caveats: n=3, one model size, WikiText-103 only. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. G1 and G1b stay fails.
+Caveats: n=3, one model size, WikiText-103 only. Parameter totals are verified against the per-seed trainer records (the trainer itself is not in this repository): hnt40k-struct-v2 39,943,040, struct32k 23,204,736, and plain hnt40k 25,981,824, each with 10,621,824 non-embedding. Every run applied RoPE. The trainer's structured model path applies RoPE only and ignores `--pe heat`, so no heat positional encoding has been tested. G1 and G1b stay fails.
