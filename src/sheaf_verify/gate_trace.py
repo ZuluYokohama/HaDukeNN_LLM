@@ -42,3 +42,16 @@ def emit(event: dict) -> None:
 
 def events() -> list[dict]:
     return list(_events)
+
+
+def trace_outcome(status: str, own_evaluated: bool, own_failed: bool, upstream: dict) -> str:
+    """Tri-state trace label: ``pass``, ``fail``, or ``blocked``.
+
+    The ledger keeps the binary ``status``. A gate whose own criteria never ran
+    because a dependency had no passing record is ``blocked``, not ``fail``.
+    """
+    if status == "pass":
+        return "pass"
+    if not own_evaluated and any(value is False for value in upstream.values()):
+        return "blocked"
+    return "fail"

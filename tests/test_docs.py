@@ -45,7 +45,14 @@ def test_reviewer_guide_lists_every_objection():
 
 
 def test_license_notice_and_export_hygiene():
-    banned = ("Permission is hereby " + "granted", "well" + "bore", "drill" + "ing", "DEVn" + "-1")
+    banned = (
+        "Permission is hereby " + "granted",
+        "well" + "bore",
+        "drill" + "ing",
+        "DEVn" + "-1",
+        "DESKTOP" + "-",
+        "train" + "_paper",
+    )
     notice = (ROOT / "NOTICE").read_text(encoding="utf-8")
     required = (
         "Required Notice: Copyright (c) 2026 Blake Jones (ZuluYokohama). "
@@ -96,7 +103,7 @@ def test_license_notice_and_export_hygiene():
             text = path.read_text(encoding="utf-8", errors="ignore")
             for phrase in banned:
                 assert phrase not in text, path
-            for drive in ("C:" + "\\", "E:" + "\\"):
+            for drive in ("C:" + "\\", "D:" + "\\", "E:" + "\\", "H:" + "\\"):
                 assert drive not in text, path
 
 
@@ -163,19 +170,29 @@ _RESULTS = (
     "compute-efficiency",
     "per-byte",
     "g1g",
-    "pending",
-    "no result",
+    "1.174315",
+    "0.000564",
+    "0.019839",
+    "1.65 epochs",
+    "g1h",
+    "1.197637",
+    "0.023321",
+    "g1i",
+    "1.211442",
+    "0.017287",
+    "0.0094",
     "n=3",
     "WikiText-103",
-    "unverified",
+    "verified against the per-seed trainer records",
     "39,943,040",
     "10,621,824",
     "23,204,736",
-    "no trainer",
+    "25,981,824",
+    "RoPE",
 )
 
 
-def test_recorded_results_name_the_compute_match_and_the_pending_run():
+def test_recorded_results_name_the_compute_match_and_the_ablations():
     pages = [
         ROOT / "docs" / "index.html",
         ROOT / "docs" / "briefing.html",
@@ -190,12 +207,19 @@ def test_recorded_results_name_the_compute_match_and_the_pending_run():
         for phrase in _RESULTS:
             assert phrase.casefold() in folded, f"{path.name} missing {phrase}"
         assert "g1c pass" in folded
+        assert "unverified" not in folded, f"{path.name} still calls parameter totals unverified"
+        assert "g1g is pending" not in folded
     hnt = 1.269376
     control = 1.322698
     matched = 1.194155
     assert round(hnt - control, 4) == -0.0533
     assert round(hnt - matched, 3) == 0.075
     assert hnt <= 1.329303
+    g1g = (1.174805, 1.173698, 1.174444)
+    g1i = (1.210431, 1.215228, 1.208666)
+    assert abs(sum(g1g) / 3 - 1.174315) < 2e-6  # quoted mean uses unrounded seeds
+    assert round(sum(g1i) / 3 - matched, 5) == round(0.017287, 5)
+    assert abs((1.197637 - 1.174315) - 0.023321) < 2e-6  # quoted delta uses unrounded seed means
     bytes_m = (4.2006e15 / 1.2061e7) / 1e6
     assert abs(bytes_m - 348.3) < 0.05
     for name in ("BRIEFING.md", "MODE_METHOD.md", "PROGRESS.md"):

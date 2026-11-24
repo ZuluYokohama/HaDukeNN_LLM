@@ -1,0 +1,54 @@
+{
+ "iteration": "g1d",
+ "arm": "struct32k",
+ "dataset": "wikitext-103",
+ "metric": "bpb_corpus (official split bytes)",
+ "pe_applied": "rope",
+ "params": 23204736,
+ "non_embedding_params": 10621824,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "test_bpb": {
+  "n": 3,
+  "mean": 1.1941546644746153,
+  "sd": 0.0008238981071376282,
+  "ci95": [
+   1.192107988116035,
+   1.1962013408331955
+  ],
+  "values": [
+   1.1932485808046778,
+   1.194858838502362,
+   1.1943565741168058
+  ]
+ },
+ "valid_bpb": {
+  "n": 3,
+  "mean": 1.1711561490802536,
+  "sd": 0.0014599728364368657,
+  "ci95": [
+   1.1675293754991296,
+   1.1747829226613775
+  ],
+  "values": [
+   1.16953231282005,
+   1.1715757821951303,
+   1.17236035222558
+  ]
+ },
+ "train_flops": [
+  10755903779241984,
+  10755903779241984,
+  10755903779241984
+ ],
+ "train_bytes": [
+  348351289.7296669,
+  348351289.7296669,
+  348351289.7296669
+ ],
+ "contrasts": [],
+ "source": "per-seed trainer result records on the author machine; the trainer is not in this repository"
+}

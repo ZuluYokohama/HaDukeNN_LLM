@@ -12,7 +12,7 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from sheaf_verify.context import Context
-from sheaf_verify.gate_trace import emit
+from sheaf_verify.gate_trace import emit, trace_outcome
 from sheaf_verify.gates import GATES, Gate
 from sheaf_verify.hashing import SheafError, canonical_bytes
 from sheaf_verify.ledger import Ledger
@@ -82,13 +82,16 @@ def _trace_event(decision: dict) -> dict:
         ident = str(item.get("id", ""))
         if ident.startswith("upstream."):
             upstream[ident.removeprefix("upstream.")] = bool(item.get("passed"))
+    own_failed = any(not item.get("passed") for item in own)
     return {
         "gate_id": decision["gate_id"],
+        "outcome": trace_outcome(decision["status"], bool(own), own_failed, upstream),
         "own_evaluated": bool(own),
-        "own_failed": any(not item.get("passed") for item in own),
+        "own_failed": own_failed,
         "status": decision["status"],
         "upstream": upstream,
     }
+
 
 
 def run(store: Store, *, key: bytes | None, clock=None) -> list[dict]:

@@ -1,0 +1,67 @@
+{
+ "iteration": "g1i",
+ "arm": "hnt40k-struct-none",
+ "dataset": "wikitext-103",
+ "metric": "bpb_corpus (official split bytes)",
+ "pe_applied": "rope",
+ "params": 25981824,
+ "non_embedding_params": 10621824,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "test_bpb": {
+  "n": 3,
+  "mean": 1.2114416962538517,
+  "sd": 0.003395454453320694,
+  "ci95": [
+   1.203006919797827,
+   1.2198764727098763
+  ],
+  "values": [
+   1.2104313318471922,
+   1.2152276533304227,
+   1.2086661035839399
+  ]
+ },
+ "valid_bpb": {
+  "n": 3,
+  "mean": 1.1892556740428433,
+  "sd": 0.0036892808154543656,
+  "ci95": [
+   1.180090992439936,
+   1.1984203556457504
+  ],
+  "values": [
+   1.1878984134710135,
+   1.1934313281691682,
+   1.1864372804883478
+  ]
+ },
+ "train_flops": [
+  9350241111244800,
+  9350241111244800,
+  9350241111244800
+ ],
+ "train_bytes": [
+  348455006.0,
+  348450800.0,
+  348352047.0
+ ],
+ "contrasts": [
+  {
+   "versus": "g1d",
+   "delta_test_bpb": 0.017287031779236406,
+   "welch_p_two_sided": 0.009425286304327056,
+   "note": "equal train bytes (fair contrast for the plain arm)"
+  },
+  {
+   "versus": "g1h",
+   "delta_test_bpb": 0.013804916563038283,
+   "welch_p_two_sided": 0.017732371249359297,
+   "note": "same arm, fewer bytes and FLOPs"
+  }
+ ],
+ "source": "per-seed trainer result records on the author machine; the trainer is not in this repository"
+}

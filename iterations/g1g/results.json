@@ -1,0 +1,61 @@
+{
+ "iteration": "g1g",
+ "arm": "hnt40k-struct-v2",
+ "dataset": "wikitext-103",
+ "metric": "bpb_corpus (official split bytes)",
+ "pe_applied": "rope",
+ "params": 39943040,
+ "non_embedding_params": 10621824,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "test_bpb": {
+  "n": 3,
+  "mean": 1.1743154895199115,
+  "sd": 0.0005644714257913783,
+  "ci95": [
+   1.1729132647638976,
+   1.1757177142759254
+  ],
+  "values": [
+   1.1748048597963572,
+   1.173697956503951,
+   1.1744436522594266
+  ]
+ },
+ "valid_bpb": {
+  "n": 3,
+  "mean": 1.151001726770868,
+  "sd": 0.0002880383012646098,
+  "ci95": [
+   1.1502861999642682,
+   1.151717253577468
+  ],
+  "values": [
+   1.1509292155071735,
+   1.1513190920796628,
+   1.150756872725768
+  ]
+ },
+ "train_flops": [
+  10755978804719616,
+  10755978804719616,
+  10755978804719616
+ ],
+ "train_bytes": [
+  891730050.0,
+  891682704.0,
+  891673847.0
+ ],
+ "contrasts": [
+  {
+   "versus": "g1d",
+   "delta_test_bpb": -0.019839174954703775,
+   "welch_p_two_sided": 1.3453938161624458e-05,
+   "note": "equal train FLOPs; g1g saw about 2.56x the train bytes"
+  }
+ ],
+ "source": "per-seed trainer result records on the author machine; the trainer is not in this repository"
+}

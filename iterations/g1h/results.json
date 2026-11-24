@@ -1,0 +1,67 @@
+{
+ "iteration": "g1h",
+ "arm": "hnt40k-struct-none",
+ "dataset": "wikitext-103",
+ "metric": "bpb_corpus (official split bytes)",
+ "pe_applied": "rope",
+ "params": 25981824,
+ "non_embedding_params": 10621824,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "test_bpb": {
+  "n": 3,
+  "mean": 1.1976367796908134,
+  "sd": 0.0005172423040082952,
+  "ci95": [
+   1.1963518785773137,
+   1.198921680804313
+  ],
+  "values": [
+   1.1981455148744689,
+   1.1971114305761117,
+   1.1976533936218594
+  ]
+ },
+ "valid_bpb": {
+  "n": 3,
+  "mean": 1.1746324209607018,
+  "sd": 0.0004978047968779571,
+  "ci95": [
+   1.173395805291687,
+   1.1758690366297164
+  ],
+  "values": [
+   1.1741164478841775,
+   1.1751098122710661,
+   1.1746710027268619
+  ]
+ },
+ "train_flops": [
+  10757782760325120,
+  10757782760325120,
+  10757782760325120
+ ],
+ "train_bytes": [
+  400879152.0,
+  400886744.0,
+  400814301.0
+ ],
+ "contrasts": [
+  {
+   "versus": "g1g",
+   "delta_test_bpb": 0.023321290170901898,
+   "welch_p_two_sided": 8.427496615568977e-07,
+   "note": "equal train FLOPs, same tokenizer; isolates the structured path"
+  },
+  {
+   "versus": "g1d",
+   "delta_test_bpb": 0.003482115216198123,
+   "welch_p_two_sided": 0.005985405897119793,
+   "note": "equal train FLOPs"
+  }
+ ],
+ "source": "per-seed trainer result records on the author machine; the trainer is not in this repository"
+}
