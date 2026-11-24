@@ -54,7 +54,7 @@
    "versus": "g1d",
    "delta_test_bpb": -0.019839174954703775,
    "welch_p_two_sided": 1.3453938161624458e-05,
-   "note": "equal train FLOPs; g1g saw about 2.56x the train bytes"
+   "note": "equal analytic train FLOPs only; g1g saw about 2.56x the train bytes and ran about 3x longer per seed"
   }
  ],
  "source": "per-seed trainer result records on the author machine; the trainer is not in this repository"

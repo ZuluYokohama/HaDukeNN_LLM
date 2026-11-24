@@ -14,7 +14,7 @@ Test BPB 1.197637 ± 0.000517 (n=3, 95% CI 1.196352 to 1.198922). Parameters 25,
 
 ## Orient
 
-- vs g1g: +0.023321 BPB (Welch two-sided p 8.4e-07). Equal train FLOPs, same tokenizer; isolates the structured path.
+- vs g1g: +0.023321 BPB (Welch two-sided p 8.4e-07). Equal analytic train FLOPs, same tokenizer. g1g saw about 2.2x the train bytes, so this does not isolate the structured path (at equal bytes struct-v2 is worse; see G1c vs g1i).
 - vs g1d: +0.003482 BPB (Welch two-sided p 0.006). Equal train FLOPs.
 
 ## Decide / Act

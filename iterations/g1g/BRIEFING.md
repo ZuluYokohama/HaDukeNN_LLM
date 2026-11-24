@@ -14,7 +14,7 @@ Test BPB 1.174315 ± 0.000564 (n=3, 95% CI 1.172913 to 1.175718). Parameters 39,
 
 ## Orient
 
-- vs g1d: -0.019839 BPB (Welch two-sided p 1.3e-05). Equal train FLOPs; g1g saw about 2.56x the train bytes.
+- vs g1d: -0.019839 BPB (Welch two-sided p 1.3e-05). Equal analytic train FLOPs only; g1g saw about 2.56x the train bytes and ran about 3x longer per seed.
 
 ## Decide / Act
 
