@@ -30,4 +30,4 @@ G1c, g1d, and g1g do not have `iter/` branches here. The same numbers are in `do
 | g1d | Data-matched struct32k at 348.3M bytes, the same train bytes hnt saw: 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. Beats hnt by 0.075 at equal data. |
 | g1g | Pending. FLOPs-matched hnt at 1.0756e16 train FLOPs. Still running. No result is recorded. |
 
-Caveats: n=3, one model size, WikiText-103 only, 39.9M versus 23.2M total parameters, same 10.62M non-embedding. G1 and G1b stay fails.
+Caveats: n=3, one model size, WikiText-103 only. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. G1 and G1b stay fails.

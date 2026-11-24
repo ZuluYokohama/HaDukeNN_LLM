@@ -167,9 +167,11 @@ _RESULTS = (
     "no result",
     "n=3",
     "WikiText-103",
-    "39.9M",
-    "23.2M",
-    "10.62M",
+    "unverified",
+    "39,943,040",
+    "10,621,824",
+    "23,204,736",
+    "no trainer",
 )
 
 
@@ -196,3 +198,19 @@ def test_recorded_results_name_the_compute_match_and_the_pending_run():
     assert hnt <= 1.329303
     bytes_m = (4.2006e15 / 1.2061e7) / 1e6
     assert abs(bytes_m - 348.3) < 0.05
+    for name in ("BRIEFING.md", "MODE_METHOD.md", "PROGRESS.md"):
+        text = (ROOT / "iterations" / "g1b-structured" / name).read_text(encoding="utf-8")
+        assert "2026-11-24" not in text
+        assert "2026-11-23" in text
+
+
+def test_logged_parameter_integer_matches_one_shared_table_reading():
+    """Consistency check of the written shapes. This repository has no trainer to count."""
+    non_embedding = 10_621_824
+    base = 32_768 * 384
+    low_rank = 40_000 * 32 + 32 * 384
+    residual = 40_000 * 384
+    gates = 2 * 12 * 384
+    clusters = 384 * 200
+    assert non_embedding + base == 23_204_736
+    assert non_embedding + base + low_rank + residual + gates + clusters == 39_943_040

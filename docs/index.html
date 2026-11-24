@@ -86,7 +86,7 @@
       <tr>
         <td>G1c</td>
         <td><span class="status pass">pass</span></td>
-        <td>Compute-matched, WikiText-103 test bits per byte, n=3 seeds. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. Total parameters are 39.9M against struct32k's 23.2M, with the same 10.62M non-embedding. One model size. This is a compute-efficiency win, not a per-byte modeling win.</td>
+        <td>Compute-matched, WikiText-103 test bits per byte, n=3 seeds. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. One model size. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. This is a compute-efficiency win, not a per-byte modeling win.</td>
       </tr>
       <tr>
         <td>g1d</td>

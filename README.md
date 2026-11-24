@@ -144,7 +144,7 @@ WikiText-103 test bits per byte. Lower is better. These are measured campaign nu
 - g1d is the equal-data follow-up. struct32k trained on 348.3M bytes, the same train bytes hnt40k-struct-v2 saw, scored 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. That beats hnt by 0.075 at equal data.
 - g1g is a FLOPs-matched hnt run at 1.0756e16 train FLOPs, the same budget as g1d. It is pending. No result is recorded.
 
-Caveats for G1c, g1d, and the pending g1g comparison: n=3, one model size, WikiText-103 only, and 39.9M versus 23.2M total parameters with the same 10.62M non-embedding. G1c does not reverse G1 or G1b. There is no `iter/g1c`, `iter/g1d`, or `iter/g1g` branch in this repository.
+Caveats for G1c, g1d, and the pending g1g comparison: n=3, one model size, WikiText-103 only. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. G1c does not reverse G1 or G1b. There is no `iter/g1c`, `iter/g1d`, or `iter/g1g` branch in this repository.
 
 ## Gaps
 
