@@ -2,6 +2,8 @@
 
 Publication note: drive letters and the training-machine name in this log were omitted before publication. Counts, times, and gate results are unchanged.
 
+Later public results are the 2026-11-23 amendment in `BRIEFING.md` and the docs site. This log stops when the G1c chain was launched. It does not contain the G1c, g1d, or g1g numbers, and it does not contain a g1g result. g1g is pending.
+
 
 - 14:25 builds done (hnt40k units, sw40k superword, members, clusters spectral/random) on the data drive.
 - 14:29 smoke v1 (hnt40k-struct, 150 steps) OK.

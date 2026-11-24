@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1117">
   <title>HaDukeN //\\// HGNLLM Experiments — briefing</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -17,36 +18,40 @@
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/GATES.md">GATES.md</a>
     </nav>
-    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail">
-      <title>Gate status: G0 partial, G1 fail, G1b fail</title>
-      <rect x="0" y="0" width="112" height="64" rx="6" fill="#f3e0c4" stroke="#8a4b08"/>
-      <text x="56" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G0</text>
-      <text x="56" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8a4b08">PARTIAL</text>
-      <rect x="124" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
-      <text x="180" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1</text>
-      <text x="180" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
-      <rect x="248" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
-      <text x="304" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1b</text>
-      <text x="304" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
+    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.">
+      <title>Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.</title>
+      <rect x="0" y="0" width="84" height="64" rx="6" fill="var(--partial-bg)" stroke="var(--partial)"/>
+      <text x="42" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G0</text>
+      <text x="42" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--partial)">PARTIAL</text>
+      <rect x="92" y="0" width="84" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
+      <text x="134" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1</text>
+      <text x="134" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+      <rect x="184" y="0" width="84" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
+      <text x="226" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1b</text>
+      <text x="226" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+      <rect x="276" y="0" width="84" height="64" rx="6" fill="var(--pass-bg)" stroke="var(--pass)"/>
+      <text x="318" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1c</text>
+      <text x="318" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--pass)">PASS</text>
     </svg>
+    <p class="strip-note">G1c pass is compute-matched, not a per-byte modeling win. g1d beats hnt at equal data. g1g is pending.</p>
   </header>
 
   <h2>OODA</h2>
   <h3>Observe</h3>
   <p>The feasibility record counts units on the valid split against GPT-2 BPE: 181,544 versus 249,887 (27.35% fewer), byte fallback 0.048%, build 0.093 CPU-hours, peak RAM 4.83 GB, vocabulary size 65,536. That record is metadata. It is not the text it was counted on.</p>
   <h3>Orient</h3>
-  <p>The written G0 cap is V ≤ 64,000. 65,536 is 2^16, which is also called 64k in some tokenizer names. The harness does not treat those as the same number. G0 is therefore partial: four limits hold, and the vocabulary line does not. G1, the units-only pilot, failed both tests: hnt64k test BPB 1.452254 is above struct32k plus one standard deviation (1.329303), and train FLOPs/byte 3.5706e7 is above struct32k and sw64k. G1b, the structured hnt40k follow-up, also failed on BPB: test BPB 1.477304 is still above 1.329303. Its train FLOPs/byte 1.1929e7 is about 61% below struct32k, so only the FLOPs side moved. Nothing downstream of these failures is a result.</p>
+  <p>The written G0 cap is V ≤ 64,000. 65,536 is 2^16, which is also called 64k in some tokenizer names. The harness does not treat those as the same number. G0 is therefore partial: four limits hold, and the vocabulary line does not. G1, the units-only pilot, failed both tests: hnt64k test BPB 1.452254 is above struct32k plus one standard deviation (1.329303), and train FLOPs/byte 3.5706e7 is above struct32k and sw64k. G1b, the structured hnt40k follow-up, also failed on BPB: test BPB 1.477304 is still above 1.329303. Its train FLOPs/byte 1.1929e7 is about 61% below struct32k, so only the FLOPs side moved. G1c ran hnt40k-struct-v2 compute-matched to 4.2006e15 train FLOPs, n=3, on WikiText-103. Test bits per byte are 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte. The sw40k-struct-v2 control is 1.322698 ± 0.006710, struct32k is 1.322354, and the GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. G1c passes as a compute-matched comparison. g1d retrained struct32k on 348.3M bytes, the same train bytes hnt saw, and scored 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. That beats hnt by 0.075 at equal data, so G1c is a compute-efficiency win, not a per-byte modeling win. g1g, a FLOPs-matched hnt run at 1.0756e16, is pending and has no result. Caveats: n=3, one model size, WikiText-103 only. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. G1c does not reverse the G1 or G1b failures.</p>
   <h3>Decide</h3>
-  <p>Publish the harness and the recorded metadata. Do not publish a claim that the pilot beat struct32k, and do not publish weights or a tokenizer table to support a claim that is not in the ledger.</p>
+  <p>Publish the harness and the recorded metadata. Do not publish a claim that G1 or G1b beat struct32k. Do not publish the G1c pass as a per-byte modeling win. Do not publish a g1g number. Do not publish weights or a tokenizer table to support a claim that is not in the ledger.</p>
   <h3>Act</h3>
-  <p>Keep experiments on <code>iter/&lt;id&gt;</code> branches. Published records: <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a> (G0 partial), <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1-hnt64k">iter/g1-hnt64k</a> (G1 fail), and <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1b-structured">iter/g1b-structured</a> (G1b fail on BPB). A later pilot that wants to clear G1 has to beat struct32k on test BPB and on train FLOPs per byte, with the equal-size control, three seeds, and raw test bytes.</p>
+  <p>Keep experiments on <code>iter/&lt;id&gt;</code> branches. Published records: <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a> (G0 partial), <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1-hnt64k">iter/g1-hnt64k</a> (G1 fail), and <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1b-structured">iter/g1b-structured</a> (G1b fail on BPB). G1c, g1d, and g1g are recorded in this briefing and do not have <code>iter/</code> branches here. g1g is pending and has no result. A later pilot that wants to clear G1 has to beat struct32k on test BPB and on train FLOPs per byte, with the equal-size control, three seeds, and raw test bytes. Clearing that line on a longer byte budget is a compute comparison. g1d is the equal-data check, and it goes the other way.</p>
 
   <h2>1. Situation</h2>
   <p>The repository is the verification harness for this line of experiments. A trainer elsewhere registers the bytes it used. The store hashes them, appends gate decisions to a ledger, and lets a reviewer recompute the hashes. The synthetic study under <code>fixtures/passing</code> exercises every gate with toy numbers. Passing that study means the checker runs. It does not mean a research arm won.</p>
   <p>Friendly constraints: PolyForm Noncommercial 1.0.0, no commercial use without a separate license, contact via GitHub @ZuluYokohama. The tree must stay free of weights, corpus bytes, tokenizer merge tables, credentials, and machine paths.</p>
 
   <h2>2. Mission</h2>
-  <p>Make each later claim auditable against the same artifact hashes the gate saw, and keep the public status honest: G0 partial, G1 fail, G1b fail, everything else not run.</p>
+  <p>Make each later claim auditable against the same artifact hashes the gate saw, and keep the public status honest: G0 partial, G1 fail, G1b fail, G1c pass only as compute-matched, g1d lower for struct32k at equal data, g1g pending, everything else not run.</p>
 
   <h2>3. Execution</h2>
   <p>Gates are a dependency graph. A gate passes only when its own criteria pass and every upstream gate has a passing ledger record bound to the current hashes. <code>run</code> still writes failures.</p>
@@ -54,6 +59,9 @@
     <li><strong>G0.</strong> On the valid split, at least 15% fewer units than GPT-2 BPE, byte fallback at most 1%, vocabulary at most 64,000, build at most 2 CPU-hours and 16 GB. Recorded status: partial, because V=65,536 &gt; 64,000.</li>
     <li><strong>G1.</strong> hnt64k test bits per byte at or below struct32k plus one sample standard deviation, train FLOPs per byte lower than struct32k and lower than sw64k, and sw64k the same vocabulary size as hnt64k. Three seeds. Status: fail. Measured test BPB 1.452254 is above 1.329303, and train FLOPs/byte 3.5706e7 is above both controls.</li>
     <li><strong>G1b.</strong> The same rule on structured hnt40k (V=40,000) against struct32k and an equal-size superword control. Status: fail. Test BPB 1.477304 is above 1.329303. Train FLOPs/byte 1.1929e7 is about 61% below struct32k's 3.0882e7 and below the equal-size control, so the FLOPs side passes and the gate does not.</li>
+    <li><strong>G1c.</strong> Compute-matched hnt40k-struct-v2, n=3, WikiText-103 test bits per byte. Status: pass, compute-matched. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The mean is under 1.329303. One model size. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. This is a compute-efficiency win, not a per-byte modeling win.</li>
+    <li><strong>g1d.</strong> Data-matched struct32k at 348.3M bytes, the train bytes hnt40k-struct-v2 saw. Status: follow-up, measured. Test bits per byte 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. That beats hnt by 0.075 at equal data.</li>
+    <li><strong>g1g.</strong> FLOPs-matched hnt at 1.0756e16 train FLOPs, the same budget as g1d. Status: pending. Still running. No result is recorded.</li>
     <li><strong>G2.</strong> Spectral and compositional arms beat their named controls. One-sided Welch, Holm, alpha 0.05, three seeds. Not run.</li>
     <li><strong>G3.</strong> BF16 kernel relative error at most 0.001, and SheafHeat at most 15% of the step. Not run.</li>
     <li><strong>G4.</strong> Full model beats a tuned baseline by more than two baseline standard deviations at matched all-in FLOPs, including graph build. Headline uses five seeds. Component arms use three and must beat a random-hypergraph control. Not run.</li>
@@ -80,7 +88,7 @@
     </div>
     <div>
       <dt>Iterations</dt>
-      <dd>Branch <code>iter/&lt;id&gt;</code> with <code>BRIEFING.md</code>, <code>MODE_METHOD.md</code>, and the iteration records. Current branches: <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a>, <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1-hnt64k">iter/g1-hnt64k</a>, <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1b-structured">iter/g1b-structured</a>.</dd>
+      <dd>Branch <code>iter/&lt;id&gt;</code> with <code>BRIEFING.md</code>, <code>MODE_METHOD.md</code>, and the iteration records. Current branches: <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g0">iter/g0</a>, <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1-hnt64k">iter/g1-hnt64k</a>, <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/tree/iter/g1b-structured">iter/g1b-structured</a>. G1c, g1d, and g1g have no branch here. g1g is pending and has no result.</dd>
     </div>
     <div>
       <dt>Contact</dt>

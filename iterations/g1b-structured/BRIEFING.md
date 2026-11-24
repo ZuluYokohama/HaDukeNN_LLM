@@ -1,6 +1,8 @@
 # Iteration g1b-structured: structured hypergraph vocabulary (G1b), briefing
 
-Times are US Central (CT), Mon Nov 23, 2026. All numbers are measured unless marked analytic; none are estimates.
+Times are US Central (CT), Mon Nov 23, 2026. All numbers in sections 1–5 are measured unless marked analytic; none are estimates. Those sections are the record as written that day.
+
+**Amendment, 2026-11-23.** The v2 remainder was later run as G1c. The n=1 seed-13 figure 1.442863 in section 1 is not the G1c result. G1b v1 stays a fail (test BPB 1.477304). The G1c pass is compute-matched for hnt40k-struct-v2 on WikiText-103, n=3: test bits per byte 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). g1d, data-matched struct32k at 348.3M bytes (the same train bytes hnt saw), is 1.194155 ± 0.000824 at 1.0756e16 train FLOPs and beats hnt by 0.075 at equal data. G1c is a compute-efficiency win, not a per-byte modeling win. g1g, FLOPs-matched hnt at 1.0756e16, is pending. No g1g result is stated. Caveats: n=3, one model size, WikiText-103 only. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736.
 
 ## 1. Situation (OBSERVE)
 
@@ -36,6 +38,7 @@ Beat G1's two failure causes with the corpus hypergraph itself: compositional em
 - At 15:05 CT the memory watchdog condition fired (commit free 1.22 GB < 4 GB; an unrelated browser held 16.0 GB commit). The queue, the in-flight sw40k-struct-v2 seed-13 run (partial, no result) and its telemetry logger were stopped. Commit later recovered (23.85 GB free at 15:21).
 - From then until at least 15:26 CT GPU 0 reported 100% utilization, P0, 45–49 W, 21 MiB, with no attributable process, so the idle-check rule blocked relaunch. Remaining v2 work: sw40k-struct-v2 seeds 13/21/34 and hnt40k-struct-v2 seeds 21/34 (about 45 GPU-min at measured v2 speed); the queue skips finished runs.
 - Decision needed: whether to finish v2 once GPU 0 is genuinely idle, or stop the units line (G1 and G1b both fail on BPB) and redirect GPU time to the architecture arms.
+- The 2026-11-23 amendment at the top supersedes this "v2 not finished" decision. G1b v1 remains a fail. G1c is the compute-matched v2 result. g1g is pending and has no result.
 
 ## 5. Command & Signal (ACT)
 

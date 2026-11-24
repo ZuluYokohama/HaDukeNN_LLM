@@ -139,3 +139,78 @@ def test_docs_budget_parses_script_src_attributes():
     assert budget.script_sources(local) == ["app.js"]
     assert budget.is_external_script("app.js") is False
     assert budget.is_external_script(budget.script_sources(protocol)[0])
+
+
+_RESULTS = (
+    "G1c",
+    "compute-matched",
+    "1.269376",
+    "0.004417",
+    "1.2061e7",
+    "4.2006e15",
+    "1.322698",
+    "0.006710",
+    "1.322354",
+    "1.328219",
+    "-0.0533",
+    "7.1e-4",
+    "g1d",
+    "1.194155",
+    "0.000824",
+    "348.3M",
+    "1.0756e16",
+    "0.075",
+    "compute-efficiency",
+    "per-byte",
+    "g1g",
+    "pending",
+    "no result",
+    "n=3",
+    "WikiText-103",
+    "unverified",
+    "39,943,040",
+    "10,621,824",
+    "23,204,736",
+    "no trainer",
+)
+
+
+def test_recorded_results_name_the_compute_match_and_the_pending_run():
+    pages = [
+        ROOT / "docs" / "index.html",
+        ROOT / "docs" / "briefing.html",
+        ROOT / "docs" / "graph.html",
+        ROOT / "README.md",
+        ROOT / "iterations" / "INDEX.md",
+        ROOT / "iterations" / "g1b-structured" / "BRIEFING.md",
+    ]
+    for path in pages:
+        text = path.read_text(encoding="utf-8")
+        folded = text.casefold()
+        for phrase in _RESULTS:
+            assert phrase.casefold() in folded, f"{path.name} missing {phrase}"
+        assert "g1c pass" in folded
+    hnt = 1.269376
+    control = 1.322698
+    matched = 1.194155
+    assert round(hnt - control, 4) == -0.0533
+    assert round(hnt - matched, 3) == 0.075
+    assert hnt <= 1.329303
+    bytes_m = (4.2006e15 / 1.2061e7) / 1e6
+    assert abs(bytes_m - 348.3) < 0.05
+    for name in ("BRIEFING.md", "MODE_METHOD.md", "PROGRESS.md"):
+        text = (ROOT / "iterations" / "g1b-structured" / name).read_text(encoding="utf-8")
+        assert "2026-11-24" not in text
+        assert "2026-11-23" in text
+
+
+def test_logged_parameter_integer_matches_one_shared_table_reading():
+    """Consistency check of the written shapes. This repository has no trainer to count."""
+    non_embedding = 10_621_824
+    base = 32_768 * 384
+    low_rank = 40_000 * 32 + 32 * 384
+    residual = 40_000 * 384
+    gates = 2 * 12 * 384
+    clusters = 384 * 200
+    assert non_embedding + base == 23_204_736
+    assert non_embedding + base + low_rank + residual + gates + clusters == 39_943_040

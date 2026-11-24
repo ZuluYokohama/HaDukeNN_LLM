@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1117">
   <title>HaDukeN //\\// HGNLLM Experiments — overview</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -17,18 +18,22 @@
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
       <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>
     </nav>
-    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail">
-      <title>Gate status: G0 partial, G1 fail, G1b fail</title>
-      <rect x="0" y="0" width="112" height="64" rx="6" fill="#f3e0c4" stroke="#8a4b08"/>
-      <text x="56" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G0</text>
-      <text x="56" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8a4b08">PARTIAL</text>
-      <rect x="124" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
-      <text x="180" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1</text>
-      <text x="180" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
-      <rect x="248" y="0" width="112" height="64" rx="6" fill="#f6d5d0" stroke="#8d1d1d"/>
-      <text x="304" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#1b1914">G1b</text>
-      <text x="304" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="#8d1d1d">FAIL</text>
+    <svg class="status-strip" viewBox="0 0 360 64" role="img" aria-label="Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.">
+      <title>Gate status: G0 partial, G1 fail, G1b fail, G1c pass (compute-matched). g1g pending.</title>
+      <rect x="0" y="0" width="84" height="64" rx="6" fill="var(--partial-bg)" stroke="var(--partial)"/>
+      <text x="42" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G0</text>
+      <text x="42" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--partial)">PARTIAL</text>
+      <rect x="92" y="0" width="84" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
+      <text x="134" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1</text>
+      <text x="134" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+      <rect x="184" y="0" width="84" height="64" rx="6" fill="var(--fail-bg)" stroke="var(--fail)"/>
+      <text x="226" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1b</text>
+      <text x="226" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--fail)">FAIL</text>
+      <rect x="276" y="0" width="84" height="64" rx="6" fill="var(--pass-bg)" stroke="var(--pass)"/>
+      <text x="318" y="28" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="var(--ink)">G1c</text>
+      <text x="318" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12" fill="var(--pass)">PASS</text>
     </svg>
+    <p class="strip-note">G1c pass is compute-matched, not a per-byte modeling win. g1d beats hnt at equal data. g1g is pending.</p>
   </header>
 
   <h2>Task conditions</h2>
@@ -51,7 +56,7 @@
     </div>
     <div>
       <dt>Standard</dt>
-      <dd>G0 is partial. G1 has failed. G1b has failed. Later gates are not claimed.</dd>
+      <dd>G0 is partial. G1 has failed. G1b has failed. G1c passes only as a compute-matched comparison. g1d beats that arm at equal data. g1g is pending. Later gates are not claimed.</dd>
     </div>
   </dl>
 
@@ -79,6 +84,21 @@
         <td>Structured hnt40k test BPB 1.477304 is above the same threshold, 1.329303. Train FLOPs/byte 1.1929e7 is about 61% below struct32k and below the equal-size control. The FLOPs side passes. The gate fails.</td>
       </tr>
       <tr>
+        <td>G1c</td>
+        <td><span class="status pass">pass</span></td>
+        <td>Compute-matched, WikiText-103 test bits per byte, n=3 seeds. hnt40k-struct-v2 is 1.269376 ± 0.004417 at 1.2061e7 train FLOPs per byte and 4.2006e15 train FLOPs. The sw40k-struct-v2 control is 1.322698 ± 0.006710. struct32k is 1.322354. The GPT-2 tokenizer arm is 1.328219. hnt versus that control is -0.0533 (p 7.1e-4). The hnt mean is under the G1 line of 1.329303. One model size. Parameter totals are unverified in this repository: it contains no trainer. The g1b record reports 39,943,040 total and 10,621,824 non-embedding for one hnt40k-struct-v2 seed. The G1 briefing reports struct32k at 23,204,736. This is a compute-efficiency win, not a per-byte modeling win.</td>
+      </tr>
+      <tr>
+        <td>g1d</td>
+        <td><span class="status note">measured</span></td>
+        <td>Data-matched struct32k at 348.3M bytes, the same train bytes hnt40k-struct-v2 saw. Test bits per byte 1.194155 ± 0.000824 at 1.0756e16 train FLOPs. That beats hnt by 0.075 at equal data.</td>
+      </tr>
+      <tr>
+        <td>g1g</td>
+        <td><span class="status idle">pending</span></td>
+        <td>FLOPs-matched hnt run at 1.0756e16 train FLOPs, the same budget as g1d. Still running. No result is recorded.</td>
+      </tr>
+      <tr>
         <td>G2–G6</td>
         <td><span class="status idle">not run</span></td>
         <td>Spectral, kernel, headline, scaling, and motif gates are not claimed.</td>
@@ -93,7 +113,7 @@
   </div>
 
   <h2>Primary comparisons</h2>
-  <p>These are the comparisons the control graph is built to score. The campaign has not passed them. G0 is partial, G1 has failed, and G1b has failed. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
+  <p>These are the comparisons the control graph is built to score. G0 is partial. G1 has failed. G1b has failed. G1c passes on a compute-matched budget and does not pass as a per-byte model: g1d's struct32k is 0.075 bits per byte lower at the same 348.3M bytes. g1g is pending and has no result. The diagram is on the <a href="graph.html">control graph</a> page. Highlighted gates are G1, H1, G4, and P2.</p>
   <ul class="comparisons">
     <li class="compare"><strong>hnt vs equal-size control.</strong> G1 compares hnt64k with sw64k, the equal-size superword-BPE control, at the same vocabulary size.</li>
     <li class="compare"><strong>best arm vs struct32k / GPT-2.</strong> G1 compares hnt64k with struct32k on test BPB and train FLOPs per byte. H1 keeps GPT-2 BPE on the same train bytes. G4 compares the full arm with the tuned baseline at matched all-in FLOPs.</li>
@@ -126,6 +146,7 @@
     </tbody>
   </table>
   </div>
+  <p>G1c, g1d, and g1g are not <code>iter/</code> branches in this repository. Their numbers are in the gate table. g1g is pending and has no result.</p>
 
   <footer class="colophon">
     <p>HaDukeN //\\// HGNLLM Experiments. Copyright (c) 2026 Blake Jones (ZuluYokohama). <a href="briefing.html">Full briefing</a>.</p>
