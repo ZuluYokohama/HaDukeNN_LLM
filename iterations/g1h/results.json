@@ -54,7 +54,7 @@
    "versus": "g1g",
    "delta_test_bpb": 0.023321290170901898,
    "welch_p_two_sided": 8.427496615568977e-07,
-   "note": "equal train FLOPs, same tokenizer; isolates the structured path"
+   "note": "equal analytic train FLOPs, same tokenizer; g1g saw about 2.2x the bytes, so not a clean structure ablation"
   },
   {
    "versus": "g1d",

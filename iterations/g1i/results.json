@@ -54,7 +54,7 @@
    "versus": "g1d",
    "delta_test_bpb": 0.017287031779236406,
    "welch_p_two_sided": 0.009425286304327056,
-   "note": "equal train bytes (fair contrast for the plain arm)"
+   "note": "equal train bytes; different tokenizer, so a tokenizer contrast, not a structure ablation"
   },
   {
    "versus": "g1h",

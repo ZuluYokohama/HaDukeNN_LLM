@@ -209,6 +209,9 @@ def test_recorded_results_name_the_compute_match_and_the_ablations():
         assert "g1c pass" in folded
         assert "unverified" not in folded, f"{path.name} still calls parameter totals unverified"
         assert "g1g is pending" not in folded
+        assert "carries the win" not in folded and "carries that win" not in folded
+        assert "equal analytic" in folded, f"{path.name} must scope the g1g win to analytic FLOPs"
+        assert "cs/0108006" in folded, f"{path.name} must cite the class-factored softmax prior work"
     hnt = 1.269376
     control = 1.322698
     matched = 1.194155
@@ -220,6 +223,9 @@ def test_recorded_results_name_the_compute_match_and_the_ablations():
     assert abs(sum(g1g) / 3 - 1.174315) < 2e-6  # quoted mean uses unrounded seeds
     assert round(sum(g1i) / 3 - matched, 5) == round(0.017287, 5)
     assert abs((1.197637 - 1.174315) - 0.023321) < 2e-6  # quoted delta uses unrounded seed means
+    g1c_sd, g1i_sd = 0.004417, 0.003395
+    se = ((g1c_sd**2 + g1i_sd**2) / 3) ** 0.5
+    assert round(hnt - 1.211442, 4) == 0.0579 and (hnt - 1.211442) / se > 18  # equal-data reversal
     bytes_m = (4.2006e15 / 1.2061e7) / 1e6
     assert abs(bytes_m - 348.3) < 0.05
     for name in ("BRIEFING.md", "MODE_METHOD.md", "PROGRESS.md"):

@@ -14,7 +14,7 @@ Test BPB 1.211442 ± 0.003395 (n=3, 95% CI 1.203007 to 1.219876). Parameters 25,
 
 ## Orient
 
-- vs g1d: +0.017287 BPB (Welch two-sided p 0.0094). Equal train bytes (fair contrast for the plain arm).
+- vs g1d: +0.017287 BPB (Welch two-sided p 0.0094). Equal train bytes; different tokenizer, so a tokenizer contrast, not a structure ablation.
 - vs g1h: +0.013805 BPB (Welch two-sided p 0.018). Same arm, fewer bytes and FLOPs.
 
 ## Decide / Act
