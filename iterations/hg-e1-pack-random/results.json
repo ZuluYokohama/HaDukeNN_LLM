@@ -1,0 +1,67 @@
+{
+ "iteration": "hg-e1-pack-random-wt103",
+ "role": "control (no pass/fail of its own)",
+ "tokenizer": "struct32k",
+ "dataset": "WikiText-103 articles, seeded random article order (pack random)",
+ "params": 23204736,
+ "budget_bytes": 348328218.90996516,
+ "seq": 1024,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "primary_metric": "e1 xb_bpb (E1 held-out-article protocol causal-v2, 569 held-out articles)",
+ "official": {
+  "iteration_id": "auto-20261125-075509",
+  "e1_xb_bpb": {
+   "n": 3,
+   "mean": 1.093936036234735,
+   "sd": 0.003312261821699345,
+   "values": [
+    1.0933117613444412,
+    1.0909803320341624,
+    1.0975160153256014
+   ]
+  },
+  "wt103_test_bpb_corpus": {
+   "n": 3,
+   "mean": 1.184594879480396,
+   "sd": 0.002325524648397019,
+   "values": [
+    1.1864308955275193,
+    1.181979859760843,
+    1.1853738831528258
+   ]
+  }
+ },
+ "extra_replicate": {
+  "iteration_id": "auto-20261125-082518",
+  "e1_xb_bpb": {
+   "n": 3,
+   "mean": 1.0958272881608486,
+   "sd": 0.006171514199604179,
+   "values": [
+    1.0994887176387864,
+    1.088701949908401,
+    1.0992911969353585
+   ]
+  },
+  "wt103_test_bpb_corpus": {
+   "n": 3,
+   "mean": 1.1865881771313962,
+   "sd": 0.005956689123476021,
+   "values": [
+    1.1921324595588085,
+    1.1802907210966347,
+    1.1873413507387456
+   ]
+  }
+ },
+ "extra_vs_official": {
+  "delta_e1_xb_bpb": 0.001891251926113613,
+  "se_diff": 0.00404387050119903,
+  "note": "descriptive only; the extra replicate is a scheduler relaunch of the same plan, not a pre-registered run"
+ },
+ "source": "per-seed trainer result records on the author machine; the trainer is not in this repository"
+}

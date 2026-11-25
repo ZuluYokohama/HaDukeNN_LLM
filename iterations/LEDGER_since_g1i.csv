@@ -1,0 +1,60 @@
+iteration_id,plan_id,phase,status,dataset,tokenizer,head,clusters,compose,resid,init,budget_kind,budget_value,n_seeds,seeds,metric,mean_test_bpb,sd_test_bpb,mean_bytes_seen
+g1j,hnt-struct-random-flops-g1d,g1,finished,wt103,hnt40k,factored,random_size,slot,full,off,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.176685,0.002032,891695534
+g1k,isolate-latest-knob,g1,partial,wt103,hnt40k,factored,random_size,slot,full,off,flops,4.2006e+15,1,13,wt103 test bpb_corpus,1.253291,,348380896
+g1l,hnt-struct-random-mass-flops-g1d,g1,finished,wt103,hnt40k_massrand,factored,random_mass,slot,full,off,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.174444,0.000861,891695534
+g1m,gen-ablate-compose-mean-flops,g1,finished,wt103,hnt40k,factored,spectral,mean,full,on,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.174185,0.001388,901320563
+g1n,gen-ablate-resid-lowrank-flops,g1,finished,wt103,hnt40k,factored,spectral,slot,lowrank,on,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.182266,0.001501,891994580
+g1o,gen-ablate-resid-lowrank-flops,g1,finished,wt103,hnt40k,factored,spectral,mean,lowrank,on,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.181552,0.000487,901469288
+g1p,gen-ablate-spectral-init-off-flops,g1,finished,wt103,hnt40k,factored,spectral,slot,full,off,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.166925,0.001225,891695534
+g1q,gen-ablate-compose-mean-flops,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.166395,0.001785,901320563
+g1r,gen-ablate-resid-lowrank-flops,g1,finished,wt103,hnt40k,factored,spectral,mean,lowrank,off,flops,1.0756e+16,3,"13,21,34",wt103 test bpb_corpus,1.176480,0.002137,901469288
+g1s,hnt-v2-lowrank-resid,g1,partial,wt103,hnt40k,factored,spectral,slot,lowrank,on,flops,4.2006e+15,1,13,wt103 test bpb_corpus,1.279642,,348455006
+g1t,hnt-v2-lowrank-resid,g1,partial,wt103,hnt40k,factored,spectral,slot,lowrank,on,flops,4.2006e+15,1,13,wt103 test bpb_corpus,1.279479,,348455006
+g1u,hnt-v2-lowrank-resid,g1,partial,wt103,hnt40k,factored,spectral,slot,lowrank,on,flops,4.2006e+15,1,13,wt103 test bpb_corpus,1.279414,,348455006
+l2-calib-plain-hnt40k,,smoke,smoke,wt103,hnt40k,flat,none,mean,lowrank,na,steps,900,1,13,smoke run; not a result,1.670974,,67118685
+l2-val-wallclock-plain-hnt40k,,lane2,partial,wt103,hnt40k,flat,none,mean,lowrank,na,bytes,1181971238,1,13,wt103 test bpb_corpus,1.119124,,1182008936
+smoke-head-adaptive-20261124,,smoke,smoke,wt103,hnt40k,adaptive,none,mean,lowrank,na,steps,20,1,13,smoke run; not a result,2.152122,,1494227
+smoke-hg-pack-hyper-20261124,,smoke,smoke,wt103,struct32k,flat,none,na,na,na,steps,20,1,13,smoke run; not a result,2.308271,,1162726
+g1v,massrand-mean-initoff-flops-g1q,g1,finished,wt103,hnt40k_massrand,factored,random_mass,mean,full,off,flops,1.0756e+16,3,13;21;34,wt103 test bpb_corpus,1.173174,0.001445,901371073
+g1w,plain-hnt40k-wallclock-g1q,g1,finished,wt103,hnt40k,flat,none,na,na,na,bytes,742098776,3,13;21;34,wt103 test bpb_corpus,1.140927,0.002185,742165158
+g1x,adaptive-softmax-bytes-hnt40k,g1,partial,wt103,hnt40k,adaptive,none,na,na,na,bytes,348402823,1,13,wt103 test bpb_corpus,1.265063,,348402823
+g1y,adaptive-softmax-bytes-hnt40k,g1,partial,wt103,hnt40k,adaptive,none,na,na,na,bytes,348402823,1,13,wt103 test bpb_corpus,1.264878,,348402823
+g1z,t30-fwedu-tok-struct32k-bytes-g1d,g1,aborted_no_result,,,,,,,,bytes,,0,,,,,
+auto-20261124-121950,t30-fwedu-tok-struct32k-bytes-g1d,g1,finished,fwedu32,fwedu-struct32k,flat,none,na,na,na,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.357119,0.002255,348331775
+auto-20261124-124755,adaptive-softmax-flops-hnt40k,g1,finished,wt103,hnt40k,adaptive,none,na,na,na,flops,1.0758e+16,3,13;21;34,wt103 test bpb_corpus,1.197907,0.000605,696432624
+auto-20261124-132814,t30-fwedu-tok-hnt40k-bytes-g1d,g1,finished,fwedu32,fwedu-hnt40k,flat,none,na,na,na,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.383368,0.004016,348381526
+auto-20261124-135250,gen-bytes-hnt40k-spectral,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,bytes,348351290,3,13;21;34,wt103 test bpb_corpus,1.240978,0.001735,348402823
+auto-20261124-141251,fp-structblk-q-bytes348,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,bytes,348328219,3,13;21;34,wt103 test bpb_corpus,1.241493,0.001092,348328219
+auto-20261124-143327,fp-structblk-q-wall932,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,wallclock,932,3,13;21;34,wt103 test bpb_corpus,1.169037,0.000977,872300202
+auto-20261124-152732,ckpt-rerun-g1d,g1,finished,wt103,struct32k,flat,none,na,na,na,bytes,348328219,3,13;21;34,wt103 test bpb_corpus,1.192994,0.000914,348351290
+auto-20261124-155346,ckpt-rerun-g1q,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,flops,1.0756e+16,3,13;21;34,wt103 test bpb_corpus,1.167092,0.000428,901371073
+auto-20261124-164200,fp-structblk-q-lr2e3-wall932,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,wallclock,932,3,13;21;34,wt103 test bpb_corpus,1.167383,0.000279,876105030
+auto-20261124-173103,fp-plain-hnt40k-lr2e3-wall932,g1,finished,wt103,hnt40k,flat,none,na,na,na,wallclock,932,3,13;21;34,wt103 test bpb_corpus,1.152632,0.001757,740150837
+auto-20261124-181851,fp-s32k-plain-wall932,g1,finished,wt103,struct32k,flat,none,na,na,na,wallclock,932,3,13;21;34,wt103 test bpb_corpus,1.147226,0.002457,649277749
+auto-20261124-190640,t30-wt103-tok-bpe32k-bytes-g1d,g1,finished,wt103,bpe32k,flat,none,na,na,na,bytes,348328219,3,13;21;34,wt103 test bpb_corpus,1.191520,0.000423,348339095
+auto-20261124-193303,t30-fwedu-tok-bpe32k-bytes-g1d,t30,finished,fwedu32,fwedu-bpe32k,flat,none,na,na,na,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.357555,0.002115,348342354
+auto-20261124-200034,fpc-structblk-q-wall932,g1,finished,wt103,hnt40k,factored,spectral,mean,full,off,wallclock,932,3,13;21;34,wt103 test bpb_corpus,1.140345,0.000583,1591611528
+auto-20261124-204834,fpc-plain-hnt40k-wall932,g1,finished,wt103,hnt40k,flat,none,mean,lowrank,na,wallclock,932,3,13;21;34,wt103 test bpb_corpus,1.114880,0.001583,1273796532
+auto-20261124-215632,t37-ckpt-plain-hnt40k-flops-g1q,t37,finished,wt103,hnt40k,flat,none,mean,lowrank,na,flops,1.0758e+16,3,13;21;34,wt103 test bpb_corpus,1.195332,0.005445,400860066
+auto-20261124-225800,t37-ckpt-massrand-flops-g1v,t37,finished,wt103,hnt40k_massrand,factored,random_mass,mean,full,off,flops,1.0756e+16,3,13;21;34,wt103 test bpb_corpus,1.172872,0.000695,901320563
+auto-20261125-004401,t37-sg-h40-S-b100,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.391735,0.002905,348381527
+auto-20261125-010024,t37-sg-s32-S-b100,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.357179,0.002341,348331775
+auto-20261125-011803,t37-sg-h40-S-b025,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,87082055,3,13;21;34,fwedu32 test bpb_corpus,1.734986,0.019727,87113233
+auto-20261125-032444,t37-sg-s32-S-b025,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,87082055,3,13;21;34,fwedu32 test bpb_corpus,1.583445,0.004126,87111190
+auto-20261125-033037,t37-sg-h40-S-b050,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,174164109,3,13;21;34,fwedu32 test bpb_corpus,1.522494,0.019494,174226465
+auto-20261125-033916,t37-sg-s32-S-b050,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,174164109,3,13;21;34,fwedu32 test bpb_corpus,1.441415,0.003491,174165887
+auto-20261125-034856,t37-sg-h40-S-b150,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,522492328,3,13;21;34,fwedu32 test bpb_corpus,1.334097,0.001010,522536588
+auto-20261125-041050,t37-sg-s32-S-b150,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,522492328,3,13;21;34,fwedu32 test bpb_corpus,1.325217,0.002348,522497662
+auto-20261125-043536,t37-lr-s32-M-b025-lr5e4,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,87082055,3,13;21;34,fwedu32 test bpb_corpus,1.598370,0.000552,87111190
+auto-20261125-044505,t37-lr-s32-M-b025-lr2e3,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,87082055,3,13;21;34,fwedu32 test bpb_corpus,1.646708,0.010954,87111190
+auto-20261125-045356,t37-sg-h40-M-b100,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.375478,0.003248,348381527
+auto-20261125-051904,t37-sg-s32-M-b100,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,348328219,3,13;21;34,fwedu32 test bpb_corpus,1.324365,0.000702,348331775
+auto-20261125-054755,t37-sg-h40-M-b025,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,87082055,3,13;21;34,fwedu32 test bpb_corpus,1.743289,0.006308,87113233
+auto-20261125-055545,t37-sg-s32-M-b025,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,87082055,3,13;21;34,fwedu32 test bpb_corpus,1.581185,0.008628,87111190
+auto-20261125-060437,t37-sg-h40-M-b050,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,174164109,3,13;21;34,fwedu32 test bpb_corpus,1.520579,0.016323,174226465
+auto-20261125-061803,t37-sg-s32-M-b050,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,174164109,3,13;21;34,fwedu32 test bpb_corpus,1.420412,0.001531,174165887
+auto-20261124-222306,t37-ckpt-massrand-flops-g1v,t37,partial,wt103,hnt40k_massrand,factored,random_mass,mean,full,off,flops,1.0756e+16,2,13;21,wt103 test bpb_corpus,1.172421,0.001735,901327706
+auto-20261125-063328,t37-sg-h40-M-b150,t37,finished,fwedu32,fwedu-hnt40k,flat,none,mean,lowrank,off,bytes,522492328,3,13;21;34,fwedu32 test bpb_corpus,1.323749,0.002354,522536588
+auto-20261125-070925,t37-sg-s32-M-b150,t37,finished,fwedu32,fwedu-struct32k,flat,none,mean,lowrank,off,bytes,522492328,3,13;21;34,fwedu32 test bpb_corpus,1.290067,0.001512,522497662
+auto-20261125-075509,hg-e1-pack-random-wt103,hg-e1,finished,wt103hg-pack-random,struct32k,flat,,mean,lowrank,,bytes,348328219,3,13;21;34,E1 held-out-article xb_bpb (wt103 articles),1.093936,0.003312,
+auto-20261125-082518,hg-e1-pack-random-wt103,hg-e1,finished,wt103hg-pack-random,struct32k,flat,,mean,lowrank,,bytes,348328219,3,13;21;34,E1 held-out-article xb_bpb (wt103 articles),1.095827,0.006172,
