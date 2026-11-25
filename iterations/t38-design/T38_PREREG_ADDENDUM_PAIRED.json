@@ -1,0 +1,25 @@
+{
+  "id": "t38-apples-plain-vs-hadukenn-bpe32k/addendum-paired",
+  "type": "ADDENDUM - reported secondary analysis only; does not change any rule, verdict, run, or stage gate",
+  "applies_to_prereg_sha256": "524fca093dc6c00e803b6f9998e69277f2804cc38e44ad71f94ffd0b88d63590",
+  "created_ct": "2026-11-25 09:23:50 AM CT",
+  "approval": "Blake Jones via parent agent, 2026-11-25 9:22 AM CT: pre-declare paired-seed analysis as a reported secondary, never a verdict",
+  "data_state": "No T-38 data exists at creation: 0 t38 terminal/launch records, 0 t38 audit events, 0 fwedu-bpe32k-s result files (checked at created_ct).",
+  "scope": "every T-38 cell (rung x epochs, incl. lr-sweep cells only as description) where arms P and H share seeds",
+  "analysis": {
+    "difference": "d_s = BPB_H(s) - BPB_P(s) on fwedu32 test bpb_corpus, over the shared seeds s (negative = H better)",
+    "report": [
+      "mean d",
+      "paired SE = sd(d)/sqrt(n)",
+      "paired one-sided t = mean/SE with df n-1 (both directions' p reported)",
+      "95% CI mean +/- t_{0.975,n-1} * SE",
+      "Pearson r between arms over the shared seeds"
+    ],
+    "code": "analysis-t38/code/t38_paired.py (paired, side_by_side)"
+  },
+  "status_of_results": "descriptive and secondary",
+  "verdicts": "unchanged: Welch per T38_PREREG.json (headline and ladder rules, Holm). The paired analysis never decides PASS/KILL/PARITY/INCONCLUSIVE.",
+  "disagreement": "If paired and Welch disagree, both are reported side by side with no override.",
+  "rationale": "P and H at the same seed draw identical training windows (same tokenizer array, same seeded numpy generator), so seed-matched pairing may reduce noise; the T-37 h40-vs-s32 pooled within-cell r was -0.40 (different token arrays), so no correlation is assumed.",
+  "not_affected": "Amendment 1 (L-fit rule) remains an unapproved DRAFT and is not part of this addendum."
+}

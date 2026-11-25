@@ -1,0 +1,7 @@
+run,iteration_id,arm,seed,e1_xb_bpb,wt103_test_bpb_corpus,train_flops,finished_ct
+official,auto-20261125-075509,hg-e1-pack-random-wt103,13,1.093312,1.186431,1.2317e+16,2026-11-25 08:05:10
+official,auto-20261125-075509,hg-e1-pack-random-wt103,21,1.090980,1.181980,1.2317e+16,2026-11-25 08:14:58
+official,auto-20261125-075509,hg-e1-pack-random-wt103,34,1.097516,1.185374,1.2317e+16,2026-11-25 08:24:45
+extra-replicate,auto-20261125-082518,hg-e1-pack-random-wt103,13,1.099489,1.192132,1.2317e+16,2026-11-25 08:35:13
+extra-replicate,auto-20261125-082518,hg-e1-pack-random-wt103,21,1.088702,1.180291,1.2317e+16,2026-11-25 08:45:01
+extra-replicate,auto-20261125-082518,hg-e1-pack-random-wt103,34,1.099291,1.187341,1.2317e+16,2026-11-25 08:54:48

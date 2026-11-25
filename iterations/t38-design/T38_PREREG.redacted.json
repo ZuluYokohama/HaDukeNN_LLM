@@ -1,0 +1,212 @@
+{
+  "id": "t38-apples-plain-vs-hadukenn-bpe32k",
+  "status": "FROZEN - do not edit; any change requires a new prereg file with a new id",
+  "plan_doc": "<redacted: local path to T38_PLAN.md>",
+  "question": "Does the HaDukeNN structure component beat or match a tuned modern plain Transformer at equal training bytes, same tokenizer, same data, same backbone, and does it change the scaling exponent?",
+  "tokenizer": {
+    "name": "fwedu-bpe32k",
+    "vocab": 32768,
+    "both_arms": true,
+    "rationale": "struct32k vs bpe32k tie (FineWeb-Edu p=0.82); hnt40k per-byte penalty grows with size (S-1x 0.0346, M-1x 0.0511); plain BPE removes tokenizer confound",
+    "cache_dir_for_both_arms": "fwedu-bpe32k-s (hard links to fwedu-bpe32k tokens + struct cache)"
+  },
+  "data": {
+    "dataset": "fwedu32",
+    "train_unique_bytes": 540570430,
+    "train_unique_tokens_bpe32k": 117579261,
+    "test_bytes": 10005000,
+    "metric": "test bpb_corpus on identical test bytes",
+    "selection_split": "validation"
+  },
+  "shared_args": {
+    "pe": "rope",
+    "seq": 256,
+    "batch": 48,
+    "micro": 16,
+    "wd": 0.1,
+    "warmup_frac": 0.02,
+    "min_lr_frac": 0.1,
+    "compile": true,
+    "qk_norm": false,
+    "tie": true,
+    "norm": "RMSNorm",
+    "mlp": "SwiGLU ff=8/3*d rounded to 64",
+    "root": "<redacted: local data root>/iterations/<iter>",
+    "data_root": "<redacted: an explicit local data drive, never the default>",
+    "max_temp": 85.0,
+    "eval_every": "~2% of steps"
+  },
+  "arms": {
+    "P": {
+      "struct": "none",
+      "head": "flat"
+    },
+    "H": {
+      "struct": "spectral",
+      "compose": "mean",
+      "struct_head": "blocked",
+      "resid": "lowrank",
+      "struct_rank": 32,
+      "spectral_init": false,
+      "r2_inclusion_rule": "no r2 arm had a recorded PASS under its own frozen prereg at freeze time; none included",
+      "secondary_if_hours": {
+        "resid": "full"
+      },
+      "members": "identity (members(u)={u}, v_base=32768); pre-registered choice, mergeparents is secondary only",
+      "nc": 182,
+      "S": 181,
+      "secondary_members": "mergeparents"
+    }
+  },
+  "params_match": {
+    "non_embedding": "identical by construction",
+    "total_params_tolerance": 0.05
+  },
+  "rungs": {
+    "XS": {
+      "d": 256,
+      "n_layer": 4,
+      "ff": 704,
+      "heads": 4
+    },
+    "S": {
+      "d": 384,
+      "n_layer": 6,
+      "ff": 1024,
+      "heads": 6
+    },
+    "M": {
+      "d": 576,
+      "n_layer": 8,
+      "ff": 1536,
+      "heads": 9,
+      "headline": true
+    },
+    "M+": {
+      "d": 640,
+      "n_layer": 10,
+      "ff": 1728,
+      "heads": 10
+    },
+    "L": {
+      "d": 768,
+      "n_layer": 12,
+      "ff": 2048,
+      "heads": 12
+    }
+  },
+  "budget_bytes": {
+    "1ep": 540570430,
+    "4ep": 2162281720
+  },
+  "lr_sweep": {
+    "values": [
+      0.0005,
+      0.001,
+      0.002
+    ],
+    "seed": 13,
+    "budget": "0.5 epoch",
+    "per_arm": true,
+    "rungs": [
+      "M",
+      "M+",
+      "L"
+    ],
+    "pick": "lowest validation BPB",
+    "xs_s_lr": 0.001,
+    "m_1ep_lr": "per-arm M sweep pick",
+    "note": "XS and S use lr 1e-3 for both arms (T-37 M check: 1e-3 within noise of the best of {5e-4,1e-3,2e-3}); this is a stated limitation. M+ and L cells use their own per-arm sweep pick. Ties (|dBPB|<0.001) go to 1e-3."
+  },
+  "seeds": {
+    "headline_M_4ep": [
+      13,
+      21,
+      34,
+      55,
+      89
+    ],
+    "other_cells": [
+      13,
+      21,
+      34
+    ],
+    "optional_stopping": false
+  },
+  "primary_rule_headline": {
+    "delta": "BPB_P - BPB_H (positive = H better)",
+    "PASS": "one-sided Welch p<0.01 (H<P) AND delta >= 2*SE",
+    "PARITY": "not PASS AND one-sided 99% upper bound of (BPB_H - BPB_P) < 0.005",
+    "KILL": "one-sided Welch p<0.01 (H>P) AND (BPB_H - BPB_P) >= 2*SE",
+    "else": "INCONCLUSIVE",
+    "precedence": "PASS > KILL > PARITY > INCONCLUSIVE; parity_within_margin reported alongside"
+  },
+  "ladder_rule": {
+    "per_cell": "same as headline PASS/KILL",
+    "multiplicity": "Holm-Bonferroni over all rung x data cells, family alpha 0.01",
+    "fit": "per arm L(N)=E+A*N^-alpha (4ep) and L(N,D)=E+A*N^-alpha+B*D^-beta; bootstrap over seeds, 2000 reps",
+    "PASS_scaling": "95% bootstrap CI of alpha_H - alpha_P excludes 0 in H's favour",
+    "fit_restriction": "drop L from the N-fit iff gain_L < gain_M, gain = BPB_1ep - BPB_4ep (L gains less from 4x data than M, i.e. L is data-limited)",
+    "stage3_stop": "skip Stage 3 iff headline verdict is KILL with (BPB_H - BPB_P) > 3 * MDE80(5 seeds)=0.0117 AND the Stage-2 4ep gaps (BPB_H - BPB_P) at XS, S, M+ are not decreasing in N (Spearman rho >= 0 over XS,S,M,M+)"
+  },
+  "secondary_descriptive": [
+    "val BPB at matched analytic FLOPs (from eval curves)",
+    "val BPB at matched train wall-seconds",
+    "steady compiled tok/s and bytes/s",
+    "peak memory",
+    "lm-eval zero-shot HellaSwag/ARC-e/LAMBADA/PIQA on GPU 1 fp32 (side job)",
+    "rare-token decile probe (pre-registered one-sided p<0.01 at headline)",
+    "WT103 test BPB and word PPL cross-domain via fwedu-bpe32k tokenization (raw-v1 caveat)"
+  ],
+  "power_note": "sigma 0.0016 -> 5 seeds MDE80 0.0039; 3 seeds MDE80 0.0064 (noncentral t, one-sided alpha 0.01)",
+  "prerequisites": [
+    "P1 fwedu-bpe32k-s struct cache built in a GPU gap (chunked builder, RAM est 1.3-1.6 GB) and trainer load check",
+    "P2 autolaunch patch (ff/heads/seq/wd/struct_rank flags, <redacted: data drive> TRITON/TMP, T-38 per-plan seeds) reviewed and reloaded",
+    "P3 WT103 test tokenized with fwedu-bpe32k (secondary metric; may lag)",
+    "P4 lm-eval adapter + tests (done)",
+    "P5 t38_fit.py + tests (done)",
+    "P6 this freeze (done)"
+  ],
+  "checkpoints": {
+    "save": "seed 13 of each arm at headline rung only (disk)",
+    "all_seeds_needs": "~+2.5 GiB on <redacted: data drive> at L or bf16 ckpt option"
+  },
+  "estimates_gpu_hours_E": {
+    "lr_sweep_M": 1.12,
+    "lr_sweep_L": 2.08,
+    "headline_M_4ep_5seeds_2arms": 11.5,
+    "stage2": 20.8,
+    "stage3_incl_sweep": 20.4,
+    "full_ladder": 54
+  },
+  "queue_position": "T-38 plans inserted after the T-37 grid, held/released group by group by analysis-t38/code/t38_driver.py",
+  "analysis_code": {
+    "fit": "analysis-t38/code/t38_fit.py",
+    "commands": "analysis-t38/code/t38_commands.py",
+    "lmeval": "analysis-t38/code/t38_lmeval_adapter.py",
+    "struct_cache": "analysis-t38/code/t38_build_struct_cache.py",
+    "driver": "analysis-t38/code/t38_driver.py",
+    "analysis_is": "t38_fit.py headline_verdict / holm / bootstrap_scaling as committed at freeze; test split fwedu32 test bpb_corpus"
+  },
+  "frozen_ct": "2026-11-25 6:45 AM CT",
+  "approval": "Blake Jones via parent agent, 2026-11-25 6:34 AM CT: staged ladder approved, 5 seeds at the headline cell; freeze now",
+  "stages": {
+    "smoke": {
+      "what": "S rung, P and H, seed 13, 0.05 epoch (27,028,522 bytes); gate only, not analysed",
+      "pass": "both runs exit 0 with finite test BPB"
+    },
+    "stage1": {
+      "what": "lr sweep M (per arm, 0.5 ep, seed 13) then M 4ep, both arms, seeds 13,21,34,55,89, interleaved P/H per seed; ckpt seed 13 only",
+      "analysis": "headline rule"
+    },
+    "stage2": {
+      "what": "lr sweep M+ then XS-1ep, XS-4ep, S-1ep, S-4ep, M+-1ep, M+-4ep, M-1ep, both arms, seeds 13,21,34",
+      "analysis": "ladder rule, Holm over all cells"
+    },
+    "stage3": {
+      "what": "lr sweep L then L-1ep and L-4ep, both arms, seeds 13,21,34; ckpt seed 13 at L-4ep",
+      "gate": "stage3_stop rule evaluated after Stage 2; Stage 3 skipped only if it fires"
+    },
+    "automation": "stages follow automatically under these rules (Blake 6:34 AM CT); a stage is not started early or re-run because of an interim result"
+  }
+}

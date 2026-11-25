@@ -1,2 +1,5 @@
 # Fixture payloads are hashed byte for byte. Never convert their line endings.
 fixtures/** -text
+
+# Frozen pre-registration copies are hashed byte for byte.
+iterations/t38-design/*.json -text
