@@ -111,7 +111,7 @@
       <tr>
         <td>A3</td>
         <td><span class="status idle">running</span></td>
-        <td>A3, the random-cluster control (hnt40k with random clusters, FLOPs-matched), is running. No result is recorded.</td>
+        <td>A3, the random-cluster control (hnt40k with random clusters, FLOPs-matched), finished as g1j: 1.176685 ± 0.002032 (n=3). That is 0.002369 above g1g (Welch two-sided p 0.17). It is not a clean contrast, because spectral init was on in g1g and off in g1j. Untested.</td>
       </tr>
       <tr>
         <td>G2–G6</td>
@@ -162,6 +162,15 @@
   </table>
   </div>
   <p>G1c is not an <code>iter/</code> branch in this repository. g1d, g1g, g1h, and g1i are folders under <code>iterations/</code> on <code>main</code>. Their numbers are in the gate table.</p>
+
+  <h2>Since g1i</h2>
+  <p>These folders are on <code>main</code> under <code>iterations/</code>.</p>
+  <ul>
+    <li><strong>t37-grid.</strong> T-37 tokenizer scaling grid on FineWeb-Edu, flat heads, fwedu-hnt40k against fwedu-struct32k, 2 sizes × 4 byte budgets, n=3. struct32k is better in all 8 contrasts, and Holm (α 0.01) keeps 5 of 8. The edge shrinks with data (log2 k slope −0.232 at S, −0.137 at M) and is larger at M than at S (+0.125, 95% CI +0.080 to +0.173). These are tokenizer effects, not structured-head effects.</li>
+    <li><strong>t38-design.</strong> Frozen T-38 pre-registration (SHA-256 524fca09…, path-redacted public copy) and a paired-seed addendum (reported secondary only). Plain against the structure component on the same 32k BPE tokenizer. No result yet.</li>
+    <li><strong>hg-e1-pack-random.</strong> E1 packing control, random article order: E1 held-out-article BPB 1.093936 ± 0.003312 (n=3). It has no pass/fail of its own.</li>
+    <li><strong>LEDGER_since_g1i.csv.</strong> Every iteration recorded after g1i, numbers only, with no verdict labels.</li>
+  </ul>
 
   <footer class="colophon">
     <p>HaDukeN //\\// HGNLLM Experiments. Copyright (c) 2026 Blake Jones (ZuluYokohama). <a href="briefing.html">Full briefing</a>.</p>
