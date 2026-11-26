@@ -18,7 +18,7 @@ The `required` check is green only when those four are green. Protect `main` wit
 Run the same four commands locally before opening the pull request:
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,stack]"
 ruff check .
 pytest --cov=sheaf_verify --cov-report=term-missing --cov-fail-under=85
 sheaf-verify verify --store fixtures/passing --seal-key-file fixtures/test_seal.key
