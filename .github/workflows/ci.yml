@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,stack]"
       - run: pytest --cov=sheaf_verify --cov-report=term-missing --cov-report=xml --cov-fail-under=85
       - uses: actions/upload-artifact@v4
         if: always()
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,stack]"
       - run: python -m sheaf_verify.control_graph --check
       - run: pytest
         env:
