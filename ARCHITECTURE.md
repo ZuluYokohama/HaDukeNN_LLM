@@ -30,6 +30,10 @@ The graph is declared in `src/sheaf_verify/gates.py` and drawn in `GATES.md`. `r
 
 After the gates, `run` registers a `result` manifest. Its payload names the outcome, the ledger head, and each gate's record hash. Its inputs are the current binding, excluding any previous result. `verify` checks that the latest result matches the latest records and that every result's ledger head is some record in the chain.
 
+## Action gate
+
+`src/sheaf_verify/action_gate.py` is a standalone library module; no gate or CLI command calls it yet. `ExactUnitLattice` converts `(value, unit)` pairs to one canonical unit per dimension in `Fraction` arithmetic and refuses to mix dimensions. `LocalActionOntology` checks a proposed transfer of a conserved quantity against a declared rule and returns one of six verdicts. Malformed input becomes a verdict rather than an exception. Source witnesses are compared exactly. One witness that disagrees with at least two agreeing witnesses is set aside; every other disagreement abstains. This is a majority rule and cannot detect a poisoned majority.
+
 ## What the checks do not do
 
 They do not execute the model, the CUDA or OpenCL kernel, or a second training run. H4 checks a submitted causality trace. G1 checks the raw-byte BPB identity. G2 and G4 recompute one-sided Welch tests. G4 also recomputes the two-tailed Welch or paired test, the bootstrap interval, and Hedges' g from the submitted per-seed numbers. A trace or a seed list can be invented. The harness makes that invention explicit and comparable. It does not make it true.
