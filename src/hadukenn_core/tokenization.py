@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import heapq
 import math
 import re
 from collections import Counter
@@ -23,6 +24,113 @@ class SpanSpec:
     pmi: float
     count: int
     byte_len: int
+
+
+def _byte_bpe_merges_incremental(
+    words: list[list[int]],
+    freqs: list[int],
+    token_bytes: list[bytes],
+    merges: list[tuple[int, int]],
+    target_merges: int,
+    min_pair_count: int,
+) -> None:
+    """Incremental-count equivalent of the reference full-recount merge loop.
+
+    The reference takes ``Counter.most_common(1)`` over a fresh recount, i.e. the first max-count pair
+    in insertion order. Insertion order is the pair's first occurrence scanning words then positions,
+    so ties are broken by (lowest word index containing the pair, first position in that word).
+    Mutates ``words``, ``token_bytes`` and ``merges`` in place.
+    """
+
+    def pairs_of(seq: list[int]) -> dict[tuple[int, int], int]:
+        out: dict[tuple[int, int], int] = {}
+        for i in range(len(seq) - 1):
+            key = (seq[i], seq[i + 1])
+            out[key] = out.get(key, 0) + 1
+        return out
+
+    pair_counts: dict[tuple[int, int], int] = {}
+    where: dict[tuple[int, int], set[int]] = {}
+    for idx, (seq, f) in enumerate(zip(words, freqs, strict=True)):
+        for key, k in pairs_of(seq).items():
+            pair_counts[key] = pair_counts.get(key, 0) + k * f
+            where.setdefault(key, set()).add(idx)
+    heap = [(-c, key) for key, c in pair_counts.items()]
+    heapq.heapify(heap)
+
+    def first_occurrence(key: tuple[int, int]) -> tuple[int, int]:
+        idx = min(where[key])
+        seq = words[idx]
+        for i in range(len(seq) - 1):
+            if seq[i] == key[0] and seq[i + 1] == key[1]:
+                return idx, i
+        raise AssertionError("pair index out of sync with words")
+
+    for _ in range(target_merges):
+        if not pair_counts:
+            break
+        tied: list[tuple[int, int]] = []
+        tied_set: set[tuple[int, int]] = set()
+        top = None
+        while heap:
+            negc, key = heap[0]
+            if pair_counts.get(key) != -negc:
+                heapq.heappop(heap)
+                continue
+            if top is None:
+                top = -negc
+            elif -negc != top:
+                break
+            heapq.heappop(heap)
+            if key not in tied_set:
+                tied_set.add(key)
+                tied.append(key)
+        assert top is not None
+        for key in tied:
+            heapq.heappush(heap, (-top, key))
+        best_pair = min(tied, key=first_occurrence) if len(tied) > 1 else tied[0]
+        best_cnt = top
+        if best_cnt < min_pair_count:
+            break
+        new_id = len(token_bytes)
+        merges.append(best_pair)
+        token_bytes.append(token_bytes[best_pair[0]] + token_bytes[best_pair[1]])
+        a, b = best_pair
+        for idx in list(where.get(best_pair, ())):
+            seq = words[idx]
+            out: list[int] = []
+            i = 0
+            n = len(seq)
+            while i < n:
+                if i + 1 < n and seq[i] == a and seq[i + 1] == b:
+                    out.append(new_id)
+                    i += 2
+                else:
+                    out.append(seq[i])
+                    i += 1
+            f = freqs[idx]
+            old_p = pairs_of(seq)
+            new_p = pairs_of(out)
+            for key in old_p.keys() | new_p.keys():
+                d = (new_p.get(key, 0) - old_p.get(key, 0)) * f
+                if d:
+                    c = pair_counts.get(key, 0) + d
+                    if c:
+                        pair_counts[key] = c
+                        heapq.heappush(heap, (-c, key))
+                    else:
+                        del pair_counts[key]
+                if key not in new_p:
+                    where[key].discard(idx)
+                elif key not in old_p:
+                    where.setdefault(key, set()).add(idx)
+            words[idx] = out
+        if best_pair in pair_counts:
+            raise AssertionError("incremental Byte-BPE left a merged pair with nonzero count")
+        where.pop(best_pair, None)
+        if len(heap) > 4 * len(pair_counts) + 4096:
+            heap = [(-c, key) for key, c in pair_counts.items()]
+            heapq.heapify(heap)
 
 
 class ByteBPETokenizer:
@@ -50,7 +158,47 @@ class ByteBPETokenizer:
 
     @classmethod
     def train(cls, texts: list[str], vocab_size: int = 1024, min_pair_count: int = 4) -> ByteBPETokenizer:
-        """Train an exact byte-level BPE vocabulary over pre-tokenized byte chunks."""
+        """Train an exact byte-level BPE vocabulary over pre-tokenized byte chunks.
+
+        Uses incremental pair counts; output is byte-identical to ``train_reference``.
+        """
+        if vocab_size < 256:
+            raise ValueError("ByteBPE vocab_size must be >= 256.")
+        piece_counts: Counter[bytes] = Counter()
+        for txt in texts:
+            raw_txt = txt.encode("utf-8")
+            for m in _BYTE_PRE_RE.finditer(raw_txt):
+                piece = m.group(0)
+                if piece:
+                    piece_counts[piece] += 1
+
+        words: list[list[int]] = [list(raw) for raw in piece_counts]
+        freqs: list[int] = [piece_counts[raw] for raw in piece_counts]
+        token_bytes: list[bytes] = [bytes([b]) for b in range(256)]
+        merges: list[tuple[int, int]] = []
+
+        target_merges = vocab_size - 256
+        _byte_bpe_merges_incremental(words, freqs, token_bytes, merges, target_merges, min_pair_count)
+
+        pad_idx = 0
+        while len(token_bytes) < vocab_size:
+            a = 65 + (pad_idx // 26) % 26
+            b = 97 + pad_idx % 26
+            pair = (a, b)
+            if pair not in {p for p in merges}:
+                merges.append(pair)
+                token_bytes.append(token_bytes[a] + token_bytes[b])
+            else:
+                alt = (48 + (pad_idx % 10), 97 + ((pad_idx // 10) % 26))
+                merges.append(alt)
+                token_bytes.append(token_bytes[alt[0]] + token_bytes[alt[1]])
+            pad_idx += 1
+
+        return cls(vocab_size=vocab_size, merges=merges, token_bytes=token_bytes)
+
+    @classmethod
+    def train_reference(cls, texts: list[str], vocab_size: int = 1024, min_pair_count: int = 4) -> ByteBPETokenizer:
+        """Original full-recount trainer, kept as the equivalence oracle for ``train``."""
         if vocab_size < 256:
             raise ValueError("ByteBPE vocab_size must be >= 256.")
         piece_counts: Counter[bytes] = Counter()

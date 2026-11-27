@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import heapq
 import math
 import random
 import re
@@ -59,6 +60,271 @@ class HSTMergedRule:
     pmi_bits: float
     count: int
     byte_len: int
+
+
+def _merge_pair(seq: list[int], u: int, v: int, new_id: int) -> list[int]:
+    """Left-to-right non-overlapping replacement of (u, v) by new_id (same rule as the reference trainer)."""
+    out: list[int] = []
+    i = 0
+    n = len(seq)
+    while i < n:
+        if i + 1 < n and seq[i] == u and seq[i + 1] == v:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(seq[i])
+            i += 1
+    return out
+
+
+def _hst_stage_a_incremental(
+    words: list[list[int]],
+    freqs: list[int],
+    id_to_bytes: list[bytes],
+    rules: list[HSTMergedRule],
+    stage_a_budget: int,
+    min_pair_count: int,
+    max_span_bytes: int,
+) -> None:
+    """Stage A with incremental pair/unigram counts.
+
+    Equivalent to recounting every merge: counts are sums of per-word contributions, so only words
+    containing the merged pair change. The winner is the unique max of (count, -u, -v), read from a
+    lazily invalidated heap. Mutates ``words``, ``id_to_bytes`` and ``rules`` in place.
+    """
+    blen = [len(b) for b in id_to_bytes]
+
+    def pairs_of(seq: list[int]) -> dict[tuple[int, int], int]:
+        out: dict[tuple[int, int], int] = {}
+        for i in range(len(seq) - 1):
+            a = seq[i]
+            b = seq[i + 1]
+            if blen[a] + blen[b] <= max_span_bytes:
+                key = (a, b)
+                out[key] = out.get(key, 0) + 1
+        return out
+
+    pair_counts: dict[tuple[int, int], int] = {}
+    where: dict[tuple[int, int], set[int]] = {}
+    uni: Counter[int] = Counter()
+    total_tokens = 0
+    for idx, (seq, freq) in enumerate(zip(words, freqs, strict=True)):
+        total_tokens += len(seq) * freq
+        for tok in seq:
+            uni[tok] += freq
+        for key, k in pairs_of(seq).items():
+            pair_counts[key] = pair_counts.get(key, 0) + k * freq
+            where.setdefault(key, set()).add(idx)
+    heap = [(-c, a, b) for (a, b), c in pair_counts.items()]
+    heapq.heapify(heap)
+
+    for _ in range(stage_a_budget):
+        if not pair_counts:
+            break
+        while True:
+            negc, a, b = heap[0]
+            if pair_counts.get((a, b)) == -negc:
+                break
+            heapq.heappop(heap)
+        best_cnt = -negc
+        if best_cnt < min_pair_count:
+            break
+        u, v = a, b
+        pmi = math.log2(max(1e-12, (best_cnt * max(1, total_tokens)) / max(1, uni[u] * uni[v])))
+        new_id = len(id_to_bytes)
+        merged_raw = id_to_bytes[u] + id_to_bytes[v]
+        id_to_bytes.append(merged_raw)
+        blen.append(len(merged_raw))
+        rules.append(
+            HSTMergedRule(
+                token_id=new_id,
+                left_id=u,
+                right_id=v,
+                stage="A_lexical",
+                pmi_bits=round(pmi, 6),
+                count=int(best_cnt),
+                byte_len=len(merged_raw),
+            )
+        )
+        for idx in list(where.get((u, v), ())):
+            seq = words[idx]
+            out = _merge_pair(seq, u, v, new_id)
+            freq = freqs[idx]
+            k = len(seq) - len(out)
+            total_tokens -= k * freq
+            uni[u] -= k * freq
+            uni[v] -= k * freq
+            uni[new_id] += k * freq
+            old_p = pairs_of(seq)
+            new_p = pairs_of(out)
+            for key in old_p.keys() | new_p.keys():
+                d = (new_p.get(key, 0) - old_p.get(key, 0)) * freq
+                if d:
+                    c = pair_counts.get(key, 0) + d
+                    if c:
+                        pair_counts[key] = c
+                        heapq.heappush(heap, (-c, key[0], key[1]))
+                    else:
+                        del pair_counts[key]
+                if key not in new_p:
+                    where[key].discard(idx)
+                elif key not in old_p:
+                    where.setdefault(key, set()).add(idx)
+            words[idx] = out
+        if (u, v) in pair_counts:
+            raise AssertionError("incremental Stage A left a merged pair with nonzero count")
+        where.pop((u, v), None)
+        if len(heap) > 4 * len(pair_counts) + 4096:
+            heap = [(-c, a, b) for (a, b), c in pair_counts.items()]
+            heapq.heapify(heap)
+
+
+def _hst_stage_b_incremental(
+    doc_streams: list[list[int]],
+    id_to_bytes: list[bytes],
+    rules: list[HSTMergedRule],
+    vocab_size: int,
+    min_pair_count: int,
+    min_superspan_pmi: float,
+    max_span_bytes: int,
+) -> None:
+    """Stage B with incremental counts and an exact pruned argmax.
+
+    The reference picks the unique max of (gain, count, -u, -v) over eligible pairs, where
+    gain = count * (1 + 0.35 * pmi). Because uni[u] >= count and uni[v] >= count, pmi <= log2(T / count),
+    so gain <= count * (1 + 0.35 * log2(T / count)), which increases with count. Pairs are visited in
+    descending count and the scan stops once that (padded) bound is strictly below the best gain, so
+    no skipped pair could have won. PMI and gain use the reference expressions verbatim.
+    """
+    blen: list[int] = []
+    isdig: list[bool] = []
+    has_nl: list[bool] = []
+
+    def extend_props() -> None:
+        for raw in id_to_bytes[len(blen) :]:
+            blen.append(len(raw))
+            isdig.append(raw.isdigit())
+            has_nl.append(b"\n" in raw or b"\r" in raw)
+
+    extend_props()
+
+    def pairs_of(seq: list[int]) -> dict[tuple[int, int], int]:
+        out: dict[tuple[int, int], int] = {}
+        for i in range(len(seq) - 1):
+            a = seq[i]
+            b = seq[i + 1]
+            if blen[a] + blen[b] > max_span_bytes:
+                continue
+            if isdig[a] and isdig[b]:
+                continue
+            if has_nl[a] or has_nl[b]:
+                continue
+            key = (a, b)
+            out[key] = out.get(key, 0) + 1
+        return out
+
+    pair_counts: dict[tuple[int, int], int] = {}
+    where: dict[tuple[int, int], set[int]] = {}
+    uni: Counter[int] = Counter()
+    total_b = 0
+    for idx, stream in enumerate(doc_streams):
+        total_b += len(stream)
+        for tok in stream:
+            uni[tok] += 1
+        for key, k in pairs_of(stream).items():
+            pair_counts[key] = pair_counts.get(key, 0) + k
+            where.setdefault(key, set()).add(idx)
+    heap = [(-c, a, b) for (a, b), c in pair_counts.items()]
+    heapq.heapify(heap)
+
+    while len(id_to_bytes) < vocab_size:
+        if not pair_counts:
+            break
+        t_eff = max(1, total_b)
+        best_candidate: tuple[float, int, tuple[int, int], float] | None = None
+        popped: list[tuple[int, int, int]] = []
+        seen: set[tuple[int, int]] = set()
+        while heap:
+            negc, a, b = heap[0]
+            cnt = -negc
+            if pair_counts.get((a, b)) != cnt:
+                heapq.heappop(heap)
+                continue
+            if cnt < min_pair_count:
+                break
+            if best_candidate is not None:
+                bound = float(cnt) * (1.0 + 0.35 * math.log2(t_eff / cnt))
+                if bound * (1.0 + 1e-9) + 1e-9 < best_candidate[0]:
+                    break
+            entry = heapq.heappop(heap)
+            if (a, b) in seen:
+                continue
+            seen.add((a, b))
+            popped.append(entry)
+            pmi = math.log2(max(1e-12, (cnt * max(1, total_b)) / max(1, uni[a] * uni[b])))
+            if pmi < min_superspan_pmi:
+                continue
+            gain_score = float(cnt) * (1.0 + 0.35 * pmi)
+            cand = (gain_score, cnt, (a, b), pmi)
+            if best_candidate is None or (cand[0], cand[1], -cand[2][0], -cand[2][1]) > (
+                best_candidate[0],
+                best_candidate[1],
+                -best_candidate[2][0],
+                -best_candidate[2][1],
+            ):
+                best_candidate = cand
+        for entry in popped:
+            heapq.heappush(heap, entry)
+
+        if best_candidate is None:
+            break
+
+        _, best_cnt, (u, v), best_pmi = best_candidate
+        new_id = len(id_to_bytes)
+        merged_raw = id_to_bytes[u] + id_to_bytes[v]
+        id_to_bytes.append(merged_raw)
+        extend_props()
+        rules.append(
+            HSTMergedRule(
+                token_id=new_id,
+                left_id=u,
+                right_id=v,
+                stage="B_superspan",
+                pmi_bits=round(best_pmi, 6),
+                count=int(best_cnt),
+                byte_len=len(merged_raw),
+            )
+        )
+        for idx in list(where.get((u, v), ())):
+            stream = doc_streams[idx]
+            out = _merge_pair(stream, u, v, new_id)
+            k = len(stream) - len(out)
+            total_b -= k
+            uni[u] -= k
+            uni[v] -= k
+            uni[new_id] += k
+            old_p = pairs_of(stream)
+            new_p = pairs_of(out)
+            for key in old_p.keys() | new_p.keys():
+                d = new_p.get(key, 0) - old_p.get(key, 0)
+                if d:
+                    c = pair_counts.get(key, 0) + d
+                    if c:
+                        pair_counts[key] = c
+                        heapq.heappush(heap, (-c, key[0], key[1]))
+                    else:
+                        del pair_counts[key]
+                if key not in new_p:
+                    where[key].discard(idx)
+                elif key not in old_p:
+                    where.setdefault(key, set()).add(idx)
+            doc_streams[idx] = out
+        if (u, v) in pair_counts:
+            raise AssertionError("incremental Stage B left a merged pair with nonzero count")
+        where.pop((u, v), None)
+        if len(heap) > 4 * len(pair_counts) + 4096:
+            heap = [(-c, a, b) for (a, b), c in pair_counts.items()]
+            heapq.heapify(heap)
 
 
 class HSTTokenizer:
@@ -152,7 +418,80 @@ class HSTTokenizer:
         min_superspan_pmi: float = 1.15,
         max_span_bytes: int = 16,
     ) -> HSTTokenizer:
-        """Induce an HST-v1 vocabulary via Stage A lexical BPE + Stage B PMI-gated super-spans."""
+        """Induce an HST-v1 vocabulary via Stage A lexical BPE + Stage B PMI-gated super-spans.
+
+        Uses incremental pair counts; output is byte-identical to ``train_reference``.
+        """
+        if vocab_size < FIRST_MERGE_ID + 4:
+            raise ValueError(f"HST-v1 vocab_size must be >= {FIRST_MERGE_ID + 4}, got {vocab_size}")
+        if not (0.25 <= stage_a_fraction <= 0.98):
+            raise ValueError("stage_a_fraction must be in [0.25, 0.98].")
+
+        ctrl_map = cls.universal_control_map()
+        id_to_bytes: list[bytes] = [bytes([b]) for b in range(256)]
+        for name in RESERVED_CONTROL_TOKENS:
+            id_to_bytes.append(name.encode("utf-8"))
+        assert len(id_to_bytes) == FIRST_MERGE_ID
+
+        total_merges_budget = vocab_size - FIRST_MERGE_ID
+        stage_a_budget = max(1, int(round(total_merges_budget * stage_a_fraction)))
+
+        # Strip any control tags before learning byte-span statistics
+        ctrl_re = re.compile("|".join(re.escape(k) for k in RESERVED_CONTROL_TOKENS))
+        raw_docs = [ctrl_re.sub("", t).encode("utf-8") for t in texts if t]
+        raw_docs = [d for d in raw_docs if d]
+
+        piece_counts: Counter[bytes] = Counter()
+        for doc in raw_docs:
+            for m in _STAGE_A_PRE_RE.finditer(doc):
+                piece = m.group(0)
+                if piece:
+                    piece_counts[piece] += 1
+
+        words: list[list[int]] = [list(p) for p in piece_counts]
+        freqs: list[int] = [piece_counts[p] for p in piece_counts]
+        rules: list[HSTMergedRule] = []
+
+        # Stage A: Intra-lexeme byte BPE (digits remain isolated because _STAGE_A_PRE_RE emits 1-byte digits)
+        _hst_stage_a_incremental(words, freqs, id_to_bytes, rules, stage_a_budget, min_pair_count, max_span_bytes)
+
+        piece_to_ids = {raw_p: seq for raw_p, seq in zip(piece_counts, words, strict=True)}
+        doc_streams: list[list[int]] = []
+        for doc in raw_docs:
+            stream: list[int] = []
+            for m in _STAGE_A_PRE_RE.finditer(doc):
+                stream.extend(piece_to_ids[m.group(0)])
+            if stream:
+                doc_streams.append(stream)
+
+        # Stage B: PMI-gated cross-boundary super-spans
+        _hst_stage_b_incremental(
+            doc_streams, id_to_bytes, rules, vocab_size, min_pair_count, min_superspan_pmi, max_span_bytes
+        )
+
+        return cls(
+            vocab_size=len(id_to_bytes),
+            id_to_bytes=id_to_bytes,
+            rules=rules,
+            control_map=ctrl_map,
+            max_span_bytes=max_span_bytes,
+        )
+
+    @classmethod
+    def train_reference(
+        cls,
+        texts: list[str],
+        vocab_size: int = 1024,
+        stage_a_fraction: float = 0.68,
+        min_pair_count: int = 2,
+        min_superspan_pmi: float = 1.15,
+        max_span_bytes: int = 16,
+    ) -> HSTTokenizer:
+        """Original full-recount trainer, kept as the equivalence oracle for ``train``.
+
+        It recounts every pair on every merge (O(merges x corpus)), which takes hours on an
+        8 MiB corpus. ``train`` must return byte-identical rules and vocabulary.
+        """
         if vocab_size < FIRST_MERGE_ID + 4:
             raise ValueError(f"HST-v1 vocab_size must be >= {FIRST_MERGE_ID + 4}, got {vocab_size}")
         if not (0.25 <= stage_a_fraction <= 0.98):
