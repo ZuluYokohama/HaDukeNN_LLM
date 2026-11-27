@@ -841,7 +841,7 @@ class HSTTokenizer:
             tag = "ctrl_tok" if tid in self.control_ids else "byte_tok"
             leaf_hashes.append(hashlib.sha256(f"{tag}:{tid}:".encode() + raw).hexdigest())
         for rule in self.rules:
-            rbytes = f"rule:{rule.token_id}:{rule.left_id}:{rule.right_id}:{rule.stage}".encode()
+            rbytes = f"rule:{rule.token_id}:{rule.left_id}:{rule.right_id}:{rule.stage}:{rule.count}".encode()
             leaf_hashes.append(hashlib.sha256(rbytes).hexdigest())
 
         level = leaf_hashes

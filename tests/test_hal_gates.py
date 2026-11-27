@@ -286,6 +286,23 @@ def test_hal4_fails_when_outputs_diverge_from_the_float64_reference(tmp_path):
     assert criterion(rows["HAL4"], "hal.parity.cce_tiny")["passed"] is False
 
 
+def test_hal4_fails_when_the_reference_is_non_finite(tmp_path):
+    def mutate(parts):
+        parts["parity"]["cases"][0] = {
+            "name": "cce_tiny",
+            "op": "cce_mup_fwd",
+            "inputs": {"H": [[10, 10]], "E": [[1, 1], [0, 0]], "y": [0], "mup_base_d": 1e308},
+            "kernel_outputs": {"loss": [123456]},
+        }
+
+    rows = latest(build_hal(tmp_path, "hal4-nan", mutate))
+    assert rows["HAL3"]["status"] == "pass"
+    assert rows["HAL4"]["status"] == "fail"
+    detail = criterion(rows["HAL4"], "hal.parity.cce_tiny")
+    assert detail["passed"] is False
+    assert "non-finite" in detail["detail"]
+
+
 def test_hal5_fails_when_the_claim_baseline_is_not_met(tmp_path):
     def mutate(parts):
         # Honest numbers: C11 is slower than packed NumPy. Claiming that baseline must fail.

@@ -1,0 +1,1 @@
+{"alpha":0.05,"description":"Synthetic study of bits per raw byte under a frozen claim.","direction":"less","format":"sheaf-verify.claim.v1","hypothesis_id":"fixture-bpb","primary_contrast":"superword_bpe","primary_metric":"bpb"}

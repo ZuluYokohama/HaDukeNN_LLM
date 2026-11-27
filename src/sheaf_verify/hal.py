@@ -401,7 +401,22 @@ def _parity_case(case, index: int, max_abs: float) -> list:
             raise SheafError("kernel loss length does not match the reference")
     except (SheafError, TypeError, ValueError, OverflowError) as error:
         return [bad(f"hal.parity.{label}", str(error))]
-    peak = max(abs(left - right) for left, right in zip(reported, reference, strict=True))
+    hidden = inputs.get("H")
+    width = len(hidden[0]) if isinstance(hidden, list) and hidden and isinstance(hidden[0], list) and hidden[0] else 0
+    try:
+        scale = float(inputs.get("mup_base_d")) / float(width)
+    except (TypeError, ValueError, ZeroDivisionError, OverflowError):
+        scale = float("nan")
+    errors = [abs(left - right) for left, right in zip(reported, reference, strict=True)]
+    finite = (
+        math.isfinite(scale)
+        and all(math.isfinite(item) for item in reference)
+        and all(math.isfinite(item) for item in reported)
+        and all(math.isfinite(item) for item in errors)
+    )
+    if not finite:
+        return [bad(f"hal.parity.{label}", "non-finite scale, reference loss, kernel loss, or parity error")]
+    peak = max(errors)
     if peak > max_abs:
         return [bad(f"hal.parity.{label}", f"max abs error {peak} exceeds {max_abs} vs float64 reference")]
     return [ok(f"hal.parity.{label}", f"max abs error {peak} vs float64 reference (cap {max_abs})")]

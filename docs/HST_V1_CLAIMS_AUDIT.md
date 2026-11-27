@@ -8,7 +8,7 @@ No claim in this table is a forecast for a large public-corpus pretrain. A separ
 
 | Claim | Evidence |
 | --- | --- |
-| Digit atomicity, lossless UTF-8/binary roundtrip, causal prefix invariance, Merkle manifest `ad400f750a973371ded6bcd68e064ad271557a3d4995d7f3c1f91bcf0eafa079`, tamper rejection, fixed control IDs 256–263 | Unit tests in `tests/test_hst_foundation_v120.py` and `verify_hst_manifest_integrity` on `iterations/t49-hst-foundation-stage/HST_V1_REFERENCE_MANIFEST.json` |
+| Digit atomicity, lossless UTF-8/binary roundtrip, causal prefix invariance, Merkle manifest `10d7198bfcda0cada0d332a979a00004cea7b632c016af61557a239077b45ba8` (rule leaves commit `count`), tamper rejection, fixed control IDs 256–263 | Unit tests in `tests/test_hst_foundation_v120.py` and `verify_hst_manifest_integrity` on `iterations/t49-hst-foundation-stage/HST_V1_REFERENCE_MANIFEST.json` |
 | 19.85% token-sequence reduction at vocabulary size `V = 416` versus Byte-BPE on the T-49 toy corpus | Sealed and live T-49 JSON; re-measured with `sheaf-verify campaign --mode t49-hst-foundation --live` |
 
 ## Reproduced, but only as a 48 KB toy campaign

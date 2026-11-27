@@ -39,7 +39,7 @@ from sheaf_verify.seal import load_key
 from sheaf_verify.store import Store
 from sheaf_verify.verify import verify_store
 
-CANONICAL_ANCHOR = "e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567"
+CANONICAL_ANCHOR = "307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4"
 
 
 @dataclass
@@ -147,13 +147,194 @@ class _CapSys:
         return types.SimpleNamespace(out=out_val, err=err_val)
 
 
+class _Skipped(BaseException):
+    """Raised by the stdlib pytest shim. Not a test failure."""
+
+
+class _Mark:
+    def __init__(self, name: str, args: tuple, kwargs: dict):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+
+
+class _MarkDecorator:
+    def __init__(self, name: str, args: tuple, kwargs: dict):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, func):
+        mark = _Mark(self.name, self.args, dict(self.kwargs))
+        existing = getattr(func, "pytestmark", None)
+        if existing is None:
+            func.pytestmark = [mark]
+        elif isinstance(existing, list):
+            existing.append(mark)
+        else:
+            func.pytestmark = [existing, mark]
+        return func
+
+
+class _MarkGenerator:
+    def __getattr__(self, name: str):
+        def make(*args, **kwargs):
+            return _MarkDecorator(name, args, kwargs)
+
+        return make
+
+
+def _fixture_decorator(*args, **kwargs):
+    autouse = bool(kwargs.get("autouse", False))
+
+    def decorate(func):
+        func._sheaf_autouse = autouse
+        return func
+
+    if len(args) == 1 and callable(args[0]) and not kwargs:
+        return decorate(args[0])
+    return decorate
+
+
+def _skip(reason: str = "") -> None:
+    raise _Skipped(reason)
+
+
+def _importorskip(name: str, reason: str = ""):
+    if importlib.util.find_spec(name) is None:
+        raise _Skipped(reason or f"could not import {name}")
+    return importlib.import_module(name)
+
+
 def _install_pytest_shim() -> None:
-    if "pytest" in sys.modules:
+    """Leave a real pytest in place. The shim exists only when pytest is absent.
+
+    Importing pytest here is forbidden: sheaf_verify stays on the standard library.
+    ``find_spec`` does not import the package. Test modules import it themselves.
+    """
+    existing = sys.modules.get("pytest")
+    has_mark = existing is not None and getattr(existing, "mark", None) is not None
+    has_fixture = existing is not None and getattr(existing, "fixture", None) is not None
+    if has_mark and has_fixture:
+        return
+    if importlib.util.find_spec("pytest") is not None:
+        if existing is not None and getattr(existing, "mark", None) is None:
+            sys.modules.pop("pytest", None)
         return
     mod = types.ModuleType("pytest")
     mod.raises = lambda expected, match=None: _RaisesContext(expected, match=match)  # type: ignore[attr-defined]
     mod.approx = lambda val, rel=None, abs=None: _Approx(val, rel=rel, abs_tol=abs)  # type: ignore[attr-defined]
+    mod.mark = _MarkGenerator()  # type: ignore[attr-defined]
+    mod.fixture = _fixture_decorator  # type: ignore[attr-defined]
+    mod.skip = _skip  # type: ignore[attr-defined]
+    mod.importorskip = _importorskip  # type: ignore[attr-defined]
     sys.modules["pytest"] = mod
+
+
+def _mark_list(fn) -> list:
+    marks = getattr(fn, "pytestmark", None)
+    if marks is None:
+        return []
+    if isinstance(marks, (list, tuple)):
+        return list(marks)
+    return [marks]
+
+
+def _parametrize_groups(fn) -> list[list[dict]]:
+    groups: list[list[dict]] = []
+    for mark in _mark_list(fn):
+        if getattr(mark, "name", None) != "parametrize":
+            continue
+        args = getattr(mark, "args", ())
+        if len(args) < 2:
+            continue
+        names_raw, values = args[0], args[1]
+        if isinstance(names_raw, str):
+            names = [part.strip() for part in names_raw.split(",") if part.strip()]
+        else:
+            names = [str(part) for part in names_raw]
+        rows: list[dict] = []
+        for value in values:
+            if type(value).__name__ == "ParameterSet":
+                value = value.values
+            if len(names) == 1:
+                rows.append({names[0]: value})
+            else:
+                rows.append(dict(zip(names, value, strict=True)))
+        groups.append(rows)
+    return groups
+
+
+def _parametrize_cases(fn) -> list[dict]:
+    """Cartesian product of parametrize marks. The mark closest to the function varies fastest."""
+    groups = _parametrize_groups(fn)
+    if not groups:
+        return [{}]
+    combos = [{}]
+    for group in reversed(groups):
+        combos = [{**base, **item} for base in combos for item in group]
+    return combos
+
+
+def _is_autouse_fixture(fn) -> bool:
+    for attr in ("_pytestfixturefunction", "_fixture_function_marker"):
+        marker = getattr(fn, attr, None)
+        if marker is not None and getattr(marker, "autouse", False):
+            return True
+    return bool(getattr(fn, "_sheaf_autouse", False))
+
+
+def _autouse_fixtures(module) -> list:
+    found = []
+    for obj in vars(module).values():
+        if callable(obj) and getattr(obj, "__module__", None) == module.__name__ and _is_autouse_fixture(obj):
+            found.append(obj)
+    return found
+
+
+def _call_fixture(fn):
+    """Call the fixture body. Pytest wrappers refuse a direct call."""
+    target = getattr(fn, "_fixture_function", None)
+    if target is None:
+        target = getattr(fn, "__wrapped__", fn)
+    return target()
+
+
+def _enter_autouse(fixtures: list) -> list:
+    started: list = []
+    try:
+        for fn in fixtures:
+            result = _call_fixture(fn)
+            if inspect.isgenerator(result):
+                next(result)
+                started.append(result)
+            else:
+                started.append(None)
+    except BaseException:
+        _leave_autouse(started)
+        raise
+    return started
+
+
+def _is_skipped(exc: BaseException) -> bool:
+    if isinstance(exc, _Skipped):
+        return True
+    # pytest.skip() raises Skipped. In current pytest that class reports
+    # __module__ == "builtins" and subclasses _pytest.outcomes.OutcomeException.
+    # Do not import pytest in this package.
+    if type(exc).__name__ != "Skipped":
+        return False
+    return any("pytest" in base.__module__ for base in type(exc).__mro__)
+
+
+def _leave_autouse(started: list) -> None:
+    for gen in reversed(started):
+        if gen is None:
+            continue
+        try:
+            next(gen)
+        except StopIteration:
+            pass
 
 
 def _executable_lines(py_file: Path) -> set[int]:
@@ -297,41 +478,55 @@ def _run_pytest_suite_stdlib(repo_root: Path) -> tuple[int, int, list[str], floa
             sys.modules[mod_name] = module
             spec.loader.exec_module(module)
 
+            fixtures = _autouse_fixtures(module)
             for attr_name in dir(module):
                 if not attr_name.startswith("test_"):
                     continue
                 fn = getattr(module, attr_name)
                 if not callable(fn) or not inspect.isfunction(fn):
                     continue
-                nodeid = f"tests/{test_path.name}::{attr_name}"
-                gate_trace.enable(clear=True)
-                gate_trace.set_test(nodeid)
-                mp = _MonkeyPatch()
-                cap = _CapSys()
-                quiet_out = io.StringIO()
-                quiet_err = io.StringIO()
-                with tempfile.TemporaryDirectory(prefix="sheaf_t_") as tmp_dir:
-                    sig = inspect.signature(fn)
-                    kwargs: dict[str, object] = {}
-                    for pname in sig.parameters:
-                        if pname == "tmp_path":
-                            kwargs[pname] = Path(tmp_dir)
-                        elif pname == "monkeypatch":
-                            kwargs[pname] = mp
-                        elif pname == "capsys":
-                            kwargs[pname] = cap
-                    try:
-                        out_sink = cap._out if "capsys" in kwargs else quiet_out
-                        err_sink = cap._err if "capsys" in kwargs else quiet_err
-                        with contextlib.redirect_stdout(out_sink), contextlib.redirect_stderr(err_sink):
-                            fn(**kwargs)
-                        passed += 1
-                    except BaseException as exc:  # noqa: BLE001
-                        failed += 1
-                        failures.append(f"{nodeid}: {type(exc).__name__}: {exc}")
-                    finally:
-                        mp.restore()
-                        accumulated_events.extend(gate_trace.events())
+                cases = _parametrize_cases(fn)
+                parametrized = bool(_parametrize_groups(fn))
+                for index, extra in enumerate(cases):
+                    nodeid = f"tests/{test_path.name}::{attr_name}"
+                    if parametrized:
+                        nodeid = f"{nodeid}[{index}]"
+                    gate_trace.enable(clear=True)
+                    gate_trace.set_test(nodeid)
+                    mp = _MonkeyPatch()
+                    cap = _CapSys()
+                    quiet_out = io.StringIO()
+                    quiet_err = io.StringIO()
+                    gens: list = []
+                    with tempfile.TemporaryDirectory(prefix="sheaf_t_") as tmp_dir:
+                        sig = inspect.signature(fn)
+                        kwargs: dict[str, object] = {}
+                        for pname in sig.parameters:
+                            if pname == "tmp_path":
+                                kwargs[pname] = Path(tmp_dir)
+                            elif pname == "monkeypatch":
+                                kwargs[pname] = mp
+                            elif pname == "capsys":
+                                kwargs[pname] = cap
+                            elif pname in extra:
+                                kwargs[pname] = extra[pname]
+                        try:
+                            gens = _enter_autouse(fixtures)
+                            out_sink = cap._out if "capsys" in kwargs else quiet_out
+                            err_sink = cap._err if "capsys" in kwargs else quiet_err
+                            with contextlib.redirect_stdout(out_sink), contextlib.redirect_stderr(err_sink):
+                                fn(**kwargs)
+                            passed += 1
+                        except BaseException as exc:  # noqa: BLE001
+                            if _is_skipped(exc):
+                                pass
+                            else:
+                                failed += 1
+                                failures.append(f"{nodeid}: {type(exc).__name__}: {exc}")
+                        finally:
+                            _leave_autouse(gens)
+                            mp.restore()
+                            accumulated_events.extend(gate_trace.events())
     finally:
         sys.settrace(prev_trace)
 
