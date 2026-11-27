@@ -82,6 +82,18 @@ def test_int8_sdot_vnni_qgemm_matches_exact_int32_reference():
     assert np.max(np.abs(out_c - out_ref)) < 1e-4
 
 
+def test_int8_qgemm_extreme_values_do_not_saturate_int16():
+    """vpmaddubsw saturates after the unsigned-bias transform; 127*127 vectors must stay exact."""
+    xq = np.full((4, 64), 127, dtype=np.int8)
+    wq = np.full((5, 64), 127, dtype=np.int8)
+    xs = np.ones(4, dtype=np.float32)
+    ws = np.ones(5, dtype=np.float32)
+    out_c = hal_qgemm_int8(xq, xs, wq, ws)
+    out_ref = (xq.astype(np.int32) @ wq.astype(np.int32).T).astype(np.float32)
+    assert np.max(np.abs(out_c - out_ref)) < 1e-4
+    assert int(out_c[0, 0]) == 127 * 127 * 64
+
+
 def test_mup_cce_and_sheaf_gate_and_causal_spans():
     rng = np.random.default_rng(91)
     H = rng.standard_normal((33, 192)).astype(np.float32)

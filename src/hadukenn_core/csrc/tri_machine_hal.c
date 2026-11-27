@@ -179,6 +179,17 @@ static inline float hsum256_ps(__m256 v) {
 }
 #endif
 
+#if defined(__AVX2__)
+static inline int32_t hsum256_epi32(__m256i v) {
+    __m128i lo = _mm256_castsi256_si128(v);
+    __m128i hi = _mm256_extracti128_si256(v, 1);
+    lo = _mm_add_epi32(lo, hi);
+    lo = _mm_add_epi32(lo, _mm_shuffle_epi32(lo, 0x4E));
+    lo = _mm_add_epi32(lo, _mm_shuffle_epi32(lo, 0xB1));
+    return _mm_cvtsi128_si32(lo);
+}
+#endif
+
 static inline float dot_f32_fast(const float *a, const float *b, int d) {
     int i = 0;
 #if defined(__AVX512F__)
@@ -293,31 +304,38 @@ static inline int32_t dot_i8_fast(const int8_t *a, const int8_t *b, int d) {
     int32_t prod_sum = _mm512_reduce_add_epi32(acc_prod);
     int32_t b_sum    = _mm512_reduce_add_epi32(acc_bsum);
     total += prod_sum - (128 * b_sum);
-#elif defined(__AVX2__)
-    /* WBeast i9-9900K & LapBeast 275HX path: vpmaddubsw + vpmaddwd (32 INT8 MACs/inst) */
+#elif defined(__AVXVNNI__)
+    /* 256-bit AVX-VNNI vpdpbusd accumulates in epi32 (no int16 saturation).
+     * Shift signed a[-128..127] -> unsigned [0..255] via ^0x80, then subtract 128 * sum(b). */
     const __m256i bias_xor = _mm256_set1_epi8((char)0x80);
     const __m256i ones_u8  = _mm256_set1_epi8(1);
-    const __m256i ones_i16 = _mm256_set1_epi16(1);
     __m256i acc_prod = _mm256_setzero_si256();
     __m256i acc_bsum = _mm256_setzero_si256();
     for (; i + 32 <= d; i += 32) {
         __m256i va_s8 = _mm256_loadu_si256((const __m256i *)(a + i));
         __m256i vb_s8 = _mm256_loadu_si256((const __m256i *)(b + i));
         __m256i va_u8 = _mm256_xor_si256(va_s8, bias_xor);
-        __m256i p16   = _mm256_maddubs_epi16(va_u8, vb_s8);
-        __m256i b16   = _mm256_maddubs_epi16(ones_u8, vb_s8);
-        acc_prod = _mm256_add_epi32(acc_prod, _mm256_madd_epi16(p16, ones_i16));
-        acc_bsum = _mm256_add_epi32(acc_bsum, _mm256_madd_epi16(b16, ones_i16));
+        acc_prod = _mm256_dpbusd_avx_epi32(acc_prod, va_u8, vb_s8);
+        acc_bsum = _mm256_dpbusd_avx_epi32(acc_bsum, ones_u8, vb_s8);
     }
-    int32_t buf_p[8], buf_b[8];
-    _mm256_storeu_si256((__m256i *)buf_p, acc_prod);
-    _mm256_storeu_si256((__m256i *)buf_b, acc_bsum);
-    int32_t prod_sum = 0, b_sum = 0;
-    for (int k = 0; k < 8; ++k) {
-        prod_sum += buf_p[k];
-        b_sum    += buf_b[k];
+    total += hsum256_epi32(acc_prod) - (128 * hsum256_epi32(acc_bsum));
+#elif defined(__AVX2__)
+    /* Portable AVX2 path: sign-extend INT8 to INT16 and madd into INT32.
+     * The previous vpmaddubsw path saturated int16 after the unsigned-bias
+     * transform (255*127 + 255*127 overflows INT16_MAX), silently corrupting
+     * qgemm and the Zenbook INT8 NPU loop on AVX2 / AVX-VNNI hosts. */
+    __m256i acc = _mm256_setzero_si256();
+    for (; i + 32 <= d; i += 32) {
+        __m256i va = _mm256_loadu_si256((const __m256i *)(a + i));
+        __m256i vb = _mm256_loadu_si256((const __m256i *)(b + i));
+        __m256i a_lo = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(va));
+        __m256i b_lo = _mm256_cvtepi8_epi16(_mm256_castsi256_si128(vb));
+        __m256i a_hi = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(va, 1));
+        __m256i b_hi = _mm256_cvtepi8_epi16(_mm256_extracti128_si256(vb, 1));
+        acc = _mm256_add_epi32(acc, _mm256_madd_epi16(a_lo, b_lo));
+        acc = _mm256_add_epi32(acc, _mm256_madd_epi16(a_hi, b_hi));
     }
-    total += prod_sum - (128 * b_sum);
+    total += hsum256_epi32(acc);
 #elif defined(__aarch64__) && defined(__ARM_FEATURE_DOTPROD)
     /* Zenbook Snapdragon X Oryon path: native signed SDOT (vdotq_s32, 16 INT8 MACs/inst) */
     int32x4_t acc0 = vdupq_n_s32(0);
