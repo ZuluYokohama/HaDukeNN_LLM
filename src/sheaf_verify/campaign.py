@@ -798,9 +798,9 @@ def verify_t43_all_realms(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     return all_ok, criteria, advisories
 
 
-def verify_t44_glassbox(doc: dict) -> tuple[bool, list[CriterionResult], list[str]]:
+def verify_t44_glassbox(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     """Verify a T-44 Zero-Black-Box ('Glass-Box') AI benchmark record."""
-    criteria: list[CriterionResult] = []
+    criteria: list[Criterion] = []
     advisories: list[str] = []
 
     schema_ok = (

@@ -556,3 +556,7 @@ def _emit_report(args, report) -> None:
         sys.stdout.write(canonical_bytes(payload).decode("utf-8") + "\n")
     else:
         sys.stdout.write(render(report))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

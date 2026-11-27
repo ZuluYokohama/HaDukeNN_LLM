@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from hadukenn_core.benchmark_suite import load_clean_technical_corpus, run_full_empirical_suite
+from hadukenn_core.benchmark_suite import load_clean_technical_corpus
 from hadukenn_core.fast_ops import get_fast_head_lib, run_cluster_is_avx512, run_tiled_cce_avx512
 from hadukenn_core.heads import (
     CountShrunkSpanComposer,

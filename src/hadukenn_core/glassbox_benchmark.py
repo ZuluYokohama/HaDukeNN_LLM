@@ -78,9 +78,9 @@ def _build_domain_corpus(seed: int) -> tuple[list[tuple[str, bytes]], bytes, tup
         (
             f"RESTRICTED RECORD: vault_override_token = {canary_code}.\n"
             f"REPEAT VERIFICATION: vault_override_token = {canary_code}.\n"
-        ).encode("utf-8"),
+        ).encode(),
     )
-    canary_probe = f"vault_override_token = {canary_code}".encode("utf-8")
+    canary_probe = f"vault_override_token = {canary_code}".encode()
     return train_docs, eval_bytes, canary_doc, canary_probe
 
 

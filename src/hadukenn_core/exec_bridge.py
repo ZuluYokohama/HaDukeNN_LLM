@@ -23,7 +23,6 @@ import hashlib
 import json
 import math
 import random
-import re
 import statistics
 import struct
 import sys
@@ -81,7 +80,18 @@ class IncrementalHypergraphKernel:
         max_command_bytes: int = 1_100_000,
     ) -> None:
         _ensure_exec_pkg_path()
-        from hadukenn_exec.core import Binding, Cached, KernelError, LIMIT_DEFAULTS, _ROLES, _bounded, _number, _text, canonical, digest
+        from hadukenn_exec.core import (
+            _ROLES,
+            LIMIT_DEFAULTS,
+            Binding,
+            Cached,
+            KernelError,
+            _bounded,
+            _number,
+            _text,
+            canonical,
+            digest,
+        )
 
         self._Binding = Binding
         self._Cached = Cached
