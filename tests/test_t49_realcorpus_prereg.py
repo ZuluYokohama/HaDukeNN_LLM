@@ -149,3 +149,12 @@ def test_model_init_is_not_degenerate():
     logits, loss = model(x, x)
     assert float(logits.abs().max()) > 0.0
     assert abs(float(loss) - __import__("math").log(512)) > 1e-4
+
+
+def test_watchdog_pauses_when_battery_drains_on_ac():
+    m = _mod()
+    assert m.decide_guard_hysteresis(60.0, True, 19, is_running=True, paused=False)[0] == "pause"
+    assert m.decide_guard_hysteresis(60.0, True, 45, is_running=True, paused=True)[0] == "pause"
+    assert m.decide_guard_hysteresis(60.0, True, 50, is_running=True, paused=True)[0] == "run"
+    assert m.decide_guard_hysteresis(60.0, True, 30, is_running=True, paused=False)[0] == "run"
+    assert m.decide_guard_hysteresis(60.0, True, None, is_running=True, paused=True)[0] == "run"

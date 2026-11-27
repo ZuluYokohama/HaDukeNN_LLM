@@ -29,6 +29,8 @@ PAUSE_C = 83.0
 RESUME_C = 80.0
 STOP_C = 85.0
 MIN_RUN_BATTERY = 20
+AC_LOW_BATTERY_PAUSE = 20
+AC_LOW_BATTERY_RESUME = 50
 GUARD_INTERVAL_S = 5.0
 CKPT_INTERVAL_S = 300.0
 HARD_WALL_S = 10 * 3600.0
@@ -66,6 +68,12 @@ def decide_guard_hysteresis(
     action, reason = decide_guard(temp_c, ac_online, battery_pct, is_running=is_running)
     if action == "run" and paused and temp_c > RESUME_C:
         return "pause", f"gpu {temp_c:.1f}C > resume {RESUME_C:.0f}C"
+    # Extra safety beyond the prereg: on LapBeast the charger cannot keep up with full GPU load and the
+    # battery drains while mains reads online. Pause (GPU idle, battery recharges) below 20% and resume
+    # only at >= 50%, so the laptop never browns out mid-step.
+    if action == "run" and battery_pct is not None:
+        if battery_pct < AC_LOW_BATTERY_PAUSE or (paused and battery_pct < AC_LOW_BATTERY_RESUME):
+            return "pause", f"battery {battery_pct}% draining on AC (resume at >= {AC_LOW_BATTERY_RESUME}%)"
     return action, reason
 
 
@@ -612,7 +620,7 @@ def enforce_guard(work: Path, log, *, is_running: bool, on_stop=None) -> None:
                 log("checkpoint written before watchdog stop")
             raise SystemExit(143)
         if not paused or time.time() - last_logged >= 300:
-            log(f"WATCHDOG PAUSE: {reason} (resume at <= {RESUME_C:.0f}C, AC on)")
+            log(f"WATCHDOG PAUSE: {reason} (resume at <= {RESUME_C:.0f}C, AC on, battery >= {AC_LOW_BATTERY_RESUME}%)")
             last_logged = time.time()
         paused = True
         time.sleep(15)
