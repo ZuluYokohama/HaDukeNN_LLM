@@ -101,3 +101,51 @@ def test_stream_skip_replays_exactly_like_take(tmp_path):
     finally:
         a.close()
         b.close()
+
+
+def _drain(stream, batch):
+    out = []
+    while True:
+        taken = stream._take(batch)
+        if taken is None:
+            return out, stream.bytes_charged, stream.eof
+        out.append(taken)
+
+
+def test_parallel_encode_stream_is_identical_to_serial(tmp_path):
+    import pytest
+
+    m = _mod()
+    raw = tmp_path / "train.raw"
+    # Long lines and a missing final newline exercise the pending/eof paths; small reads exercise boundaries.
+    body = b"".join(f"row {i} ".encode() * (1 + i % 7) + b"\n" for i in range(4000)) + b"no trailing newline"
+    raw.write_bytes(body)
+    for budget in (50_000, 123_457, 1_000, 7, len(body) - 5, len(body) + 10):
+        serial = m.ByteWindowStream(raw, _ByteTok(), "byte_bpe", 32, budget)
+        try:
+            parallel = m.ByteWindowStream(raw, _ByteTok(), "byte_bpe", 32, budget, workers=2, mp_context="fork")
+        except (OSError, ValueError) as exc:  # pragma: no cover - sandbox without fork
+            pytest.skip(f"no process pool: {exc}")
+        try:
+            assert _drain(serial, 3) == _drain(parallel, 3)
+            assert serial.bytes_charged <= budget
+        finally:
+            serial.close()
+            parallel.close()
+
+
+def test_model_init_is_not_degenerate():
+    import pytest
+
+    torch = pytest.importorskip("torch")
+    m = _mod()
+    doc = json.loads(PREREG.read_text(encoding="utf-8"))
+    cfg = dict(doc["model"], n_layers=2)
+    torch.manual_seed(0)
+    model = m.build_model(cfg, 512, torch.device("cpu"), torch, torch.nn, torch.nn.functional)
+    norms = [p for n, p in model.named_parameters() if p.ndim == 1]
+    assert norms and all(bool((p == 1).all()) for p in norms)
+    x = torch.randint(0, 512, (2, 16))
+    logits, loss = model(x, x)
+    assert float(logits.abs().max()) > 0.0
+    assert abs(float(loss) - __import__("math").log(512)) > 1e-4

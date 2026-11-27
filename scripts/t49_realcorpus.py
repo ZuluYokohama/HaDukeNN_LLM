@@ -32,6 +32,7 @@ MIN_RUN_BATTERY = 20
 GUARD_INTERVAL_S = 5.0
 CKPT_INTERVAL_S = 300.0
 HARD_WALL_S = 10 * 3600.0
+ENCODE_WORKERS = 12
 
 
 def decide_guard(
@@ -334,20 +335,55 @@ def build_model(cfg: dict, vocab: int, device, torch, nn, F):
             return logits, loss
 
     model = CausalLM()
-    # GPT-style init
+    # GPT-style init: N(0, 0.02) matrices. The only 1-D parameters are RMSNorm gains, which must start at
+    # 1; zeroing them (the previous code) made every block input and the logits exactly 0 at init, so the
+    # loss sat at ln(vocab) and only the gains received gradient.
     for name, param in model.named_parameters():
         if param.ndim >= 2:
             nn.init.normal_(param, mean=0.0, std=0.02)
+        elif name.endswith("weight"):
+            nn.init.ones_(param)
         else:
             nn.init.zeros_(param)
     nn.init.normal_(model.tok.weight, mean=0.0, std=0.02)
     return model.to(device)
 
 
-class ByteWindowStream:
-    """Stream packed (x, y) windows while charging raw UTF-8 bytes once."""
+_WORKER_TOKENIZER = None
+_WORKER_ARM = ""
 
-    def __init__(self, raw_path: Path, tokenizer, arm: str, seq_len: int, byte_budget: int):
+
+def _encode_worker_init(tokenizer, arm: str) -> None:
+    global _WORKER_TOKENIZER, _WORKER_ARM
+    _WORKER_TOKENIZER = tokenizer
+    _WORKER_ARM = arm
+
+
+def _encode_worker(raw: bytes) -> list[int]:
+    return encode_bytes(_WORKER_TOKENIZER, raw, _WORKER_ARM)
+
+
+class ByteWindowStream:
+    """Stream packed (x, y) windows while charging raw UTF-8 bytes once.
+
+    With ``workers > 0`` the newline-terminated chunks are encoded ahead of time in a process pool.
+    Chunk boundaries are computed by the same state machine as the serial path (driven by the bytes
+    scheduled so far, which equal the bytes charged when that chunk is consumed), each chunk is
+    encoded by the same function, and results are consumed in file order, so the token stream and
+    byte accounting are identical to ``workers=0``.
+    """
+
+    def __init__(
+        self,
+        raw_path: Path,
+        tokenizer,
+        arm: str,
+        seq_len: int,
+        byte_budget: int,
+        *,
+        workers: int = 0,
+        mp_context: str = "spawn",
+    ):
         self.raw_path = raw_path
         self.tokenizer = tokenizer
         self.arm = arm
@@ -358,31 +394,92 @@ class ByteWindowStream:
         self._token_buf: list[int] = []
         self._file = raw_path.open("rb")
         self._pending = b""
+        self._pool = None
+        if workers > 0:
+            import collections
+            import multiprocessing as mp
+            from concurrent.futures import ProcessPoolExecutor
+
+            self._pool = ProcessPoolExecutor(
+                max_workers=workers,
+                mp_context=mp.get_context(mp_context),
+                initializer=_encode_worker_init,
+                initargs=(tokenizer, arm),
+            )
+            self._ahead = 2 * workers
+            self._jobs = collections.deque()
+            self._sched_bytes = 0
+            self._sched_eof = False
 
     def close(self) -> None:
         self._file.close()
+        if self._pool is not None:
+            self._pool.shutdown(wait=False, cancel_futures=True)
+            self._pool = None
 
-    def _fill(self) -> None:
-        if self.eof or self.bytes_charged >= self.byte_budget:
-            return
-        want = min(1 << 20, self.byte_budget - self.bytes_charged)
+    def _next_chunk(self, charged: int) -> tuple[bytes, bool] | None:
+        """Cut the next newline-terminated chunk; shared by the serial and pooled paths.
+
+        Returns (usable, ends_stream), or None when more input is needed. ``charged`` is the number of
+        bytes already charged (serial) or scheduled (pooled). Charged bytes never exceed the budget:
+        once the carried partial line alone would cross it, the last whole lines that fit are taken
+        and the stream ends there.
+        """
+        limit = self.byte_budget - charged
+        want = min(1 << 20, limit - len(self._pending))
+        if want <= 0:
+            data = self._pending[:limit]
+            self._pending = b""
+            cut = data.rfind(b"\n")
+            return (data[: cut + 1] if cut >= 0 else b""), True
         chunk = self._file.read(want)
         if not chunk:
-            self.eof = True
-            if self._pending:
-                self._token_buf.extend(encode_bytes(self.tokenizer, self._pending, self.arm))
-                self.bytes_charged += len(self._pending)
-                self._pending = b""
-            return
+            tail, self._pending = self._pending, b""
+            return tail, True
         data = self._pending + chunk
         cut = data.rfind(b"\n")
         if cut < 0:
             self._pending = data
-            return
+            return None
         usable, self._pending = data[: cut + 1], data[cut + 1 :]
+        return usable, False
+
+    def _schedule(self) -> None:
+        while len(self._jobs) < self._ahead and not self._sched_eof and self._sched_bytes < self.byte_budget:
+            job = self._next_chunk(self._sched_bytes)
+            if job is None:
+                continue
+            usable, ends = job
+            fut = self._pool.submit(_encode_worker, usable) if usable else None
+            self._jobs.append((fut, len(usable), ends))
+            self._sched_bytes += len(usable)
+            if ends:
+                self._sched_eof = True
+
+    def _fill(self) -> None:
+        if self.eof or self.bytes_charged >= self.byte_budget:
+            return
+        if self._pool is not None:
+            self._schedule()
+            if not self._jobs:
+                return
+            fut, n_bytes, ends = self._jobs.popleft()
+            if fut is not None:
+                self._token_buf.extend(fut.result())
+            self.bytes_charged += n_bytes
+            if ends:
+                self.eof = True
+            self._schedule()
+            return
+        job = self._next_chunk(self.bytes_charged)
+        if job is None:
+            return
+        usable, ends = job
         if usable:
             self._token_buf.extend(encode_bytes(self.tokenizer, usable, self.arm))
             self.bytes_charged += len(usable)
+        if ends:
+            self.eof = True
 
     def _take(self, batch: int) -> tuple[list[int], int] | None:
         need = batch * (self.seq_len + 1)
@@ -421,9 +518,39 @@ class ByteWindowStream:
         return x, y
 
 
+_EVAL_IDS: dict[tuple[str, str], list[int]] = {}
+
+
+def _encode_file_worker(tokenizer, arm: str, path: str) -> list[int]:
+    return encode_bytes(tokenizer, Path(path).read_bytes(), arm)
+
+
+def precompute_eval_ids(tokenizers: dict, paths: dict[str, Path], log) -> None:
+    """Encode validation/test once per arm, in parallel, before any timed training.
+
+    Same function on the same whole file as eval_bpb's fallback, so the ids are identical; this only
+    moves the (slow, pure-Python) encode out of the training wall clock and the throughput probe.
+    """
+    import multiprocessing as mp
+    from concurrent.futures import ProcessPoolExecutor
+
+    t0 = time.time()
+    jobs = {}
+    with ProcessPoolExecutor(max_workers=4, mp_context=mp.get_context("spawn")) as pool:
+        for arm in ("byte_bpe", "hst_v1"):
+            for split in ("wiki.validation.raw", "wiki.test.raw"):
+                key = (arm, str(paths[split]))
+                jobs[key] = pool.submit(_encode_file_worker, tokenizers[arm], arm, str(paths[split]))
+        for key, fut in jobs.items():
+            _EVAL_IDS[key] = fut.result()
+    sizes = {f"{a}:{Path(p).name}": len(v) for (a, p), v in _EVAL_IDS.items()}
+    log(f"eval ids precomputed in {time.time() - t0:.1f}s tokens={sizes}")
+
+
 def eval_bpb(model, tokenizer, arm: str, path: Path, seq_len: int, device, torch) -> float:
-    raw = path.read_bytes()
-    ids = encode_bytes(tokenizer, raw, arm)
+    ids = _EVAL_IDS.get((arm, str(path)))
+    if ids is None:
+        ids = encode_bytes(tokenizer, path.read_bytes(), arm)
     lens = token_byte_lens(tokenizer, arm, model.vocab)
     if len(ids) < seq_len + 1:
         raise RuntimeError(f"{path.name} too short to evaluate")
@@ -543,7 +670,7 @@ def run_arm(
     micro = int(opt_cfg["microbatch_sequences"])
     accum = int(opt_cfg["grad_accum_steps"])
     warmup = int(opt_cfg["warmup_steps"])
-    stream = ByteWindowStream(paths["wiki.train.raw"], tokenizer, arm, seq_len, byte_budget)
+    stream = ByteWindowStream(paths["wiki.train.raw"], tokenizer, arm, seq_len, byte_budget, workers=ENCODE_WORKERS)
     ckpt_dir = work / "ckpt" / f"seed{seed}_{arm}"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     step = 0
@@ -779,6 +906,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.phase == "prepare":
         log("prepare complete")
         return 0
+
+    precompute_eval_ids(tokenizers, paths, log)
 
     import torch
     import torch.nn as nn
