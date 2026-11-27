@@ -33,6 +33,51 @@ from sheaf_verify.compliance import emit_regulatory_bundle, verify_regulatory_bu
 GIB = 1024 ** 3
 MIB = 1024 ** 2
 
+_OPENBLAS_SET_THREADS = None
+
+
+def _set_openblas_threads(n: int) -> int | None:
+    """Cap SciPy/NumPy OpenBLAS threads (symbols are prefixed in the wheel).
+
+    A 32-thread default on this 8P+16E hybrid oversubscribes the Python row loop
+    (sometimes 50x) and can leave a spinning pool that inflates the C11 OpenMP
+    kernel from ~2.5 ms to ~13 ms. Returns the thread count after the call, or
+    None if the library is not present.
+    """
+    global _OPENBLAS_SET_THREADS
+    n = max(1, int(n))
+    if _OPENBLAS_SET_THREADS is None:
+        _OPENBLAS_SET_THREADS = False
+        try:
+            libs_dir = Path(np.__file__).resolve().parent.parent / "numpy.libs"
+            cands = sorted(libs_dir.glob("libscipy_openblas64*.so*"))
+            if not cands:
+                return None
+            lib = ctypes.CDLL(str(cands[0]))
+            setter = getattr(lib, "scipy_openblas_set_num_threads64_", None) or getattr(
+                lib, "scipy_openblas_set_num_threads_64_", None
+            )
+            getter = getattr(lib, "scipy_openblas_get_num_threads64_", None) or getattr(
+                lib, "scipy_openblas_get_num_threads_64_", None
+            )
+            if setter is None:
+                return None
+            setter.argtypes = [ctypes.c_int]
+            setter.restype = None
+            if getter is not None:
+                getter.argtypes = []
+                getter.restype = ctypes.c_int
+            _OPENBLAS_SET_THREADS = (setter, getter)
+        except OSError:
+            return None
+    if _OPENBLAS_SET_THREADS is False:
+        return None
+    setter, getter = _OPENBLAS_SET_THREADS
+    setter(n)
+    return int(getter()) if getter is not None else n
+
+
+
 ISA_FLAGS: dict[str, int] = {
     "SCALAR": 1 << 0,
     "AVX2": 1 << 1,
@@ -896,23 +941,29 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
         m = np.max(logits, axis=1, keepdims=True)
         _ = (m.squeeze(-1) + np.log(np.sum(np.exp(logits - m), axis=1))) - logits[np.arange(N), targets]
 
-    # Time NumPy / the Python row loop first, before omp_set_num_threads in the
-    # C kernel can oversubscribe the shared libgomp pool used by OpenBLAS.
-    # Then run the C kernel with the P-core logical count (or 8), not 2.
+    # Stabilize thread pools before any timed work. The Python row loop is a
+    # serial sequence of GEMVs: leave OpenBLAS at 1 so it does not launch a
+    # 32-thread team per row (that can inflate the loop by 50x on this hybrid
+    # CPU). Packed NumPy GEMM uses the P-core logical count. Park OpenBLAS at 1
+    # again before the C11 OpenMP kernel so the two runtimes do not contend
+    # (measured: ~2.5 ms C alone vs ~13 ms after a default 32-thread GEMM).
+    cce_threads = len(probe_host_hardware().get("p_cores") or []) or 8
+    _set_openblas_threads(1)
     _py_row_cce()
     t1 = time.perf_counter()
     for _ in range(5):
         _py_row_cce()
     py_loop_ms = ((time.perf_counter() - t1) / 5.0) * 1000.0
 
+    _set_openblas_threads(cce_threads)
     _numpy_gemm_cce()
     t2 = time.perf_counter()
     for _ in range(5):
         _numpy_gemm_cce()
     numpy_gemm_ms = ((time.perf_counter() - t2) / 5.0) * 1000.0
 
-    cce_threads = len(probe_host_hardware().get("p_cores") or []) or 8
-    for _ in range(1):
+    _set_openblas_threads(1)
+    for _ in range(3):
         hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
     t0 = time.perf_counter()
     for _ in range(5):
@@ -1065,6 +1116,8 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
             "c11_speedup_over_numpy_gemm": round(cce_speedup_vs_numpy, 2),
             "c11_speedup_over_py_loop": round(cce_speedup, 2),
             "c11_cce_num_threads": int(cce_threads),
+            "python_loop_openblas_threads": 1,
+            "numpy_gemm_openblas_threads": int(cce_threads),
             "mup_logit_std_unscaled_d768": round(std_unscaled, 4),
             "mup_logit_std_scaled_d768": round(std_mup, 4),
             "sheaf_kv_gate_max_abs_err": sheaf_gate_max_err,
