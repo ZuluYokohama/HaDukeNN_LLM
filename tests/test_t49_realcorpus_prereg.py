@@ -67,3 +67,37 @@ def test_budget_lock_quantizes_and_refuses_too_slow():
     assert m.lock_train_bytes(bytes_per_sec=80_000) == 200_000_000
     # 25 kB/s: 25e3*0.85*32400/10 = 68,850,000 -> 60e6
     assert m.lock_train_bytes(bytes_per_sec=25_000) == 60_000_000
+
+
+def test_watchdog_resume_hysteresis_matches_prereg():
+    m = _mod()
+    # Not paused yet: below 83 C runs.
+    assert m.decide_guard_hysteresis(81.0, True, 99, is_running=True, paused=False)[0] == "run"
+    # Once paused, stay paused until <= 80 C.
+    assert m.decide_guard_hysteresis(81.0, True, 99, is_running=True, paused=True)[0] == "pause"
+    assert m.decide_guard_hysteresis(80.0, True, 99, is_running=True, paused=True)[0] == "run"
+    assert m.decide_guard_hysteresis(85.0, True, 99, is_running=True, paused=True)[0] == "stop"
+    assert m.decide_guard_hysteresis(70.0, False, 50, is_running=True, paused=True)[0] == "pause"
+
+
+class _ByteTok:
+    def encode(self, text):
+        return list(text.encode("utf-8"))
+
+
+def test_stream_skip_replays_exactly_like_take(tmp_path):
+    m = _mod()
+    raw = tmp_path / "train.raw"
+    raw.write_bytes(b"".join(f"line {i} with some words\n".encode() for i in range(5000)))
+    a = m.ByteWindowStream(raw, _ByteTok(), "byte_bpe", 64, 60_000)
+    b = m.ByteWindowStream(raw, _ByteTok(), "byte_bpe", 64, 60_000)
+    try:
+        for _ in range(37):
+            assert a._take(4) is not None
+            assert b.skip_batch(4)
+        assert a.bytes_charged == b.bytes_charged
+        assert a._token_buf == b._token_buf
+        assert a._take(4) == b._take(4)
+    finally:
+        a.close()
+        b.close()

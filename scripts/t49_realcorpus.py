@@ -29,6 +29,9 @@ PAUSE_C = 83.0
 RESUME_C = 80.0
 STOP_C = 85.0
 MIN_RUN_BATTERY = 20
+GUARD_INTERVAL_S = 5.0
+CKPT_INTERVAL_S = 300.0
+HARD_WALL_S = 10 * 3600.0
 
 
 def decide_guard(
@@ -48,6 +51,21 @@ def decide_guard(
             return "stop", f"AC offline and battery {battery_pct}% < {MIN_RUN_BATTERY}%"
         return "pause", "AC offline"
     return "run", "ok"
+
+
+def decide_guard_hysteresis(
+    temp_c: float,
+    ac_online: bool,
+    battery_pct: int | None,
+    *,
+    is_running: bool,
+    paused: bool,
+) -> tuple[str, str]:
+    """decide_guard plus the pre-registered resume rule: once paused, stay paused until <= RESUME_C."""
+    action, reason = decide_guard(temp_c, ac_online, battery_pct, is_running=is_running)
+    if action == "run" and paused and temp_c > RESUME_C:
+        return "pause", f"gpu {temp_c:.1f}C > resume {RESUME_C:.0f}C"
+    return action, reason
 
 
 def lock_train_bytes(
@@ -366,7 +384,7 @@ class ByteWindowStream:
             self._token_buf.extend(encode_bytes(self.tokenizer, usable, self.arm))
             self.bytes_charged += len(usable)
 
-    def next_batch(self, batch: int):
+    def _take(self, batch: int) -> tuple[list[int], int] | None:
         need = batch * (self.seq_len + 1)
         while len(self._token_buf) < need and not self.eof and self.bytes_charged < self.byte_budget:
             self._fill()
@@ -379,6 +397,17 @@ class ByteWindowStream:
         # we need used+1 tokens to form y
         window = self._token_buf[: used + 1]
         self._token_buf = self._token_buf[used:]
+        return window, take
+
+    def skip_batch(self, batch: int) -> bool:
+        """Advance exactly as next_batch would, without building tensors (used to replay on resume)."""
+        return self._take(batch) is not None
+
+    def next_batch(self, batch: int):
+        taken = self._take(batch)
+        if taken is None:
+            return None
+        window, take = taken
         import torch
 
         ids = torch.tensor(window, dtype=torch.long)
@@ -438,17 +467,27 @@ def append_jsonl(path: Path, row: dict) -> None:
         handle.write(json.dumps(row) + "\n")
 
 
-def enforce_guard(work: Path, log, *, is_running: bool) -> None:
+def enforce_guard(work: Path, log, *, is_running: bool, on_stop=None) -> None:
+    paused = False
+    last_logged = 0.0
     while True:
         temp = read_gpu_temp()
         ac, battery = read_ac_battery()
-        action, reason = decide_guard(temp, ac, battery, is_running=is_running)
+        action, reason = decide_guard_hysteresis(temp, ac, battery, is_running=is_running, paused=paused)
         if action == "run":
+            if paused:
+                log(f"WATCHDOG RESUME: gpu {temp:.1f}C, AC online")
             return
         if action == "stop":
             log(f"WATCHDOG STOP: {reason}")
+            if on_stop is not None:
+                on_stop()
+                log("checkpoint written before watchdog stop")
             raise SystemExit(143)
-        log(f"WATCHDOG PAUSE: {reason} (resume at <= {RESUME_C:.0f}C, AC on)")
+        if not paused or time.time() - last_logged >= 300:
+            log(f"WATCHDOG PAUSE: {reason} (resume at <= {RESUME_C:.0f}C, AC on)")
+            last_logged = time.time()
+        paused = True
         time.sleep(15)
 
 
@@ -484,6 +523,7 @@ def run_arm(
     log,
     probe: bool,
     probe_seconds: float | None,
+    wall_deadline: float | None = None,
 ) -> dict:
     cfg = prereg["model"]
     opt_cfg = prereg["optimization"]
@@ -508,15 +548,74 @@ def run_arm(
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     step = 0
     tokens = 0
-    t0 = time.time()
+    batches = 0
+    prior_seconds = 0.0
     first_eval = None
     first_eval_at_bytes = 2_000_000
+    latest = ckpt_dir / "latest.pt"
+    if not probe and latest.is_file():
+        state = torch.load(latest, map_location=device, weights_only=True)
+        if (
+            state.get("arm") != arm
+            or int(state.get("seed", -1)) != seed
+            or int(state.get("byte_budget", -1)) != byte_budget
+            or "batches" not in state
+        ):
+            raise RuntimeError(f"checkpoint {latest} does not match arm={arm} seed={seed} budget={byte_budget}")
+        model.load_state_dict(state["model"])
+        optimizer.load_state_dict(state["optimizer"])
+        step = int(state["step"])
+        tokens = int(state["tokens"])
+        batches = int(state["batches"])
+        prior_seconds = float(state["seconds"])
+        first_eval = state.get("first_eval")
+        log(f"resuming arm={arm} seed={seed} from step={step}: replaying {batches} batches to restore the byte stream")
+        for _ in range(batches):
+            if not stream.skip_batch(micro):
+                raise RuntimeError("stream ended while replaying a checkpoint")
+        if stream.bytes_charged != int(state["bytes_charged"]):
+            raise RuntimeError(
+                f"replayed bytes_charged {stream.bytes_charged} != checkpoint {state['bytes_charged']}; refusing to resume"
+            )
+        log(f"resume verified: bytes_charged={stream.bytes_charged}")
+    t0 = time.time() - prior_seconds
     model.train()
     peak_lr = float(opt_cfg["lr"])
+    last_guard = 0.0
+    last_ckpt = time.time()
+
+    def save_ckpt() -> None:
+        if probe:
+            return
+        tmp = ckpt_dir / "latest.pt.tmp"
+        torch.save(
+            {
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "step": step,
+                "tokens": tokens,
+                "batches": batches,
+                "seconds": time.time() - t0,
+                "first_eval": first_eval,
+                "bytes_charged": stream.bytes_charged,
+                "byte_budget": byte_budget,
+                "arm": arm,
+                "seed": seed,
+            },
+            tmp,
+        )
+        tmp.replace(latest)
+
     log(f"start arm={arm} seed={seed} params={n_params} budget={byte_budget} probe={probe}")
     try:
         while stream.bytes_charged < byte_budget and not stream.eof:
-            enforce_guard(work, log, is_running=True)
+            if wall_deadline is not None and time.time() >= wall_deadline:
+                save_ckpt()
+                log(f"HARD WALL reached at step={step}; checkpointed, stopping (seed {seed} {arm} incomplete)")
+                raise SystemExit(124)
+            if time.time() - last_guard >= GUARD_INTERVAL_S:
+                enforce_guard(work, log, is_running=True, on_stop=save_ckpt)
+                last_guard = time.time()
             optimizer.zero_grad(set_to_none=True)
             step_loss = 0.0
             got = 0
@@ -524,6 +623,7 @@ def run_arm(
                 batch = stream.next_batch(micro)
                 if batch is None:
                     break
+                batches += 1
                 x, y = batch
                 x = x.to(device, non_blocking=True)
                 y = y.to(device, non_blocking=True)
@@ -609,18 +709,9 @@ def run_arm(
                     )
                 append_jsonl(work / "metrics.jsonl", row)
                 write_status(work, {"phase": "probe" if probe else "official", **row})
-            if step % 50 == 0:
-                torch.save(
-                    {
-                        "model": model.state_dict(),
-                        "optimizer": optimizer.state_dict(),
-                        "step": step,
-                        "bytes_charged": stream.bytes_charged,
-                        "arm": arm,
-                        "seed": seed,
-                    },
-                    ckpt_dir / "latest.pt",
-                )
+            if time.time() - last_ckpt >= CKPT_INTERVAL_S:
+                save_ckpt()
+                last_ckpt = time.time()
         # official end-of-arm test
         result = {
             "arm": arm,
@@ -759,6 +850,8 @@ def main(argv: list[str] | None = None) -> int:
                 "(create it only after the prereg store and budget lock are committed)"
             )
             return 3
+        wall_deadline = marker.stat().st_mtime + HARD_WALL_S
+        log(f"official hard wall at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(wall_deadline))} CST")
         official = []
         for seed in prereg["seeds"]["official"]:
             for arm in ("byte_bpe", "hst_v1"):
@@ -782,6 +875,7 @@ def main(argv: list[str] | None = None) -> int:
                     log=log,
                     probe=False,
                     probe_seconds=None,
+                    wall_deadline=wall_deadline,
                 )
                 (work / "ckpt" / f"seed{seed}_{arm}" / "result.json").write_text(json.dumps(row, indent=2) + "\n")
                 official.append(row)
