@@ -884,24 +884,7 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
     E = (rng.standard_normal((V, d)) / math.sqrt(d)).astype(np.float32)
     targets = rng.integers(0, V, size=N, dtype=np.int32)
 
-    loss_c, dH_c, dE_c = hal_tiled_cce_mup(
-        H, E, targets, tile_V=512, mup_base_d=384, compute_grad=True
-    )
     scale_mup = 384.0 / 576.0
-    logits_ref = (H.astype(np.float64) @ E.astype(np.float64).T) * scale_mup
-    m_ref = np.max(logits_ref, axis=1, keepdims=True)
-    exp_ref = np.exp(logits_ref - m_ref)
-    lse_ref = (m_ref + np.log(np.sum(exp_ref, axis=1, keepdims=True))).squeeze(-1)
-    loss_ref = lse_ref - logits_ref[np.arange(N), targets]
-    probs_ref = exp_ref / np.sum(exp_ref, axis=1, keepdims=True)
-    probs_ref[np.arange(N), targets] -= 1.0
-    probs_ref *= scale_mup / float(N)
-    dH_ref = probs_ref @ E.astype(np.float64)
-    dE_ref = probs_ref.T @ H.astype(np.float64)
-
-    cce_loss_max_err = float(np.max(np.abs(loss_c - loss_ref)))
-    cce_dh_max_err = float(np.max(np.abs(dH_c - dH_ref)))
-    cce_de_max_err = float(np.max(np.abs(dE_c - dE_ref)))
 
     def _py_row_cce() -> None:
         for n_idx in range(N):
@@ -937,6 +920,24 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
     c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
     cce_speedup = py_loop_ms / max(c_cce_ms, 1e-6)
     cce_speedup_vs_numpy = numpy_gemm_ms / max(c_cce_ms, 1e-6)
+
+    loss_c, dH_c, dE_c = hal_tiled_cce_mup(
+        H, E, targets, tile_V=512, mup_base_d=384, compute_grad=True
+    )
+    logits_ref = (H.astype(np.float64) @ E.astype(np.float64).T) * scale_mup
+    m_ref = np.max(logits_ref, axis=1, keepdims=True)
+    exp_ref = np.exp(logits_ref - m_ref)
+    lse_ref = (m_ref + np.log(np.sum(exp_ref, axis=1, keepdims=True))).squeeze(-1)
+    loss_ref = lse_ref - logits_ref[np.arange(N), targets]
+    probs_ref = exp_ref / np.sum(exp_ref, axis=1, keepdims=True)
+    probs_ref[np.arange(N), targets] -= 1.0
+    probs_ref *= scale_mup / float(N)
+    dH_ref = probs_ref @ E.astype(np.float64)
+    dE_ref = probs_ref.T @ H.astype(np.float64)
+
+    cce_loss_max_err = float(np.max(np.abs(loss_c - loss_ref)))
+    cce_dh_max_err = float(np.max(np.abs(dH_c - dH_ref)))
+    cce_de_max_err = float(np.max(np.abs(dE_c - dE_ref)))
 
     H_l = rng.standard_normal((64, 768)).astype(np.float32)
     E_l = (rng.standard_normal((2048, 768)) / math.sqrt(384.0)).astype(np.float32)
