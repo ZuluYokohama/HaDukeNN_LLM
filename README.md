@@ -145,6 +145,8 @@ sheaf-verify campaign --mode t46-tri-machine-hal \
 
 The v1.2.0 drop ships `src/sheaf_verify/hst_standard.py` and a T-49 briefing. The package version in `pyproject.toml` is `1.0.0`. Sealed confirmation hashes and the sealed T-46 JSON are unchanged.
 
+The official claim status for that briefing is [`docs/HST_V1_CLAIMS_AUDIT.md`](docs/HST_V1_CLAIMS_AUDIT.md) and the corrected copy [`docs/HST-v1-briefing.html`](docs/HST-v1-briefing.html). The T-49 5-seed BPB result (`p = 4.81e-4`, 20% fewer optimizer steps) is a **48,000-byte synthetic toy campaign**, reproduced on this host, not a large-corpus pretrain. The briefing’s “221/221 checks”, “20–35% compute left on the table”, “125M–1.3B sweet spot”, and “regulated-domain readiness” statements are hypotheses or contradicted counts, not measured facts. The T-37 struct32k `-0.0337` BPB figure remains a recorded `iterations/t37-grid/` result; it was not re-run for this audit.
+
 ## Iterations
 
 `main` holds the harness and `iterations/INDEX.md`. An experiment does not land on `main`. Cut a branch named `iter/<id>` from `main` and add:

@@ -1,17 +1,19 @@
 # HaDukeNN Span-Trace v1 (`HST-v1`) Open Tokenization Standard & `HaDukeNN-LM` Architecture Specification
 
+Claim status for the v1.2.0 briefing is in [HST_V1_CLAIMS_AUDIT.md](HST_V1_CLAIMS_AUDIT.md) and the corrected briefing [HST-v1-briefing.html](HST-v1-briefing.html). Do not cite the 48 KB T-49 probe as a foundation-model result.
+
 ## 1. Design Rationale
 
 Standard subword tokenizers ([SentencePiece](https://arxiv.org/abs/1808.06226) and regex-constrained Byte-BPE) suffer from four structural flaws that tax both training compute and downstream reasoning:
 
-1. **Whitespace Prison & Wasted Context**: Pre-tokenization regexes prevent high-information multi-word technical phrases and value-unit idioms from merging, burning `20-35%` extra sequence tokens and quadratic attention compute ([SuperBPE, Liu et al., 2025](https://arxiv.org/abs/2503.13423)).
+1. **Whitespace Prison & Wasted Context**: Pre-tokenization regexes prevent high-information multi-word technical phrases and value-unit idioms from merging. The figure that this wastes `20-35%` extra sequence tokens and quadratic attention compute is a **literature hypothesis** from [SuperBPE, Liu et al., 2025](https://arxiv.org/abs/2503.13423), not a HaDukeNN measurement on a large public corpus. The only in-repo measured reduction is `19.85%` at `V = 416` on the 48,000-byte T-49 toy campaign; see [HST_V1_CLAIMS_AUDIT.md](HST_V1_CLAIMS_AUDIT.md).
 2. **Inconsistent Multi-Digit Arithmetic Chunking**: Arbitrary 2- and 3-digit merges fragment numbers inconsistently (`1042` vs `10420`), degrading exact arithmetic and unit conversion.
 3. **Unverified Prefix Drift & Uncommitted Vocabularies**: Distributed training and streaming inference lack a cryptographic vocabulary commitment (`SHA-256` Merkle root) and formal lookahead bounds (`max_span_bytes`) guaranteeing that unseen suffix bytes never mutate committed prefix tokens.
 4. **String-Prompted Tool & Verification Hacks**: Verifiable reasoning actions (`fork`, `assert`, `unit`, `receipt`) are bolted onto raw text via fragile JSON wrappers rather than native reserved control slots coupled directly to an execution kernel.
 
 At the same time, empirical scaling campaigns across `G1`, `T-30`, `T-37`, and the 5-rung `T-38` ladder (`XS, S, M, M+, L` in [the master results sheet](https://docs.google.com/spreadsheets/d/1Y74fgo8BTV6em61pOoHUiOsTh3jhco7i1FSwL-ADqi4/edit)) established three non-negotiable hardware laws for `HaDukeNN-LM`:
 
-- **Put structure in input path contraction, not narrow output bottlenecks**: `struct32k` improved FineWeb-Edu equal-bytes compression across `16/16` scaling cells (`-0.0337` BPB at `M-1.5x`, `p = 5.1e-5`, growing with scale `dlog2k = +0.1246`), whereas `182x181` [Goodman class-factored](https://arxiv.org/abs/cs/0108006) output heads lost every equal-bytes cell (`XS +0.0320`, `S +0.0247`, `M +0.0188`, `M+ +0.0153`; 1-epoch `L +0.0186`) with exponent parity (`alpha_H - alpha_P ~ 0`).
+- **Put structure in input path contraction, not narrow output bottlenecks**: The recorded T-37 tokenizer grid (`iterations/t37-grid/`, not re-run for the v1.2.0 audit) reports that `struct32k` improved FineWeb-Edu equal-bytes compression across `16/16` scaling cells (`-0.0337` BPB at `M-1.5x`, `p = 5.1e-5`, growing with scale `dlog2k = +0.1246`), whereas `182x181` [Goodman class-factored](https://arxiv.org/abs/cs/0108006) output heads lost every equal-bytes cell (`XS +0.0320`, `S +0.0247`, `M +0.0188`, `M+ +0.0153`; 1-epoch `L +0.0186`) with exponent parity (`alpha_H - alpha_P ~ 0`).
 - **Preserve contiguous Tensor-Core GEMMs via Tiled Cut Cross-Entropy**: Chunked vocabulary cross-entropy ([Wijmans et al., 2024](https://arxiv.org/abs/2411.00909)) sustains `41-45 TFLOPS` without materializing full `[B*W, V]` logit buffers, reserving cluster importance sampling strictly for `V >= 128k` or `batch=1` DRAM-bound edge NPU loops.
 - **Enforce `muP` Zero-Shot Width Scaling**: Unscaled Standard Parametrization (`SP`) shifted its optimal LR downward and spiked to `1.5611` BPB at `lr = 0.002` on Stage 3 rung `L` (`d=768, L=12`), motivating exact [Tensor Programs V (`muP`)](https://arxiv.org/abs/2203.03466) `d_base / d` output-logit and hidden-LR scaling.
 
@@ -29,6 +31,9 @@ Every compliant `HST-v1` tokenizer (`schemas/hst-v1.schema.json`, `src/sheaf_ver
 6. **Reserved Verifiable Control Slots & Canonical Merkle Commitment**: Top-of-vocabulary slots (`<|hst:bos|>`, `<|hst:eos|>`, `<|hst:span_open|>`, `<|hst:span_close|>`, `<|hst:fork|>`, `<|hst:assert|>`, `<|hst:unit|>`, `<|hst:receipt|>`) bind inline to `IncrementalHypergraphKernel` ([PR #9](https://github.com/ZuluYokohama/HaDukeNN_LLM/pull/9)) and `ExactUnitLattice`, sealed under `merkle_root_sha256` and [IETF SCITT RFC 9943](https://www.rfc-editor.org/info/rfc9943/).
 
 ## 3. Staged `HaDukeNN-LM` Hardware Scaling Ladder
+
+The tiers below are **planned hardware targets**, not a measured “125M–1.3B sweet spot” and not proof of regulated-domain readiness. No 125M–1.3B HaDukeNN-LM pretrain is in this repository. VRAM estimates are design figures.
+
 
 | Tier ID | Architecture (`d / L / H / d_ff`) | Vocab (`HST-v1`) | Output Head | Target Hardware | Est. BF16 Train VRAM |
 | :--- | :--- | ---: | :--- | :--- | ---: |
