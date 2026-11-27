@@ -4,8 +4,9 @@ Customizes low-level CPU SIMD, GPU CUDA/OpenCL, Hexagon NPU, and static RAM
 arenas across all three target machines:
   1. wbeast   : x86_64 (8C/16T AVX2+FMA3) + RTX 5070 12GB (sm_120, 48 MiB L2)
                 + GTX 1660 Ti 6GB (sm_75 async E2 side-lane) + 32 GB DDR4
-  2. lapbeast : x86_64 Hybrid (24c = 8P+16E AVX2+FMA3+AVX-VNNI) + RTX 5060 8GB
-                (sm_120, battery/thermal watchdog rc=143) + 32 GB DDR5-5600
+  2. lapbeast : x86_64 Hybrid (24c = 8P+16E, 32 threads, AVX2+FMA3+AVX-VNNI)
+                + RTX 4080 Laptop 12GB (sm_89, battery/thermal watchdog rc=143)
+                + 61 GiB RAM. Live inventory is probed at run time.
   3. zenbook  : ARM64 (8c Snapdragon X Oryon NEON+SDOT+I8MM) + Hexagon V73 NPU
                 (45 TOPS looped INT8 @ 14.5 W) + Adreno FP16 + 13.0 GiB LPDDR5x
 """
@@ -129,24 +130,24 @@ WBEAST_PROFILE = MachineProfile(
 LAPBEAST_PROFILE = MachineProfile(
     machine_id="lapbeast",
     arch="x86_64",
-    cpu_model="Intel Core Ultra 9 275HX (24c = 8 Lion Cove P + 16 Skymont E)",
-    p_cores=tuple(range(0, 8)),
-    e_cores=tuple(range(8, 24)),  # 16 Skymont E-cores run causal span scan + sheaf/SCITT audit
+    cpu_model="13th Gen Intel Core i9-13980HX (24c = 8P+16E, 32 threads)",
+    p_cores=tuple(range(0, 16)),  # 8 P-cores with HT (logical 0..15)
+    e_cores=tuple(range(16, 32)),  # 16 E-cores (logical 16..31)
     expected_simd=("AVX2", "FMA3", "AVX_VNNI"),
-    primary_accel="NVIDIA GeForce RTX 5060 Laptop GPU 8GB (Blackwell sm_120)",
-    secondary_accel="Intel AI Boost NPU (INT8 background aboutness/stalk filter)",
-    cuda_arch_primary="sm_120",
+    primary_accel="NVIDIA GeForce RTX 4080 Laptop GPU 12GB (Ada Lovelace sm_89)",
+    secondary_accel="",
+    cuda_arch_primary="sm_89",
     cuda_arch_secondary="",
     l2_cache_mib=32,
-    cce_tile_v=1024,  # Tight 8 GB VRAM ceiling -> zero [N, V] logits, 1024-vocab L2 tiles
+    cce_tile_v=1024,
     mup_base_d=384,
-    ram_total_gib=32.0,
-    ram_arena_cap_bytes=int(24.0 * GIB),
-    vram_primary_cap_mib=7_168,
+    ram_total_gib=61.0,
+    ram_arena_cap_bytes=int(48.0 * GIB),  # leave headroom for OS / display
+    vram_primary_cap_mib=11_264,
     vram_secondary_cap_mib=0,
     npu_loop_enabled=False,
-    npu_target_watts=12.0,
-    npu_vtcm_mib=4,
+    npu_target_watts=0.0,
+    npu_vtcm_mib=0,
     battery_gated=True,
     min_start_battery_pct=90,
     min_run_battery_pct=20,
@@ -156,6 +157,7 @@ LAPBEAST_PROFILE = MachineProfile(
         "-O3",
         "--use_fast_math",
         "-std=c++17",
+        "-gencode=arch=compute_89,code=sm_89",
         "-gencode=arch=compute_120,code=sm_120",
     ),
 )
@@ -340,6 +342,108 @@ def detect_machine_profile(override: str | None = None) -> MachineProfile:
     if cpu_cnt >= 20 or Path("/sys/class/power_supply/BAT0").exists():
         return LAPBEAST_PROFILE
     return WBEAST_PROFILE
+
+
+
+def probe_host_hardware() -> dict[str, Any]:
+    """Read live CPU, RAM, and NVIDIA GPU inventory from this host (not profile text)."""
+    cpu_model = platform.processor() or ""
+    try:
+        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.lower().startswith("model name"):
+                cpu_model = line.split(":", 1)[1].strip()
+                break
+    except OSError:
+        pass
+
+    p_cores: list[int] = []
+    e_cores: list[int] = []
+    try:
+        for cpu in sorted(Path("/sys/devices/system/cpu").glob("cpu[0-9]*"), key=lambda p: int(p.name[3:])):
+            idx = int(cpu.name[3:])
+            mhz_path = cpu / "cpufreq" / "cpuinfo_max_freq"
+            max_mhz = 0.0
+            if mhz_path.is_file():
+                max_mhz = int(mhz_path.read_text().strip()) / 1000.0
+            # On this 13980HX, P-cores advertise >= 5.4 GHz, E-cores 4.0 GHz.
+            if max_mhz >= 5000:
+                p_cores.append(idx)
+            else:
+                e_cores.append(idx)
+    except OSError:
+        pass
+
+    ram_total_gib = 0.0
+    try:
+        for line in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
+            if line.startswith("MemTotal:"):
+                ram_total_gib = int(line.split()[1]) / (1024.0 * 1024.0)
+                break
+    except OSError:
+        pass
+
+    gpu: dict[str, Any] = {}
+    try:
+        proc = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=name,compute_cap,memory.total,temperature.gpu",
+                "--format=csv,noheader,nounits",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            name, cap, mem, temp = [x.strip() for x in proc.stdout.strip().splitlines()[0].split(",")]
+            sm = "sm_" + cap.replace(".", "")
+            gpu = {
+                "name": name,
+                "compute_cap": cap,
+                "cuda_arch": sm,
+                "memory_mib": int(float(mem)),
+                "temperature_c": int(float(temp)),
+            }
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        gpu = {}
+
+    primary = ""
+    if gpu:
+        primary = f"{gpu['name']} ({gpu.get('memory_mib', 0)} MiB, {gpu.get('cuda_arch', '')})"
+
+    return {
+        "cpu_model": cpu_model,
+        "logical_cpus": os.cpu_count() or 0,
+        "p_cores": p_cores,
+        "e_cores": e_cores,
+        "ram_total_gib": round(ram_total_gib, 2),
+        "gpu": gpu,
+        "primary_accel": primary,
+        "cuda_arch_primary": gpu.get("cuda_arch", ""),
+        "vram_primary_cap_mib": int(gpu.get("memory_mib") or 0),
+    }
+
+
+def overlay_live_profile(profile: MachineProfile, probe: dict[str, Any] | None = None) -> MachineProfile:
+    """Return a copy of *profile* with CPU/GPU/RAM fields filled from a live host probe."""
+    inv = probe if probe is not None else probe_host_hardware()
+    updates: dict[str, Any] = {}
+    if inv.get("cpu_model"):
+        updates["cpu_model"] = inv["cpu_model"]
+    if inv.get("p_cores"):
+        updates["p_cores"] = tuple(inv["p_cores"])
+    if inv.get("e_cores"):
+        updates["e_cores"] = tuple(inv["e_cores"])
+    if inv.get("ram_total_gib"):
+        updates["ram_total_gib"] = float(inv["ram_total_gib"])
+    if inv.get("primary_accel"):
+        updates["primary_accel"] = inv["primary_accel"]
+    if inv.get("cuda_arch_primary"):
+        updates["cuda_arch_primary"] = inv["cuda_arch_primary"]
+    if inv.get("vram_primary_cap_mib"):
+        updates["vram_primary_cap_mib"] = int(inv["vram_primary_cap_mib"])
+    return MachineProfile(**{**asdict(profile), **updates})
 
 
 class StaticSlabArena:
@@ -799,17 +903,39 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
     cce_dh_max_err = float(np.max(np.abs(dH_c - dH_ref)))
     cce_de_max_err = float(np.max(np.abs(dE_c - dE_ref)))
 
+    def _py_row_cce() -> None:
+        for n_idx in range(N):
+            row = (H[n_idx] @ E.T) * scale_mup
+            _ = float(np.max(row) + math.log(float(np.sum(np.exp(row - np.max(row))))) - row[targets[n_idx]])
+
+    def _numpy_gemm_cce() -> None:
+        logits = (H @ E.T) * scale_mup
+        m = np.max(logits, axis=1, keepdims=True)
+        _ = (m.squeeze(-1) + np.log(np.sum(np.exp(logits - m), axis=1))) - logits[np.arange(N), targets]
+
+    # Use the host thread count explicitly. The previous suite pinned this to 2,
+    # which made the C kernel look ~5x slower than multi-threaded NumPy.
+    cce_threads = os.cpu_count() or 8
+    for _ in range(1):
+        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
     t0 = time.perf_counter()
     for _ in range(5):
-        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=2)
+        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
     c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
 
+    _py_row_cce()
     t1 = time.perf_counter()
-    for n_idx in range(N):
-        row = (H[n_idx] @ E.T) * scale_mup
-        _ = float(np.max(row) + math.log(float(np.sum(np.exp(row - np.max(row))))) - row[targets[n_idx]])
-    py_loop_ms = (time.perf_counter() - t1) * 1000.0
+    for _ in range(5):
+        _py_row_cce()
+    py_loop_ms = ((time.perf_counter() - t1) / 5.0) * 1000.0
+
+    _numpy_gemm_cce()
+    t2 = time.perf_counter()
+    for _ in range(5):
+        _numpy_gemm_cce()
+    numpy_gemm_ms = ((time.perf_counter() - t2) / 5.0) * 1000.0
     cce_speedup = py_loop_ms / max(c_cce_ms, 1e-6)
+    cce_speedup_vs_numpy = numpy_gemm_ms / max(c_cce_ms, 1e-6)
 
     H_l = rng.standard_normal((64, 768)).astype(np.float32)
     E_l = (rng.standard_normal((2048, 768)) / math.sqrt(384.0)).astype(np.float32)
@@ -895,33 +1021,48 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
     )
     bundle_ok, bundle_issues = verify_regulatory_bundle(bundle, signing_key=seal_key)
 
+    host_probe = probe_host_hardware()
+    live_profiles = dict(PROFILES)
+    # Overlay live CPU/GPU/RAM onto the profile that matches this host.
+    machine = platform.machine().lower()
+    if machine not in ("aarch64", "arm64"):
+        live_profiles["lapbeast"] = overlay_live_profile(LAPBEAST_PROFILE, host_probe)
+    profile_views = {
+        name: {
+            "arch": p.arch,
+            "cpu_model": p.cpu_model,
+            "primary_accel": p.primary_accel,
+            "secondary_accel": p.secondary_accel,
+            "ram_arena_cap_gib": round(p.ram_arena_cap_bytes / GIB, 2),
+            "ram_total_gib": p.ram_total_gib,
+            "l2_cache_mib": p.l2_cache_mib,
+            "cce_tile_v": p.cce_tile_v,
+            "npu_loop_enabled": p.npu_loop_enabled,
+            "battery_gated": p.battery_gated,
+            "cuda_arch_primary": p.cuda_arch_primary,
+            "vram_primary_cap_mib": p.vram_primary_cap_mib,
+        }
+        for name, p in live_profiles.items()
+    }
+
     return {
         "schema": "sheaf-verify.tri-machine-hal.v1",
         "version": "0.9.0",
         "elapsed_seconds": round(time.perf_counter() - t_start, 3),
         "host_isa": isa_info,
         "machines_configured": list(PROFILES.keys()),
-        "profiles": {
-            name: {
-                "arch": p.arch,
-                "cpu_model": p.cpu_model,
-                "primary_accel": p.primary_accel,
-                "secondary_accel": p.secondary_accel,
-                "ram_arena_cap_gib": round(p.ram_arena_cap_bytes / GIB, 2),
-                "l2_cache_mib": p.l2_cache_mib,
-                "cce_tile_v": p.cce_tile_v,
-                "npu_loop_enabled": p.npu_loop_enabled,
-                "battery_gated": p.battery_gated,
-            }
-            for name, p in PROFILES.items()
-        },
+        "host_probe": host_probe,
+        "profiles": profile_views,
         "benchmarks_and_parity": {
             "cce_loss_max_abs_err": cce_loss_max_err,
             "cce_dh_max_abs_err": cce_dh_max_err,
             "cce_de_max_abs_err": cce_de_max_err,
             "c11_cce_ms": round(c_cce_ms, 4),
             "python_loop_cce_ms": round(py_loop_ms, 4),
+            "numpy_gemm_cce_ms": round(numpy_gemm_ms, 4),
+            "c11_speedup_over_numpy_gemm": round(cce_speedup_vs_numpy, 2),
             "c11_speedup_over_py_loop": round(cce_speedup, 2),
+            "c11_cce_num_threads": int(cce_threads),
             "mup_logit_std_unscaled_d768": round(std_unscaled, 4),
             "mup_logit_std_scaled_d768": round(std_mup, 4),
             "sheaf_kv_gate_max_abs_err": sheaf_gate_max_err,

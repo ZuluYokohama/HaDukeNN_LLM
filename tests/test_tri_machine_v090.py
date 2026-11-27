@@ -50,8 +50,8 @@ def test_machine_profile_overrides_and_affinity():
     assert detect_machine_profile("zenbook") == ZENBOOK_PROFILE
     aff_p = apply_thread_affinity(LAPBEAST_PROFILE, role="compute")
     aff_e = apply_thread_affinity(LAPBEAST_PROFILE, role="audit_io")
-    assert aff_p["requested_cores"] == list(range(0, 8))
-    assert aff_e["requested_cores"] == list(range(8, 24))
+    assert aff_p["requested_cores"] == list(LAPBEAST_PROFILE.p_cores)
+    assert aff_e["requested_cores"] == list(LAPBEAST_PROFILE.e_cores)
 
 
 def test_static_slab_arena_64byte_alignment_and_ceiling():

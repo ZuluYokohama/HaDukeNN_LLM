@@ -52,11 +52,47 @@ esac
     "${REPO_ROOT}/src/hadukenn_core/csrc/tri_machine_hal.c" \
     -lm -o "${CACHE_OUT}/libhadukenn_tri_hal.so"
 
+nvcc_supports_arch() {
+    local sm="$1"
+    local tmp_cu tmp_o
+    tmp_cu="$(mktemp /tmp/hadukenn_nvcc_XXXXXX.cu)"
+    tmp_o="$(mktemp /tmp/hadukenn_nvcc_XXXXXX.o)"
+    printf 'extern "C" __global__ void k() {}\n' > "${tmp_cu}"
+    if nvcc -c "${tmp_cu}" -gencode "arch=compute_${sm},code=sm_${sm}" -o "${tmp_o}" >/dev/null 2>&1; then
+        rm -f "${tmp_cu}" "${tmp_o}"
+        return 0
+    fi
+    rm -f "${tmp_cu}" "${tmp_o}"
+    return 1
+}
+
 if command -v nvcc >/dev/null 2>&1 && [[ "${MACHINE}" != "zenbook" ]]; then
     echo "[HaDukeNN v0.9.0] Compiling CUDA kernels via nvcc..."
-    NVCC_GENCODE=(-gencode arch=compute_120,code=sm_120)
-    if [[ "${MACHINE}" == "wbeast" ]]; then
+    NVCC_GENCODE=()
+    # Prefer the live GPU's compute capability (e.g. 8.9 -> 89 on an RTX 4080 Laptop).
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        LIVE_CAP="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -n1 | tr -d '[:space:]')"
+        LIVE_SM="${LIVE_CAP//./}"
+        if [[ -n "${LIVE_SM}" ]] && nvcc_supports_arch "${LIVE_SM}"; then
+            NVCC_GENCODE+=(-gencode "arch=compute_${LIVE_SM},code=sm_${LIVE_SM}")
+            echo "[HaDukeNN v0.9.0] nvcc gencode sm_${LIVE_SM} from nvidia-smi compute_cap=${LIVE_CAP}"
+        fi
+    fi
+    # Keep sm_120 when this nvcc can emit it (Blackwell toolkits).
+    if nvcc_supports_arch 120; then
+        if [[ " ${NVCC_GENCODE[*]} " != *"sm_120"* ]]; then
+            NVCC_GENCODE+=(-gencode arch=compute_120,code=sm_120)
+            echo "[HaDukeNN v0.9.0] nvcc gencode sm_120 (toolkit supports Blackwell)"
+        fi
+    else
+        echo "[HaDukeNN v0.9.0] nvcc does not support sm_120; skipping that gencode"
+    fi
+    if [[ "${MACHINE}" == "wbeast" ]] && nvcc_supports_arch 75; then
         NVCC_GENCODE+=(-gencode arch=compute_75,code=sm_75)
+    fi
+    if [[ "${#NVCC_GENCODE[@]}" -eq 0 ]]; then
+        echo "[HaDukeNN v0.9.0] ERROR: no supported nvcc gencode for this GPU/toolkit" >&2
+        exit 1
     fi
     nvcc -O3 --use_fast_math -std=c++17 "${NVCC_GENCODE[@]}" \
         -Xcompiler -fPIC -shared \
