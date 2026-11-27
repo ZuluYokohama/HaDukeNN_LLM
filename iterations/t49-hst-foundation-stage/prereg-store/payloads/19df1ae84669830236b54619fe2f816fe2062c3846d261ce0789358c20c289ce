@@ -1,0 +1,17 @@
+{
+  "locator_root": "~/hadukenn/data/wikitext-103-raw",
+  "files": {
+    "wiki.train.raw": {
+      "sha256": "d4f43c552ffd6ff64f71d37c8c7f0a5a2c38a1f9bc36d9471811479a2550ec6e",
+      "bytes": 539931870
+    },
+    "wiki.validation.raw": {
+      "sha256": "fbf387067edf87fc0f11e8cc1708be8ff6c944f6eeb98c1e34140c8a95629a00",
+      "bytes": 1145547
+    },
+    "wiki.test.raw": {
+      "sha256": "7952b062817620ac99b47296dc945942b55068d0e85baf1f95f300c7ad1480ef",
+      "bytes": 1289123
+    }
+  }
+}

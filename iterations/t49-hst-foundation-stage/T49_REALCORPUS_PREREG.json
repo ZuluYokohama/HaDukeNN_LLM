@@ -1,0 +1,151 @@
+{
+  "schema": "sheaf-verify.t49-realcorpus-prereg.v1",
+  "campaign_id": "T-49-REAL-WIKI103",
+  "title": "Pre-registered equal-bytes comparison of HST-v1 vs Byte-BPE on WikiText-103 raw",
+  "status": "preregistered_not_run",
+  "host_intent": "LapBeast RTX 4080 Laptop (CUDA sm_89, 12282 MiB), AC-powered",
+  "explicit_non_claims": [
+    "This protocol does not claim that HST-v1 will win. The outcome is unknown until the official seeds finish.",
+    "This is not the 48,000-byte synthetic T-49 toy campaign and must not be reported as a foundation-model or 125M-1.3B result.",
+    "No regulated-domain readiness claim is being tested.",
+    "T-37 -0.0337 BPB is out of scope and is not re-run here."
+  ],
+  "hypothesis_to_test": "At a strict equal UTF-8 training-byte budget on WikiText-103 raw, a causal LM trained with an HST-v1 tokenizer will achieve a lower held-out test bits-per-byte than the same LM architecture and optimizer trained with a Byte-BPE tokenizer of the same vocabulary size. The only intended factor is the tokenizer.",
+  "arms": [
+    {
+      "arm_id": "hst_v1",
+      "tokenizer": "HST-v1 (sheaf_verify.hst_standard.HSTTokenizer.train)",
+      "model_recipe": "shared_dense_sp"
+    },
+    {
+      "arm_id": "byte_bpe",
+      "tokenizer": "Byte-BPE (hadukenn_core.tokenization.ByteBPETokenizer.train)",
+      "model_recipe": "shared_dense_sp"
+    }
+  ],
+  "not_an_arm": "Dense SP is the shared parametrization for both arms, not a third tokenizer. A rank-constrained bottleneck is not trained (it is not a fair tokenizer control and would consume wall time).",
+  "corpus": {
+    "name": "WikiText-103 raw v1",
+    "hub_repo": "Salesforce/wikitext",
+    "hub_config": "wikitext-103-raw-v1",
+    "hub_revision": "refs/convert/parquet",
+    "join_rule": "For each split, concatenate the parquet 'text' column in row order as UTF-8, appending a newline only when the row does not already end in U+000A.",
+    "data_root_outside_repo": "~/hadukenn/data/wikitext-103-raw (never committed)",
+    "parquet_sha256": {
+      "train/0000.parquet": "74da360f23826045b3e6ac6375411fdb15f003030aa74f2596ed08b857cb9212",
+      "train/0001.parquet": "ba090ac30dbf5461e8dcbdd1a1b8e6f3cf9c2c756d64f0c1220450acd514f720",
+      "validation/0000.parquet": "204929b7ff9d6184953f867dedb860e40aa69c078fc1e54b3baaa8fb28511c4c",
+      "test/0000.parquet": "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91"
+    },
+    "raw_sha256": {
+      "wiki.train.raw": "d4f43c552ffd6ff64f71d37c8c7f0a5a2c38a1f9bc36d9471811479a2550ec6e",
+      "wiki.validation.raw": "fbf387067edf87fc0f11e8cc1708be8ff6c944f6eeb98c1e34140c8a95629a00",
+      "wiki.test.raw": "7952b062817620ac99b47296dc945942b55068d0e85baf1f95f300c7ad1480ef"
+    },
+    "raw_bytes": {
+      "wiki.train.raw": 539931870,
+      "wiki.validation.raw": 1145547,
+      "wiki.test.raw": 1289123
+    },
+    "abort_if_hash_mismatch": true
+  },
+  "tokenizer_training": {
+    "vocab_size": 8192,
+    "source": "prefix of wiki.train.raw: take the first 8388608 bytes, then truncate back to the last 0x0A at or before that offset so the slice is valid UTF-8",
+    "prefix_8MiB_sha256_before_newline_trim": "0ecdad3fc068efbd0a9a72a42204fa6a2896db54e893bb9b880354f8e1307a7e",
+    "hst": {
+      "stage_a_fraction": 0.68,
+      "min_pair_count": 2,
+      "min_superspan_pmi": 1.15,
+      "max_span_bytes": 16
+    },
+    "byte_bpe": {
+      "min_pair_count": 4
+    },
+    "shared_across_seeds": true
+  },
+  "model": {
+    "recipe_id": "shared_dense_sp",
+    "d_model": 512,
+    "n_layers": 8,
+    "n_heads": 8,
+    "d_ff": 1536,
+    "seq_len": 512,
+    "vocab_size": 8192,
+    "tied_embeddings": true,
+    "norm": "RMSNorm",
+    "positional": "RoPE",
+    "mlp": "SwiGLU",
+    "dropout": 0.0,
+    "dtype": "bfloat16_compute_float32_params",
+    "expected_params_approx": 31500000,
+    "note": "Exact parameter count is recorded at launch. Target band is 20-50M."
+  },
+  "optimization": {
+    "optimizer": "AdamW",
+    "lr": 0.0003,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "eps": 1e-08,
+    "weight_decay": 0.1,
+    "grad_clip_norm": 1.0,
+    "warmup_steps": 200,
+    "lr_schedule": "linear warmup, then cosine to 0.1 * lr",
+    "microbatch_sequences": 16,
+    "grad_accum_steps": 4,
+    "tokens_per_optimizer_step": 32768,
+    "seed_controls": "Python, NumPy, and Torch RNGs set from the official seed; CUDA deterministic algorithms not required"
+  },
+  "equal_bytes_protocol": {
+    "unit": "UTF-8 bytes of wiki.train.raw are charged when a newline-terminated chunk is encoded into the training buffer, in file order. The final chunk is truncated so charged bytes never exceed locked_train_bytes_per_arm_seed. Tokens sitting in the buffer after the budget is met are not trained.",
+    "no_double_count": true,
+    "wraps_allowed": false,
+    "target_train_bytes_per_arm_seed": 200000000,
+    "min_train_bytes_per_arm_seed": 20000000,
+    "quantize_bytes": 10000000,
+    "wall_budget_hours": 9.0,
+    "n_official_runs": 10,
+    "safety_factor": 0.85,
+    "lock_rule": "After a discarded probe (seed 0, not an official seed) of at least 60 seconds on each arm, let bps be the min raw-bytes-per-second. locked_bytes = min(target, floor((wall_budget_hours*3600*bps*safety_factor)/n_official_runs/quantize_bytes)*quantize_bytes). If locked_bytes < min_train_bytes, abort and do not start official seeds. Write budget_lock.json before seed 13 starts. Do not change locked_bytes after the first official step."
+  },
+  "seeds": {
+    "official": [
+      13,
+      21,
+      34,
+      55,
+      89
+    ],
+    "probe_seed_discarded": 0,
+    "order": "For each official seed, run byte_bpe then hst_v1 (so a mid-run stop still yields complete seed pairs when possible). Seeds run in the listed order."
+  },
+  "metric": {
+    "name": "exact_target_byte_bpb",
+    "definition": "total next-token NLL in nats / (ln(2) * sum of UTF-8 byte lengths of the target tokens actually scored). Remainder tokens that do not fill a seq_len window are not scored and are not in the denominator.",
+    "train_split": "wiki.train.raw (byte budget only)",
+    "validation_split": "wiki.validation.raw, used for logging and the first-eval sanity point only",
+    "test_split": "wiki.test.raw, scored once at the end of each official arm",
+    "test_sealed_until_arm_end": true
+  },
+  "statistical_test": {
+    "method": "sheaf_verify.stats.paired_t on the 5 official test BPB pairs, then sheaf_verify.stats.one_sided_less (HST BPB < Byte-BPE BPB)",
+    "alpha": 0.01,
+    "alternative": "HST test BPB is less than Byte-BPE test BPB",
+    "pairing": "same official seed",
+    "if_an_arm_fails": "Do not impute. If fewer than 5 complete pairs finish, report the completed pairs and do not claim the pre-registered 5-seed test was executed."
+  },
+  "stopping_rules": [
+    "Fixed locked byte budget; no early stopping on validation or test.",
+    "Stop an arm and mark it failed (not a win) on non-finite loss or grad norm.",
+    "Thermal: pause training at GPU 83 C, resume at or below 80 C, stop the process at 85 C (checkpoint first).",
+    "AC required. Pause if mains is offline. Stop if mains is offline and battery is below 20%. Refuse to start official training if mains is offline.",
+    "Hard wall: if the 10-hour wall is reached, checkpoint, stop after the current optimizer step, and report incomplete seeds honestly.",
+    "Do not start official seeds until this preregistration is registered in the campaign sheaf store and committed."
+  ],
+  "artifacts": {
+    "work_dir": "~/hadukenn/logs/t49-realcorpus (logs, checkpoints, tokenizers, budget_lock; not committed)",
+    "results_json": "written under work_dir after official runs; registered through training gates later, not claimed here"
+  }
+}
