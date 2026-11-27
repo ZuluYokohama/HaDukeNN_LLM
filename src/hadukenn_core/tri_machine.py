@@ -913,16 +913,9 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
         m = np.max(logits, axis=1, keepdims=True)
         _ = (m.squeeze(-1) + np.log(np.sum(np.exp(logits - m), axis=1))) - logits[np.arange(N), targets]
 
-    # Use the host thread count explicitly. The previous suite pinned this to 2,
-    # which made the C kernel look ~5x slower than multi-threaded NumPy.
-    cce_threads = os.cpu_count() or 8
-    for _ in range(1):
-        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
-    t0 = time.perf_counter()
-    for _ in range(5):
-        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
-    c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
-
+    # Time NumPy / the Python row loop first, before omp_set_num_threads in the
+    # C kernel can oversubscribe the shared libgomp pool used by OpenBLAS.
+    # Then run the C kernel with the P-core logical count (or 8), not 2.
     _py_row_cce()
     t1 = time.perf_counter()
     for _ in range(5):
@@ -934,6 +927,14 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
     for _ in range(5):
         _numpy_gemm_cce()
     numpy_gemm_ms = ((time.perf_counter() - t2) / 5.0) * 1000.0
+
+    cce_threads = len(probe_host_hardware().get("p_cores") or []) or 8
+    for _ in range(1):
+        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
+    t0 = time.perf_counter()
+    for _ in range(5):
+        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
+    c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
     cce_speedup = py_loop_ms / max(c_cce_ms, 1e-6)
     cce_speedup_vs_numpy = numpy_gemm_ms / max(c_cce_ms, 1e-6)
 
