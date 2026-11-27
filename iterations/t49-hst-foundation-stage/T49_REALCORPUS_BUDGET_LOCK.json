@@ -1,0 +1,13 @@
+{
+  "schema": "sheaf-verify.t49-realcorpus-budget-lock.v1",
+  "campaign_id": "T-49-REAL-WIKI103",
+  "note": "Copy of work_dir/budget_lock.json, committed before official seed 13 starts. Probe = discarded seed 0, 90 s per arm, on commit 43bdc19. An earlier serial-encode probe (40,000,000 B, hst_v1 16,432 B/s) was superseded before any official step; see 43bdc19.",
+  "locked_train_bytes_per_arm_seed": 200000000,
+  "min_probe_bytes_per_sec": 104157.53427359358,
+  "probe_bytes_per_sec": {
+    "byte_bpe": 150821.78462766224,
+    "hst_v1": 104157.53427359358
+  },
+  "locked_at_unix": 1795764475.1416848,
+  "rule": "T49_REALCORPUS_PREREG.json equal_bytes_protocol.lock_rule"
+}
