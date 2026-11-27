@@ -147,12 +147,24 @@ class _CapSys:
         return types.SimpleNamespace(out=out_val, err=err_val)
 
 
+class _SkipTest(BaseException):
+    """Pure-stdlib equivalent of pytest.skip for selftest runs."""
+
+
+def _raise_skip(reason: str = "") -> None:
+    raise _SkipTest(reason)
+
+
+_raise_skip.Exception = _SkipTest  # type: ignore[attr-defined]
+
+
 def _install_pytest_shim() -> None:
     if "pytest" in sys.modules:
         return
     mod = types.ModuleType("pytest")
     mod.raises = lambda expected, match=None: _RaisesContext(expected, match=match)  # type: ignore[attr-defined]
     mod.approx = lambda val, rel=None, abs=None: _Approx(val, rel=rel, abs_tol=abs)  # type: ignore[attr-defined]
+    mod.skip = _raise_skip  # type: ignore[attr-defined]
     sys.modules["pytest"] = mod
 
 
@@ -320,12 +332,15 @@ def _run_pytest_suite_stdlib(repo_root: Path) -> tuple[int, int, list[str], floa
                             kwargs[pname] = mp
                         elif pname == "capsys":
                             kwargs[pname] = cap
+                    skip_exc = getattr(getattr(sys.modules.get("pytest"), "skip", None), "Exception", _SkipTest)
                     try:
                         out_sink = cap._out if "capsys" in kwargs else quiet_out
                         err_sink = cap._err if "capsys" in kwargs else quiet_err
                         with contextlib.redirect_stdout(out_sink), contextlib.redirect_stderr(err_sink):
                             fn(**kwargs)
                         passed += 1
+                    except (_SkipTest, skip_exc):
+                        pass
                     except BaseException as exc:  # noqa: BLE001
                         failed += 1
                         failures.append(f"{nodeid}: {type(exc).__name__}: {exc}")

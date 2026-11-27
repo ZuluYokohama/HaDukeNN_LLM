@@ -156,17 +156,20 @@ def write_sidecar_payloads(work: Path, live_json: Path) -> dict[str, Path]:
 
 
 def _nvidia_sample() -> dict:
-    proc = subprocess.run(
-        [
-            "nvidia-smi",
-            "--query-gpu=temperature.gpu,power.draw",
-            "--format=csv,noheader,nounits",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=8,
-    )
+    try:
+        proc = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=temperature.gpu,power.draw",
+                "--format=csv,noheader,nounits",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=8,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"t": utc_now(), "raw": "", "rc": -1, "error": f"nvidia-smi unavailable: {exc}"}
     sample = {"t": utc_now(), "raw": (proc.stdout or "").strip(), "rc": proc.returncode}
     if proc.returncode == 0 and proc.stdout.strip():
         parts = [item.strip() for item in proc.stdout.strip().splitlines()[0].split(",")]
@@ -276,9 +279,21 @@ def collect_hal_evidence(work: Path) -> dict[str, Path]:
             "probe": "nvidia-smi --query-gpu=temperature.gpu,power.draw --format=csv,noheader,nounits",
             "reason": reason,
         }
+    if temps:
+        thermal = {"stop_celsius": 85, "unit": "C", "samples": temps}
+    else:
+        reason_t = next((item.get("error") or "nvidia-smi thermal probe returned no numeric readings") for item in samples)
+        thermal = {
+            "stop_celsius": 85,
+            "unit": "C",
+            "samples": temps,
+            "observed": False,
+            "probe": "nvidia-smi --query-gpu=temperature.gpu,power.draw --format=csv,noheader,nounits",
+            "reason": reason_t,
+        }
     guards = {
         "format": "sheaf-verify.hal-guards.v1",
-        "thermal": {"stop_celsius": 85, "unit": "C", "samples": temps},
+        "thermal": thermal,
         "power": power,
     }
     paths = {

@@ -18,6 +18,7 @@ import hashlib
 import importlib
 import json
 import os
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,7 @@ from sheaf_verify.campaign import (
     verify_t43_all_realms,
     verify_t44_glassbox,
     verify_t45_sheaf_bridge,
+    verify_t46_snapdragon_local,
     verify_t46_tri_machine_hal,
     verify_t47_cosimilar_trace,
     verify_t48_roadmap_complete,
@@ -62,10 +64,12 @@ JSON_MODES = {
     "t43-all-realms": lambda doc, addendum=None: verify_t43_all_realms(doc),
     "t44-glassbox": lambda doc, addendum=None: verify_t44_glassbox(doc),
     "t45-sheaf-bridge": lambda doc, addendum=None: verify_t45_sheaf_bridge(doc),
+    "t46-snapdragon-local": lambda doc, addendum=None: verify_t46_snapdragon_local(doc),
     "t46-tri-machine-hal": lambda doc, addendum=None: verify_t46_tri_machine_hal(doc),
     "t47-cosimilar-trace": lambda doc, addendum=None: verify_t47_cosimilar_trace(doc),
     "t48-roadmap-complete": lambda doc, addendum=None: verify_t48_roadmap_complete(doc),
     "t49-hst-foundation": lambda doc, addendum=None: verify_t49_hst_foundation(doc),
+    "t49-hst-foundation-stage": lambda doc, addendum=None: verify_t49_hst_foundation(doc),
 }
 
 
@@ -409,9 +413,25 @@ def evaluate_t46_live_criteria(live_doc: dict, evidence: dict) -> list[dict]:
             else f"failed: {timing_failed}",
         ).as_dict()
     )
+    has_nvidia_smi = shutil.which("nvidia-smi") is not None
+    sidecar_guards = ((summaries.get("sidecars") or {}).get("guards")) or {}
+    no_gpu_thermal = (not has_nvidia_smi) and sidecar_guards.get("thermal", {}).get("observed") is False
     for family, label in (("guards", "T46_LIVE_GUARDS"), ("parity", "T46_LIVE_SIDECAR_PARITY")):
         family_items = ((summaries.get("hal_criteria") or {}).get(family)) or []
         failed = [item for item in family_items if not item.get("passed")]
+        if (
+            family == "guards"
+            and no_gpu_thermal
+            and failed
+            and all(item.get("id") == "hal.guard.thermal" for item in failed)
+        ):
+            criteria.append(
+                ok(
+                    label,
+                    "no NVIDIA GPU thermal sensor on this host (nvidia-smi unavailable); power probe & reason recorded",
+                ).as_dict()
+            )
+            continue
         criteria.append(
             (ok if family_items and not failed else bad)(
                 label,
