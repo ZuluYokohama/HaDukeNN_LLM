@@ -29,8 +29,7 @@ def main() -> int:
     if args.command == "evaluate":
         if not 1 <= args.repeats <= 20:
             parser.error("--repeats must be between 1 and 20")
-        from .runner import cli_exit
-        from .runner import evaluate as run_evaluation
+        from .runner import cli_exit, evaluate as run_evaluation
         return cli_exit(run_evaluation(args.out, benchmark=not args.no_timing, repeats=args.repeats))
     if args.command == "replay":
         from .runner import replay_file

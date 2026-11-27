@@ -36,7 +36,7 @@ show_missing = true
 [tool.ruff]
 line-length = 120
 src = ["src", "tests"]
-extend-exclude = ["fixtures"]
+extend-exclude = ["fixtures", "iterations"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
