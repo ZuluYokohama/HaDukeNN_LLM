@@ -17,7 +17,8 @@ from hadukenn_core.hst_foundation_lm import (
     run_inline_receipt_gated_decode,
     run_mup_width_transfer_probe,
 )
-from sheaf_verify.campaign import verify_t49_hst_foundation
+from sheaf_verify.campaign import verify_t48_roadmap_complete, verify_t49_hst_foundation
+from sheaf_verify.cli import main as cli_main
 from sheaf_verify.hst_standard import (
     FIRST_MERGE_ID,
     HST_SCHEMA_ID,
@@ -166,3 +167,212 @@ def test_t49_mup_probe_receipt_gate_and_cli_verification():
     assert proc.returncode == 0, proc.stderr
     parsed = json.loads(proc.stdout)
     assert parsed["ok"] is True
+
+
+def test_hst_manifest_rejects_tampered_byte_len():
+    manifest_path = ROOT / "iterations" / "t49-hst-foundation-stage" / "HST_V1_REFERENCE_MANIFEST.json"
+    doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    tampered = json.loads(json.dumps(doc))
+    tampered["merges"][0]["byte_len"] = 99
+    ok_bad, probs = verify_hst_manifest_integrity(tampered)
+    assert ok_bad is False
+    assert any("byte_len mismatch" in msg for msg in probs)
+    with pytest.raises(ValueError, match="byte_len mismatch"):
+        HSTTokenizer.from_manifest(tampered)
+
+    missing_blen = json.loads(json.dumps(doc))
+    del missing_blen["merges"][0]["byte_len"]
+    ok_miss, probs_miss = verify_hst_manifest_integrity(missing_blen)
+    assert ok_miss is False
+    assert any("byte_len mismatch" in msg for msg in probs_miss)
+    with pytest.raises(ValueError, match="byte_len mismatch"):
+        HSTTokenizer.from_manifest(missing_blen)
+
+    for bad_blen in ("2", 2.9, True):
+        bad_doc = json.loads(json.dumps(doc))
+        bad_doc["merges"][0]["byte_len"] = bad_blen
+        ok_b, probs_b = verify_hst_manifest_integrity(bad_doc)
+        assert ok_b is False and any("byte_len mismatch" in msg for msg in probs_b)
+        with pytest.raises(ValueError, match="byte_len mismatch"):
+            HSTTokenizer.from_manifest(bad_doc)
+
+    for bad_b64 in ("ZXI=!!!", 12345):
+        bad_doc = json.loads(json.dumps(doc))
+        bad_doc["merges"][0]["token_b64"] = bad_b64
+        ok_b64, _ = verify_hst_manifest_integrity(bad_doc)
+        assert ok_b64 is False
+        with pytest.raises(ValueError):
+            HSTTokenizer.from_manifest(bad_doc)
+
+
+def test_t48_and_t49_campaign_handle_null_nested_sections(tmp_path: Path, capsys):
+    t48_path = ROOT / "iterations" / "t48-roadmap-complete" / "T48_ROADMAP_COMPLETE_RESULTS.json"
+    t48_doc = json.loads(t48_path.read_text(encoding="utf-8"))
+    for key in ("phase_a_t38_live_scaling_audit", "phase_d_learned_neural_hypergraph_bridge"):
+        bad = json.loads(json.dumps(t48_doc))
+        bad[key] = None
+        ok_flag, criteria, _ = verify_t48_roadmap_complete(bad)
+        assert ok_flag is False
+        assert any(not c.passed for c in criteria)
+
+    bad_headline = json.loads(json.dumps(t48_doc))
+    bad_headline["phase_a_t38_live_scaling_audit"]["headline_M_4ep"] = None
+    ok_hl, _, _ = verify_t48_roadmap_complete(bad_headline)
+    assert ok_hl is False
+
+    t48_null_file = tmp_path / "t48_null.json"
+    t48_null_file.write_text(json.dumps({**t48_doc, "phase_a_t38_live_scaling_audit": None}), encoding="utf-8")
+    assert cli_main(["campaign", "--mode", "t48-roadmap-complete", "--path", str(t48_null_file), "--json"]) == 1
+    assert json.loads(capsys.readouterr().out)["ok"] is False
+
+    t49_path = ROOT / "iterations" / "t49-hst-foundation-stage" / "T49_HST_FOUNDATION_RESULTS.json"
+    t49_doc = json.loads(t49_path.read_text(encoding="utf-8"))
+    for key in (
+        "pillar_1_hst_v1_tokenization_standard",
+        "pillar_2_equal_bytes_foundation_lm",
+        "pillar_3_mup_zero_shot_width_transfer",
+        "pillar_4_inline_receipt_gated_decoding",
+    ):
+        bad = json.loads(json.dumps(t49_doc))
+        bad[key] = None
+        ok_flag, criteria, _ = verify_t49_hst_foundation(bad)
+        assert ok_flag is False
+        assert any(not c.passed for c in criteria)
+
+    t49_null_file = tmp_path / "t49_null.json"
+    t49_null_file.write_text(
+        json.dumps({**t49_doc, "pillar_1_hst_v1_tokenization_standard": None}), encoding="utf-8"
+    )
+    assert cli_main(["campaign", "--mode", "t49-hst-foundation", "--path", str(t49_null_file), "--json"]) == 1
+    assert json.loads(capsys.readouterr().out)["ok"] is False
+
+
+def test_t48_and_t49_campaign_reject_top_level_non_dict(tmp_path: Path, capsys):
+    for bad_root in (None, [], 42, "bad", True, False):
+        ok48, crit48, adv48 = verify_t48_roadmap_complete(bad_root)  # type: ignore[arg-type]
+        assert ok48 is False and adv48 == [] and len(crit48) == 1 and not crit48[0].passed
+        ok49, crit49, adv49 = verify_t49_hst_foundation(bad_root)  # type: ignore[arg-type]
+        assert ok49 is False and adv49 == [] and len(crit49) == 1 and not crit49[0].passed
+
+    for idx, raw in enumerate(("null", "[]")):
+        p = tmp_path / f"root_{idx}.json"
+        p.write_text(raw, encoding="utf-8")
+        for mode in ("t48-roadmap-complete", "t49-hst-foundation", "t49-hst-foundation-stage"):
+            for flag in ("--path", "--in"):
+                assert cli_main(["campaign", "--mode", mode, flag, str(p), "--json"]) == 1
+                assert json.loads(capsys.readouterr().out)["ok"] is False
+
+
+def test_t49_rejects_negative_p_value():
+    artifact = ROOT / "iterations" / "t49-hst-foundation-stage" / "T49_HST_FOUNDATION_RESULTS.json"
+    doc = json.loads(artifact.read_text(encoding="utf-8"))
+    broken = json.loads(json.dumps(doc))
+    broken["pillar_2_equal_bytes_foundation_lm"]["p_one_sided_hst_beats_bpe"] = -0.5
+    ok_flag, criteria, _ = verify_t49_hst_foundation(broken)
+    assert ok_flag is False
+    assert any(c.id == "T49_EQUAL_BYTES_FOUNDATION_LM_WIN" and not c.passed for c in criteria)
+
+
+def test_hst_manifest_rejects_negative_and_bool_child_ids():
+    manifest_path = ROOT / "iterations" / "t49-hst-foundation-stage" / "HST_V1_REFERENCE_MANIFEST.json"
+    doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for key, bad_val in (
+        ("left_id", -1),
+        ("right_id", -1),
+        ("left_id", True),
+        ("right_id", False),
+        ("left_id", 999_999),
+    ):
+        bad_doc = json.loads(json.dumps(doc))
+        bad_doc["merges"][0][key] = bad_val
+        ok_m, _ = verify_hst_manifest_integrity(bad_doc)
+        assert ok_m is False
+        with pytest.raises(ValueError):
+            HSTTokenizer.from_manifest(bad_doc)
+
+
+def test_hst_encode_with_empty_control_map():
+    from sheaf_verify.hst_standard import HSTMergedRule
+
+    id_to_bytes = [bytes([b]) for b in range(256)]
+    rules: list[HSTMergedRule] = []
+    for idx in range(8):
+        tid = 256 + idx
+        lid = ord("a") + idx
+        rid = ord("b") + idx
+        id_to_bytes.append(id_to_bytes[lid] + id_to_bytes[rid])
+        rules.append(
+            HSTMergedRule(
+                token_id=tid,
+                left_id=lid,
+                right_id=rid,
+                stage="A_lexical",
+                pmi_bits=1.0,
+                count=10,
+                byte_len=2,
+            )
+        )
+    tok_empty = HSTTokenizer(
+        vocab_size=264,
+        id_to_bytes=id_to_bytes,
+        rules=rules,
+        control_map={},
+    )
+    assert tok_empty.encode("hello ab 123") == tok_empty.encode_bytes(b"hello ab 123")
+    manifest = tok_empty.export_manifest()
+    reloaded = HSTTokenizer.from_manifest(manifest)
+    assert reloaded.control_map == {}
+    assert reloaded.encode("hello ab 123") == reloaded.encode_bytes(b"hello ab 123")
+
+
+def test_cli_selftest_report_out_creates_parent_dir(tmp_path: Path, monkeypatch, capsys):
+    import sheaf_verify.selftest as sv_selftest
+
+    monkeypatch.setattr(sv_selftest, "run_full_verification", lambda *_a, **_kw: (True, {"ok": True, "stub": True}))
+    out_path = tmp_path / "missing_parent" / "nested" / "selftest_report.json"
+    assert not out_path.parent.exists()
+    rc = cli_main(["selftest", "--report-out", str(out_path), "--json"])
+    assert rc == 0
+    assert out_path.is_file()
+    saved = json.loads(out_path.read_text(encoding="utf-8"))
+    assert saved == {"ok": True, "stub": True}
+    emitted = json.loads(capsys.readouterr().out)
+    assert emitted == {"ok": True, "stub": True}
+
+
+def test_hst_manifest_rejects_malformed_containers_and_vocab_size():
+    manifest_path = ROOT / "iterations" / "t49-hst-foundation-stage" / "HST_V1_REFERENCE_MANIFEST.json"
+    doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    for bad_root in ("not_a_dict", ["list"], 123, None):
+        with pytest.raises(ValueError):
+            HSTTokenizer.from_manifest(bad_root)  # type: ignore[arg-type]
+
+    for mutator in (
+        lambda d: d.__setitem__("merges", "bad"),
+        lambda d: d.__setitem__("merges", ["bad"]),
+        lambda d: d.__setitem__("control_tokens", ["bad"]),
+        lambda d: d.__setitem__("control_tokens", {"<|hst:bos|>": True}),
+        lambda d: d.pop("vocab_size"),
+        lambda d: d.__setitem__("vocab_size", True),
+        lambda d: d.__setitem__("vocab_size", 200),
+        lambda d: d["merges"][0].pop("stage"),
+        lambda d: d["merges"][0].__setitem__("stage", "C_invalid"),
+        lambda d: d["merges"][0].__setitem__("pmi_bits", "bad"),
+        lambda d: d["merges"][0].__setitem__("count", True),
+    ):
+        bad_doc = json.loads(json.dumps(doc))
+        mutator(bad_doc)
+        with pytest.raises(ValueError):
+            HSTTokenizer.from_manifest(bad_doc)
+
+
+def test_t49_rejects_over_100_token_reduction_pct():
+    artifact = ROOT / "iterations" / "t49-hst-foundation-stage" / "T49_HST_FOUNDATION_RESULTS.json"
+    doc = json.loads(artifact.read_text(encoding="utf-8"))
+    broken = json.loads(json.dumps(doc))
+    broken["pillar_1_hst_v1_tokenization_standard"]["token_sequence_reduction_pct"] = 150.0
+    ok_flag, criteria, _ = verify_t49_hst_foundation(broken)
+    assert ok_flag is False
+    assert any(c.id == "T49_HST_V1_STANDARD_AND_COMPRESSION" and not c.passed for c in criteria)

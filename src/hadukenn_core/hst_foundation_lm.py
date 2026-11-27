@@ -23,6 +23,7 @@ from typing import Any
 import numpy as np
 
 from hadukenn_core.exec_bridge import IncrementalHypergraphKernel
+from hadukenn_core.fast_ops import detect_oryon_capabilities
 from hadukenn_core.heads import CountShrunkSpanComposer, flat_tied_fwd_bwd, tiled_cce_fwd_bwd
 from hadukenn_core.tokenization import ByteBPETokenizer
 from hadukenn_core.transformer_lm import CausalTransformerLM, TransformerConfig
@@ -183,19 +184,81 @@ def _eval_exact_target_byte_bpb(
     H_flat = model.encode_hidden(xs, prefix_stalks=stalk_batch) * np.float32(mup_logit_scale)
     if bottleneck_proj is not None:
         # Low-rank bottleneck projection simulating a rank-constrained class funnel (rank_b < d_model)
-        H_flat = (H_flat @ bottleneck_proj) @ bottleneck_proj.T
+        H_flat = np.ascontiguousarray((H_flat @ bottleneck_proj) @ bottleneck_proj.T, dtype=np.float32)
 
     U_table = model.full_embedding_table()
     targets_flat = ys.reshape(-1)
     target_bytes = float(np.sum(token_byte_lens[targets_flat]))
 
     if model.cfg.head_kind == "tiled_cce":
-        loss_vec, _, _ = tiled_cce_fwd_bwd(H_flat, U_table, targets_flat, compute_grad=False)
+        H_cce = np.ascontiguousarray(H_flat, dtype=np.float32)
+        U_cce = np.ascontiguousarray(U_table, dtype=np.float32)
+        loss_vec, _, _ = tiled_cce_fwd_bwd(H_cce, U_cce, targets_flat, compute_grad=False)
     else:
         loss_vec, _, _ = flat_tied_fwd_bwd(H_flat, U_table, targets_flat, compute_grad=False)
 
     total_nats = float(np.sum(loss_vec))
     return total_nats / (max(1.0, target_bytes) * math.log(2.0))
+
+
+def verify_oryon_neon_tiled_cce(seed: int = 13) -> dict[str, Any]:
+    """Verify native ARM64 Oryon NEON tiled_cce_fwd_bwd_f32 dispatch and numerical parity."""
+    caps = detect_oryon_capabilities()
+    cfg = TransformerConfig(
+        vocab_size=320,
+        d_model=64,
+        n_heads=4,
+        n_layers=1,
+        d_ff=128,
+        window_len=16,
+        head_kind="tiled_cce",
+    )
+    lm = CausalTransformerLM(cfg, seed=seed)
+    rng = np.random.default_rng(seed)
+    x_ids = rng.integers(0, cfg.vocab_size, size=(2, cfg.window_len), dtype=np.int64)
+    y_ids = rng.integers(0, cfg.vocab_size, size=(2, cfg.window_len), dtype=np.int64)
+    train_loss, grads = lm.forward_backward(x_ids, y_ids, training=True)
+
+    eval_ids = rng.integers(0, cfg.vocab_size, size=(cfg.window_len * 2 + 1,), dtype=np.int64).tolist()
+    byte_lens = np.ones(cfg.vocab_size, dtype=np.int32)
+    eval_bpb = _eval_exact_target_byte_bpb(lm, eval_ids, byte_lens)
+
+    h_c = np.ascontiguousarray(rng.normal(0.0, 0.35, size=(32, 64)), dtype=np.float32)
+    e_c = np.ascontiguousarray(rng.normal(0.0, 0.25, size=(320, 64)), dtype=np.float32)
+    t_c = rng.integers(0, 320, size=(32,), dtype=np.int32)
+    loss_nat, dh_nat, de_nat = tiled_cce_fwd_bwd(
+        h_c, e_c, t_c, tile_V=128, compute_grad=True, use_native=True
+    )
+    loss_ref, dh_ref, de_ref = tiled_cce_fwd_bwd(
+        h_c, e_c, t_c, tile_V=128, compute_grad=True, use_native=False
+    )
+    assert dh_nat is not None and de_nat is not None
+    assert dh_ref is not None and de_ref is not None
+    loss_err = float(np.max(np.abs(loss_nat - loss_ref)))
+    dh_err = float(np.max(np.abs(dh_nat - dh_ref)))
+    de_err = float(np.max(np.abs(de_nat - de_ref)))
+    parity_ok = (
+        bool(caps.get("native_loaded", False))
+        and "E_base" in grads
+        and math.isfinite(float(train_loss))
+        and math.isfinite(float(eval_bpb))
+        and loss_err < 1e-4
+        and dh_err < 1e-4
+        and de_err < 1e-4
+    )
+    return {
+        "native_loaded": bool(caps.get("native_loaded", False)),
+        "has_neon": bool(caps.get("has_neon", False)),
+        "has_i8mm": bool(caps.get("has_i8mm", False)),
+        "compiler_flags": list(caps.get("flags", [])),
+        "tiled_cce_native_symbol": "tiled_cce_fwd_bwd_f32",
+        "tiled_cce_parity_ok": parity_ok,
+        "loss_max_abs_err": round(loss_err, 8),
+        "dh_max_abs_err": round(dh_err, 8),
+        "de_max_abs_err": round(de_err, 8),
+        "train_loss": round(float(train_loss), 6),
+        "eval_bpb": round(float(eval_bpb), 6),
+    }
 
 
 def _forward_backward_with_mup_output_scale(

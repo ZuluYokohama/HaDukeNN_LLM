@@ -28,6 +28,7 @@ from typing import Any
 
 import numpy as np
 
+from hadukenn_core.npu_qnn_backend import _VALID_DCVS_MODES, HexagonQNNBackend
 from sheaf_verify.compliance import emit_regulatory_bundle, verify_regulatory_bundle
 
 GIB = 1024 ** 3
@@ -45,6 +46,8 @@ def _set_openblas_threads(n: int) -> int | None:
     None if the library is not present.
     """
     global _OPENBLAS_SET_THREADS
+    if platform.machine().lower() in ("aarch64", "arm64"):
+        return None
     n = max(1, int(n))
     if _OPENBLAS_SET_THREADS is None:
         _OPENBLAS_SET_THREADS = False
@@ -242,72 +245,120 @@ PROFILES: dict[str, MachineProfile] = {
 }
 
 
-_HAL_LIB: ctypes.CDLL | None = None
-_HAL_TRIED = False
+_HAL_LIB_MAP: dict[tuple[str, str, tuple[str, ...], str | None], ctypes.CDLL | None] = {}
+_HAL_PROBE_CACHE: dict[tuple[str, int, str], tuple[str, list[str], str | None]] = {}
+_HAL_SRC_SHA_CACHE: dict[tuple[str, int, int, int, int], tuple[str, bytes]] = {}
+_HAL_CC_DISCOVERY_CACHE: dict[tuple[str, str], str | None] = {}
 
 
-def get_tri_machine_lib(force_rebuild: bool = False) -> ctypes.CDLL | None:
-    """Compile and load `tri_machine_hal.c` into `$HOME/.cache/hadukenn_core`."""
-    global _HAL_LIB, _HAL_TRIED
-    if _HAL_TRIED and not force_rebuild:
-        return _HAL_LIB
-    _HAL_TRIED = True
+def _discover_tri_machine_cc(use_cache: bool = True) -> str | None:
+    """Probe C11 compiler in order: $CC -> clang -> ~/.local/bin/clang -> cc -> gcc."""
+    cc_env = os.environ.get("CC", "").strip()
+    path_env = os.environ.get("PATH", "")
+    cache_key = (cc_env, path_env)
+    if use_cache and cache_key in _HAL_CC_DISCOVERY_CACHE:
+        cached = _HAL_CC_DISCOVERY_CACHE[cache_key]
+        if cached is None or Path(cached).is_file():
+            return cached
 
-    csrc_dir = Path(__file__).resolve().parent / "csrc"
-    c_file = csrc_dir / "tri_machine_hal.c"
-    h_file = csrc_dir / "tri_machine_hal.h"
-    if not c_file.is_file() or not h_file.is_file():
-        return None
+    found_cc: str | None = None
+    if cc_env:
+        cand = Path(cc_env)
+        if cand.is_file() and os.access(cand, os.X_OK):
+            found_cc = str(cand)
+        else:
+            found_cc = shutil.which(cc_env)
+        _HAL_CC_DISCOVERY_CACHE[cache_key] = found_cc
+        return found_cc
 
-    cc = shutil.which("gcc") or shutil.which("clang")
-    if cc is None:
-        return None
+    found_clang = shutil.which("clang")
+    if found_clang is not None:
+        _HAL_CC_DISCOVERY_CACHE[cache_key] = found_clang
+        return found_clang
 
-    digest = hashlib.sha256(c_file.read_bytes() + h_file.read_bytes()).hexdigest()[:16]
-    cache_dir = Path.home() / ".cache" / "hadukenn_core"
-    try:
-        cache_dir.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        return None
+    local_clang = Path.home() / ".local" / "bin" / "clang"
+    if local_clang.is_file() and os.access(local_clang, os.X_OK):
+        found_cc = str(local_clang)
+        _HAL_CC_DISCOVERY_CACHE[cache_key] = found_cc
+        return found_cc
 
-    ext = ".dll" if os.name == "nt" else ".so"
-    out_so = cache_dir / f"hadukenn_tri_hal_{digest}{ext}"
-    if force_rebuild or not out_so.is_file():
-        cmd = [
-            cc,
-            "-O3",
+    for tool in ("cc", "gcc"):
+        found = shutil.which(tool)
+        if found is not None:
+            _HAL_CC_DISCOVERY_CACHE[cache_key] = found
+            return found
+
+    _HAL_CC_DISCOVERY_CACHE[cache_key] = None
+    return None
+
+
+def _tri_compiler_version_banner(cc: str) -> str:
+    proc = subprocess.run(
+        [cc, "--version"],
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return "unknown"
+    first = (proc.stdout or proc.stderr or "").splitlines()
+    return first[0].strip() if first else "unknown"
+
+
+def _probe_tri_machine_isa_flags(cc: str) -> list[str]:
+    """Probe ISA flags independently of OpenMP/pthreads."""
+    arch = platform.machine().lower()
+    if arch in ("aarch64", "arm64"):
+        candidates = [
+            "-mcpu=oryon-1+fp16",
+            "-mcpu=oryon-1",
+            "-march=armv8.6-a+dotprod+i8mm+fp16",
             "-march=native",
-            "-fopenmp",
-            "-shared",
-            "-fPIC",
-            f"-I{csrc_dir}",
-            str(c_file),
-            "-lm",
-            "-o",
-            str(out_so),
         ]
-        proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
-        if proc.returncode != 0:
-            cmd_portable = [
-                cc,
-                "-O3",
-                "-shared",
-                "-fPIC",
-                f"-I{csrc_dir}",
-                str(c_file),
-                "-lm",
-                "-o",
-                str(out_so),
-            ]
-            proc2 = subprocess.run(cmd_portable, check=False, capture_output=True, text=True)
-            if proc2.returncode != 0:
-                return None
+    else:
+        candidates = ["-march=native"]
 
-    try:
-        lib = ctypes.CDLL(str(out_so))
-    except OSError:
-        return None
+    for flag in candidates:
+        proc = subprocess.run(
+            [cc, flag, "-x", "c", "-c", os.devnull, "-o", os.devnull],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode == 0:
+            return [flag]
+    return []
 
+
+def _probe_tri_machine_thread_flag(cc: str) -> str | None:
+    """Probe -fopenmp via real #include <omp.h> compile+link, falling back to -pthread."""
+    omp_src = "#include <omp.h>\nint f(void) { return omp_get_max_threads(); }\n"
+    proc_omp = subprocess.run(
+        [cc, "-fopenmp", "-shared", "-fPIC", "-x", "c", "-", "-o", os.devnull],
+        input=omp_src,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc_omp.returncode == 0:
+        return "-fopenmp"
+
+    pth_src = "#include <pthread.h>\nint f(void) { return 1; }\n"
+    proc_pth = subprocess.run(
+        [cc, "-pthread", "-shared", "-fPIC", "-x", "c", "-", "-o", os.devnull],
+        input=pth_src,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc_pth.returncode == 0:
+        return "-pthread"
+    return None
+
+
+def _bind_tri_machine_symbols(lib: ctypes.CDLL) -> None:
     f32_p = ctypes.POINTER(ctypes.c_float)
     i8_p = ctypes.POINTER(ctypes.c_int8)
     i32_p = ctypes.POINTER(ctypes.c_int32)
@@ -359,8 +410,97 @@ def get_tri_machine_lib(force_rebuild: bool = False) -> ctypes.CDLL | None:
     ]
     lib.hadukenn_scan_causal_spans_u8.restype = ctypes.c_int
 
-    _HAL_LIB = lib
-    return _HAL_LIB
+
+def get_tri_machine_lib(force_rebuild: bool = False) -> ctypes.CDLL | None:
+    """Compile and load `tri_machine_hal.c` into `$HOME/.cache/hadukenn_core`."""
+    csrc_dir = Path(__file__).resolve().parent / "csrc"
+    c_file = csrc_dir / "tri_machine_hal.c"
+    h_file = csrc_dir / "tri_machine_hal.h"
+    if not c_file.is_file() or not h_file.is_file():
+        return None
+
+    cc = _discover_tri_machine_cc(use_cache=not force_rebuild)
+    if cc is None:
+        return None
+
+    st_c = c_file.stat()
+    st_h = h_file.stat()
+    src_stat_key = (str(c_file), st_c.st_mtime_ns, st_c.st_size, st_h.st_mtime_ns, st_h.st_size)
+    if src_stat_key in _HAL_SRC_SHA_CACHE:
+        src_sha, src_bytes = _HAL_SRC_SHA_CACHE[src_stat_key]
+    else:
+        src_bytes = c_file.read_bytes() + h_file.read_bytes()
+        src_sha = hashlib.sha256(src_bytes).hexdigest()
+        _HAL_SRC_SHA_CACHE[src_stat_key] = (src_sha, src_bytes)
+
+    try:
+        cc_mtime = Path(cc).stat().st_mtime_ns
+    except OSError:
+        cc_mtime = 0
+    probe_key = (cc, cc_mtime, platform.machine().lower())
+    if probe_key in _HAL_PROBE_CACHE and not force_rebuild:
+        cc_ver, isa_flags, thread_flag = _HAL_PROBE_CACHE[probe_key]
+    else:
+        cc_ver = _tri_compiler_version_banner(cc)
+        isa_flags = _probe_tri_machine_isa_flags(cc)
+        thread_flag = _probe_tri_machine_thread_flag(cc)
+        _HAL_PROBE_CACHE[probe_key] = (cc_ver, isa_flags, thread_flag)
+
+    cache_key = (src_sha, cc, tuple(isa_flags), thread_flag)
+    if not force_rebuild and cache_key in _HAL_LIB_MAP:
+        return _HAL_LIB_MAP[cache_key]
+
+    key_material = src_bytes + f"|{cc}|{cc_ver}|{' '.join(isa_flags)}|{thread_flag or ''}".encode()
+    digest = hashlib.sha256(key_material).hexdigest()[:16]
+    cache_dir = Path.home() / ".cache" / "hadukenn_core"
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        _HAL_LIB_MAP[cache_key] = None
+        return None
+
+    ext = ".dll" if os.name == "nt" else ".so"
+    out_so = cache_dir / f"hadukenn_tri_hal_{digest}{ext}"
+    if force_rebuild or not out_so.is_file():
+        tmp_so = cache_dir / f".tmp_{os.getpid()}_{digest}{ext}"
+        cmd = [
+            cc,
+            "-std=c11",
+            "-O3",
+            *isa_flags,
+            "-shared",
+            "-fPIC",
+            "-Wall",
+            "-Wextra",
+            "-Werror=implicit-function-declaration",
+            f"-I{csrc_dir}",
+        ]
+        if thread_flag is not None:
+            cmd.append(thread_flag)
+        cmd.extend([str(c_file), "-lm", "-o", str(tmp_so)])
+
+        proc = subprocess.run(
+            cmd,
+            stdin=subprocess.DEVNULL,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0:
+            if tmp_so.exists():
+                tmp_so.unlink(missing_ok=True)
+            _HAL_LIB_MAP[cache_key] = None
+            return None
+        os.replace(tmp_so, out_so)
+
+    try:
+        lib = ctypes.CDLL(str(out_so))
+        _bind_tri_machine_symbols(lib)
+    except OSError:
+        lib = None
+
+    _HAL_LIB_MAP[cache_key] = lib
+    return lib
 
 
 def detect_host_isa() -> dict[str, Any]:
@@ -496,6 +636,11 @@ class StaticSlabArena:
     def __init__(self, capacity_bytes: int) -> None:
         if capacity_bytes <= 0:
             raise ValueError("capacity_bytes must be positive")
+        max_c_size = ctypes.c_size_t(-1).value
+        if capacity_bytes > max_c_size - 63:
+            raise MemoryError(
+                f"Requested capacity {capacity_bytes}B exceeds size_t alignment ceiling"
+            )
         self.capacity_bytes = ((capacity_bytes + 63) // 64) * 64
         self._lib = get_tri_machine_lib()
         self._c_arena = _CArena()
@@ -503,15 +648,26 @@ class StaticSlabArena:
         self._py_peak = 0
         self._py_allocs = 0
         self._py_overflows = 0
+        self._closed: bool = False
         if self._lib is not None:
             rc = self._lib.hadukenn_arena_init(ctypes.byref(self._c_arena), self.capacity_bytes)
             if rc != 0:
                 raise MemoryError(f"Failed to allocate {self.capacity_bytes} byte aligned slab")
 
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
     def alloc_bytes(self, nbytes: int) -> int:
         """Allocate a 64-byte aligned slice and return its pointer (or virtual offset)."""
+        if self._closed:
+            raise RuntimeError("StaticSlabArena is closed")
+        if nbytes < 0:
+            raise ValueError("nbytes must be non-negative")
         if self._lib is not None and self._c_arena.base:
-            ptr = self._lib.hadukenn_arena_alloc(ctypes.byref(self._c_arena), nbytes)
+            max_c_size = ctypes.c_size_t(-1).value
+            c_nbytes = min(nbytes, max_c_size)
+            ptr = self._lib.hadukenn_arena_alloc(ctypes.byref(self._c_arena), c_nbytes)
             if not ptr:
                 raise MemoryError(
                     f"Arena ceiling exceeded: requested {nbytes}B at offset "
@@ -531,6 +687,8 @@ class StaticSlabArena:
 
     def alloc_f32_view(self, shape: tuple[int, ...]) -> np.ndarray:
         """Carve a zero-copy 64-byte aligned float32 ndarray directly out of the static slab."""
+        if self._closed:
+            raise RuntimeError("StaticSlabArena is closed")
         elems = int(math.prod(shape))
         nbytes = elems * 4
         ptr = self.alloc_bytes(nbytes)
@@ -542,6 +700,8 @@ class StaticSlabArena:
         return np.zeros(shape, dtype=np.float32)
 
     def reset(self) -> None:
+        if self._closed:
+            raise RuntimeError("StaticSlabArena is closed")
         if self._lib is not None and self._c_arena.base:
             self._lib.hadukenn_arena_reset(ctypes.byref(self._c_arena))
         else:
@@ -565,8 +725,10 @@ class StaticSlabArena:
         }
 
     def close(self) -> None:
-        if self._lib is not None and self._c_arena.base:
-            self._lib.hadukenn_arena_free(ctypes.byref(self._c_arena))
+        if not self._closed:
+            if self._lib is not None and self._c_arena.base:
+                self._lib.hadukenn_arena_free(ctypes.byref(self._c_arena))
+            self._closed = True
 
     def __enter__(self) -> StaticSlabArena:
         return self
@@ -778,10 +940,14 @@ def hal_sheaf_kv_prefix_gate(
         )
         return out_prefix, out_energy
 
+    if K_nbr == 0:
+        return np.zeros((N, d_model), dtype=np.float32), np.zeros(N, dtype=np.float32)
+
     diff = q_c[:, None, :] - ns_c
     e_k = np.sum(diff * diff, axis=-1)
-    gates = np.exp(-beta * e_k)
-    gates /= np.maximum(np.sum(gates, axis=-1, keepdims=True), 1e-12)
+    e_ref = np.min(e_k, axis=-1, keepdims=True) if beta >= 0.0 else np.max(e_k, axis=-1, keepdims=True)
+    gates = np.exp(-float(beta) * (e_k - e_ref))
+    gates /= np.sum(gates, axis=-1, keepdims=True)
     prefix = np.einsum("nk,nkd->nd", gates, nv_c).astype(np.float32)
     return prefix, np.mean(e_k, axis=-1).astype(np.float32)
 
@@ -832,6 +998,15 @@ def hal_scan_causal_spans(
     return out
 
 
+_VALID_NPU_BACKENDS = frozenset({"hal_c11", "htp_qnn", "auto", "oryon_i8mm", "numpy"})
+_NPU_BACKEND_TO_QNN_TIER: dict[str, str] = {
+    "htp_qnn": "htp_qnn",
+    "auto": "auto",
+    "oryon_i8mm": "oryon_i8mm",
+    "numpy": "numpy_ref",
+}
+
+
 class ZenbookLoopedNPUEngine:
     """Persistent zero-allocation looped INT8 engine for Zenbook Hexagon V73 (13.0 GiB slab)."""
 
@@ -842,26 +1017,58 @@ class ZenbookLoopedNPUEngine:
         loop_steps: int = 4,
         arena_cap_bytes: int = 64 * MIB,
         seed: int = 13,
+        backend: str = "hal_c11",
+        dcvs_mode: str = "burst",
     ) -> None:
+        if not isinstance(backend, str) or backend not in _VALID_NPU_BACKENDS:
+            raise ValueError(
+                f"Unsupported backend {backend!r}; expected one of {sorted(_VALID_NPU_BACKENDS)}"
+            )
+        if not isinstance(dcvs_mode, str) or dcvs_mode not in _VALID_DCVS_MODES:
+            raise ValueError(
+                f"Unsupported dcvs_mode {dcvs_mode!r}; expected one of {sorted(_VALID_DCVS_MODES)}"
+            )
+        if d_model <= 0 or d_ff <= 0 or loop_steps <= 0:
+            raise ValueError("d_model, d_ff, and loop_steps must be positive integers")
         if arena_cap_bytes > ZENBOOK_PROFILE.ram_arena_cap_bytes:
             raise MemoryError("Requested slab exceeds Zenbook 13.0 GiB physical budget")
+
         self.d_model = d_model
         self.d_ff = d_ff
         self.loop_steps = loop_steps
+        self.backend = backend
+        self.dcvs_mode = dcvs_mode
+        self._closed: bool = False
+        self._qnn_backend: HexagonQNNBackend | None = None
         self.arena = StaticSlabArena(arena_cap_bytes)
+        try:
+            if backend != "hal_c11":
+                self._qnn_backend = HexagonQNNBackend(
+                    force_tier=_NPU_BACKEND_TO_QNN_TIER[backend],
+                    dcvs_mode=dcvs_mode,
+                )
 
-        rng = np.random.default_rng(seed)
-        w_up_fp32 = (rng.standard_normal((d_ff, d_model)) / math.sqrt(d_model)).astype(np.float32)
-        w_dn_fp32 = (rng.standard_normal((d_model, d_ff)) / math.sqrt(d_ff)).astype(np.float32)
-        self.w_up_fp32 = w_up_fp32
-        self.w_dn_fp32 = w_dn_fp32
-        self.w_up_q, self.w_up_s = quantize_symmetric_int8(w_up_fp32)
-        self.w_dn_q, self.w_dn_s = quantize_symmetric_int8(w_dn_fp32)
+            rng = np.random.default_rng(seed)
+            w_up_fp32 = (rng.standard_normal((d_ff, d_model)) / math.sqrt(d_model)).astype(np.float32)
+            w_dn_fp32 = (rng.standard_normal((d_model, d_ff)) / math.sqrt(d_ff)).astype(np.float32)
+            self.w_up_fp32 = w_up_fp32
+            self.w_dn_fp32 = w_dn_fp32
+            self.w_up_q, self.w_up_s = quantize_symmetric_int8(w_up_fp32)
+            self.w_dn_q, self.w_dn_s = quantize_symmetric_int8(w_dn_fp32)
+            self.w_up_q_t = np.ascontiguousarray(self.w_up_q.T)
+            self.w_dn_q_t = np.ascontiguousarray(self.w_dn_q.T)
 
-        self._max_batch = 128
-        self._state_buf = self.arena.alloc_f32_view((self._max_batch, d_model))
-        self._norm_buf = self.arena.alloc_f32_view((self._max_batch, d_model))
-        self._allocs_at_boot = self.arena.stats()["alloc_count"]
+            self._max_batch = 128
+            self._state_buf = self.arena.alloc_f32_view((self._max_batch, d_model))
+            self._norm_buf = self.arena.alloc_f32_view((self._max_batch, d_model))
+            self._allocs_at_boot = self.arena.stats()["alloc_count"]
+        except Exception:
+            if self._qnn_backend is not None:
+                self._qnn_backend.close()
+                self._qnn_backend = None
+            self.arena.close()
+            self._closed = True
+            raise
 
         self.qnn_provider_options = {
             "backend_path": "QnnHtp.dll",
@@ -871,15 +1078,31 @@ class ZenbookLoopedNPUEngine:
             "htp_graph_finalization_optimization_mode": "3",
         }
 
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
     def run_loop(self, x_in: np.ndarray, use_fp32_ref: bool = False) -> tuple[np.ndarray, dict[str, Any]]:
         """Execute `loop_steps` recurrent residual steps with zero slab allocations inside the loop."""
-        N, d = x_in.shape
+        if self._closed:
+            raise RuntimeError("ZenbookLoopedNPUEngine is closed")
+        x_arr = np.asarray(x_in, dtype=np.float32)
+        if x_arr.ndim != 2:
+            raise ValueError(f"Expected 2D input tensor, got shape {x_arr.shape}")
+        N, d = x_arr.shape
         if d != self.d_model or N > self._max_batch:
-            raise ValueError(f"Input shape {x_in.shape} exceeds pre-bound NPU buffer ({self._max_batch}, {self.d_model})")
+            raise ValueError(
+                f"Input shape {x_arr.shape} exceeds pre-bound NPU buffer "
+                f"({self._max_batch}, {self.d_model})"
+            )
 
         allocs_before = self.arena.stats()["alloc_count"]
         state = self._state_buf[:N]
-        np.copyto(state, np.asarray(x_in, dtype=np.float32))
+        np.copyto(state, x_arr)
+
+        backend_used = "fp32_ref" if use_fp32_ref else self.backend
+        canary_ok = True
+        providers: list[str] = ["FP32Reference"] if use_fp32_ref else ["C11HAL"]
 
         t0 = time.perf_counter()
         step_scale = 1.0 / math.sqrt(self.loop_steps)
@@ -891,11 +1114,23 @@ class ZenbookLoopedNPUEngine:
             if use_fp32_ref:
                 h_mid = np.maximum(normed @ self.w_up_fp32.T, 0.0)
                 delta = h_mid @ self.w_dn_fp32.T
-            else:
+            elif self.backend == "hal_c11":
                 x_q, x_s = quantize_symmetric_int8(normed)
                 h_mid = np.maximum(hal_qgemm_int8(x_q, x_s, self.w_up_q, self.w_up_s), 0.0)
                 m_q, m_s = quantize_symmetric_int8(h_mid)
                 delta = hal_qgemm_int8(m_q, m_s, self.w_dn_q, self.w_dn_s)
+            else:
+                assert self._qnn_backend is not None
+                x_q, x_s = quantize_symmetric_int8(normed)
+                h_mid = np.maximum(
+                    self._qnn_backend.qgemm_int8_f32(x_q, x_s, self.w_up_q_t, self.w_up_s),
+                    0.0,
+                )
+                m_q, m_s = quantize_symmetric_int8(h_mid)
+                delta = self._qnn_backend.qgemm_int8_f32(m_q, m_s, self.w_dn_q_t, self.w_dn_s)
+                backend_used = self._qnn_backend.last_tier_used or self.backend
+                canary_ok = bool(self._qnn_backend.last_canary_ok)
+                providers = list(self._qnn_backend.last_providers)
 
             state += step_scale * delta
 
@@ -909,11 +1144,26 @@ class ZenbookLoopedNPUEngine:
             "arena_peak_bytes": self.arena.stats()["peak_bytes"],
             "target_power_watts": ZENBOOK_PROFILE.npu_target_watts,
             "qnn_htp_options": self.qnn_provider_options,
+            "backend_requested": self.backend,
+            "backend_used": backend_used,
+            "canary_ok": canary_ok,
+            "providers": providers,
         }
         return state.copy(), telemetry
 
     def close(self) -> None:
-        self.arena.close()
+        if not self._closed:
+            if self._qnn_backend is not None:
+                self._qnn_backend.close()
+                self._qnn_backend = None
+            self.arena.close()
+            self._closed = True
+
+    def __enter__(self) -> ZenbookLoopedNPUEngine:
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        self.close()
 
 
 def run_tri_machine_verification_suite() -> dict[str, Any]:
@@ -940,14 +1190,20 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
         m = np.max(logits, axis=1, keepdims=True)
         _ = (m.squeeze(-1) + np.log(np.sum(np.exp(logits - m), axis=1))) - logits[np.arange(N), targets]
 
-    # Stabilize thread pools before any timed work. The Python row loop is a
-    # serial sequence of GEMVs: leave OpenBLAS at 1 so it does not launch a
-    # 32-thread team per row (that can inflate the loop by 50x on this hybrid
-    # CPU). Packed NumPy GEMM uses the P-core logical count. Park OpenBLAS at 1
-    # again before the C11 OpenMP kernel so the two runtimes do not contend
-    # (measured: ~2.5 ms C alone vs ~13 ms after a default 32-thread GEMM).
+    # Stabilize thread pools before any timed work. Park OpenBLAS first (1 thread
+    # on x86_64 hybrid hosts via _set_openblas_threads, or brief 0.20s sleep on
+    # aarch64 where resizing OpenBLAS mid-process is unsafe) and time C11 first
+    # before packed NumPy GEMM spins up OpenBLAS workers.
     cce_threads = len(probe_host_hardware().get("p_cores") or []) or 8
-    _set_openblas_threads(1)
+    if _set_openblas_threads(1) is None:
+        time.sleep(0.20)
+    for _ in range(3):
+        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
+    t0 = time.perf_counter()
+    for _ in range(5):
+        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
+    c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
+
     _py_row_cce()
     t1 = time.perf_counter()
     for _ in range(5):
@@ -960,14 +1216,8 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
     for _ in range(5):
         _numpy_gemm_cce()
     numpy_gemm_ms = ((time.perf_counter() - t2) / 5.0) * 1000.0
-
     _set_openblas_threads(1)
-    for _ in range(3):
-        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
-    t0 = time.perf_counter()
-    for _ in range(5):
-        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
-    c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
+
     cce_speedup = py_loop_ms / max(c_cce_ms, 1e-6)
     cce_speedup_vs_numpy = numpy_gemm_ms / max(c_cce_ms, 1e-6)
 

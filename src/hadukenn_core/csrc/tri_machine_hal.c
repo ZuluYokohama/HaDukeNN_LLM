@@ -7,15 +7,25 @@
  *   - Zenbook  (Snapdragon X Oryon ARMv8.7-A: 128-bit NEON + ASIMDDP vdotq_s32 + 13 GiB slab)
  *   - Server   (Xeon / Zen4+: 512-bit AVX-512F + AVX512-VNNI vpdpbusd, clean VZEROUPPER hygiene)
  */
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
 #define _POSIX_C_SOURCE 200809L
 #include "tri_machine_hal.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef _OPENMP
 #include <omp.h>
+#elif !defined(_WIN32)
+#include <pthread.h>
+#include <unistd.h>
+#if defined(__linux__)
+#include <sched.h>
+#endif
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
@@ -100,6 +110,8 @@ const char *hadukenn_active_simd_backend(void) {
     return "x86_64_avx512f_fma";
 #elif defined(__AVX2__) && defined(__FMA__)
     return "x86_64_avx2_fma3";
+#elif defined(__aarch64__) && defined(__ARM_FEATURE_MATMUL_INT8) && defined(__ARM_FEATURE_DOTPROD)
+    return "arm64_neon_i8mm_sdot";
 #elif defined(__aarch64__) && defined(__ARM_FEATURE_DOTPROD)
     return "arm64_neon_sdot";
 #elif defined(__aarch64__)
@@ -114,7 +126,7 @@ const char *hadukenn_active_simd_backend(void) {
  * ========================================================================= */
 
 int hadukenn_arena_init(HadukennArena *arena, size_t capacity_bytes) {
-    if (!arena || capacity_bytes == 0) return -1;
+    if (!arena || capacity_bytes == 0 || capacity_bytes > SIZE_MAX - 63u) return -1;
     memset(arena, 0, sizeof(*arena));
     const size_t aligned_cap = (capacity_bytes + 63u) & ~(size_t)63u;
 #if defined(_WIN32)
@@ -131,8 +143,13 @@ int hadukenn_arena_init(HadukennArena *arena, size_t capacity_bytes) {
 
 void *hadukenn_arena_alloc(HadukennArena *arena, size_t size_bytes) {
     if (!arena || !arena->base) return NULL;
+    if (size_bytes > SIZE_MAX - 63u) {
+        arena->overflow_count += 1u;
+        return NULL;
+    }
     const size_t aligned = (size_bytes + 63u) & ~(size_t)63u;
-    if (arena->offset_bytes + aligned > arena->capacity_bytes) {
+    if (aligned < size_bytes || arena->offset_bytes > arena->capacity_bytes ||
+        aligned > arena->capacity_bytes - arena->offset_bytes) {
         arena->overflow_count += 1u;
         return NULL;
     }
@@ -166,7 +183,7 @@ void hadukenn_arena_free(HadukennArena *arena) {
  * 3. Multi-ISA Register-Blocked Primitives (AVX-512 / AVX2+FMA / NEON)
  * ========================================================================= */
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__AVX512F__)
 static inline float hsum256_ps(__m256 v) {
     __m128 lo = _mm256_castps256_ps128(v);
     __m128 hi = _mm256_extractf128_ps(v, 1);
@@ -364,8 +381,146 @@ static inline int32_t dot_i8_fast(const int8_t *a, const int8_t *b, int d) {
 }
 
 /* =========================================================================
- * 4. Exported Tri-Machine Compute Kernels
+ * 4. Multi-Core Thread Dispatch & Exported Tri-Machine Compute Kernels
  * ========================================================================= */
+
+#if !defined(_OPENMP) && !defined(_WIN32)
+#define HADUKENN_MAX_PTHREADS 16
+
+typedef void (*hadukenn_par_fn)(int start, int end, void *ctx);
+
+typedef struct {
+    int start;
+    int end;
+    hadukenn_par_fn fn;
+    void *ctx;
+} HadukennParTask;
+
+static void *hadukenn_par_trampoline(void *arg) {
+    HadukennParTask *task = (HadukennParTask *)arg;
+    task->fn(task->start, task->end, task->ctx);
+    return NULL;
+}
+
+static int hadukenn_resolve_num_threads(int requested, int total_items, int min_items_per_thread) {
+    if (total_items <= 0) return 1;
+    int hw = 1;
+    long ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+    if (ncpu > 1) {
+        hw = (ncpu > HADUKENN_MAX_PTHREADS) ? HADUKENN_MAX_PTHREADS : (int)ncpu;
+    }
+#if defined(__linux__)
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    if (sched_getaffinity(0, sizeof(cpuset), &cpuset) == 0) {
+        int aff_cnt = CPU_COUNT(&cpuset);
+        if (aff_cnt >= 1 && aff_cnt < hw) {
+            hw = aff_cnt;
+        }
+    }
+#endif
+    int nt = (requested > 0) ? requested : hw;
+    if (nt < 1) nt = 1;
+    if (nt > HADUKENN_MAX_PTHREADS) nt = HADUKENN_MAX_PTHREADS;
+    if (min_items_per_thread > 0) {
+        int max_useful = total_items / min_items_per_thread;
+        if (max_useful < 1) max_useful = 1;
+        if (nt > max_useful) nt = max_useful;
+    }
+    if (nt > total_items) nt = total_items;
+    return nt;
+}
+
+static void hadukenn_parallel_for(
+    int total_items,
+    int requested_threads,
+    int min_items_per_thread,
+    hadukenn_par_fn fn,
+    void *ctx
+) {
+    if (total_items <= 0) return;
+    int nt = hadukenn_resolve_num_threads(requested_threads, total_items, min_items_per_thread);
+    if (nt <= 1) {
+        fn(0, total_items, ctx);
+        return;
+    }
+
+    pthread_t threads[HADUKENN_MAX_PTHREADS];
+    HadukennParTask tasks[HADUKENN_MAX_PTHREADS];
+    int base = total_items / nt;
+    int rem = total_items % nt;
+    int cursor = 0;
+    for (int t = 0; t < nt; ++t) {
+        int chunk = base + (t < rem ? 1 : 0);
+        tasks[t].start = cursor;
+        tasks[t].end = cursor + chunk;
+        tasks[t].fn = fn;
+        tasks[t].ctx = ctx;
+        cursor += chunk;
+    }
+
+    int spawned = 0;
+    int caller_start = tasks[nt - 1].start;
+    for (int t = 0; t < nt - 1; ++t) {
+        if (pthread_create(&threads[t], NULL, hadukenn_par_trampoline, &tasks[t]) != 0) {
+            caller_start = tasks[t].start;
+            break;
+        }
+        spawned += 1;
+    }
+
+    fn(caller_start, total_items, ctx);
+
+    for (int t = 0; t < spawned; ++t) {
+        pthread_join(threads[t], NULL);
+    }
+}
+#endif /* !defined(_OPENMP) && !defined(_WIN32) */
+
+/* --- 4a. FP32 GEMV --- */
+
+static inline void gemv_f32_range(
+    const float *x,
+    const float *W,
+    float *out,
+    int M,
+    int d,
+    float scale,
+    int n_start,
+    int n_end,
+    int m_start,
+    int m_end
+) {
+    for (int n = n_start; n < n_end; ++n) {
+        const float *xn = x + (size_t)n * d;
+        float *out_n = out + (size_t)n * M;
+        for (int m = m_start; m < m_end; ++m) {
+            out_n[m] = scale * dot_f32_fast(xn, W + (size_t)m * d, d);
+        }
+    }
+}
+
+#if !defined(_OPENMP) && !defined(_WIN32)
+typedef struct {
+    const float *x;
+    const float *W;
+    float *out;
+    int N;
+    int M;
+    int d;
+    float scale;
+    int partition_rows;
+} GemvParCtx;
+
+static void gemv_par_worker(int start, int end, void *raw_ctx) {
+    GemvParCtx *ctx = (GemvParCtx *)raw_ctx;
+    if (ctx->partition_rows) {
+        gemv_f32_range(ctx->x, ctx->W, ctx->out, ctx->M, ctx->d, ctx->scale, start, end, 0, ctx->M);
+    } else {
+        gemv_f32_range(ctx->x, ctx->W, ctx->out, ctx->M, ctx->d, ctx->scale, 0, ctx->N, start, end);
+    }
+}
+#endif
 
 void hadukenn_gemv_f32(
     const float *x,
@@ -376,7 +531,13 @@ void hadukenn_gemv_f32(
     int d,
     float scale
 ) {
-    #pragma omp parallel for collapse(2) if((size_t)N * (size_t)M >= 512)
+    if (N <= 0 || M <= 0 || d < 0 || !x || !W || !out) return;
+    if (d == 0) {
+        memset(out, 0, (size_t)N * (size_t)M * sizeof(float));
+        return;
+    }
+#ifdef _OPENMP
+    #pragma omp parallel for collapse(2) if((size_t)N * (size_t)M >= 512u && (size_t)N * (size_t)M * (size_t)d >= 32768u)
     for (int n = 0; n < N; ++n) {
         for (int m = 0; m < M; ++m) {
             out[(size_t)n * M + m] = scale * dot_f32_fast(
@@ -386,7 +547,138 @@ void hadukenn_gemv_f32(
             );
         }
     }
+#elif !defined(_WIN32)
+    if ((size_t)N * (size_t)M >= 512u && (size_t)N * (size_t)M * (size_t)d >= 32768u) {
+        GemvParCtx ctx = {x, W, out, N, M, d, scale, (N >= 4) ? 1 : 0};
+        if (ctx.partition_rows) {
+            hadukenn_parallel_for(N, 0, 1, gemv_par_worker, &ctx);
+        } else {
+            hadukenn_parallel_for(M, 0, 16, gemv_par_worker, &ctx);
+        }
+    } else {
+        gemv_f32_range(x, W, out, M, d, scale, 0, N, 0, M);
+    }
+#else
+    gemv_f32_range(x, W, out, M, d, scale, 0, N, 0, M);
+#endif
 }
+
+/* --- 4b. Symmetric INT8 Quantized GEMM (AVX512-VNNI / AVX2 / ARM64 i8mm+sdot) --- */
+
+static inline void qgemm_int8_range(
+    const int8_t *x_q,
+    const float *x_scale,
+    const int8_t *w_q,
+    const float *w_scale,
+    float *out,
+    int n_start,
+    int n_end,
+    int m_start,
+    int m_end,
+    int M,
+    int d
+) {
+#if defined(__aarch64__) && defined(__ARM_FEATURE_MATMUL_INT8)
+    int n = n_start;
+    for (; n + 1 < n_end; n += 2) {
+        const int8_t *x0 = x_q + (size_t)n * d;
+        const int8_t *x1 = x_q + (size_t)(n + 1) * d;
+        const float sx0 = x_scale[n];
+        const float sx1 = x_scale[n + 1];
+        float *out0 = out + (size_t)n * M;
+        float *out1 = out + (size_t)(n + 1) * M;
+
+        int m = m_start;
+        for (; m + 1 < m_end; m += 2) {
+            const int8_t *w0 = w_q + (size_t)m * d;
+            const int8_t *w1 = w_q + (size_t)(m + 1) * d;
+            int32x4_t acc = vdupq_n_s32(0);
+            int k = 0;
+            for (; k + 8 <= d; k += 8) {
+                int8x16_t va = vcombine_s8(vld1_s8(x0 + k), vld1_s8(x1 + k));
+                int8x16_t vb = vcombine_s8(vld1_s8(w0 + k), vld1_s8(w1 + k));
+                acc = vmmlaq_s32(acc, va, vb);
+            }
+            int32_t a00 = vgetq_lane_s32(acc, 0);
+            int32_t a01 = vgetq_lane_s32(acc, 1);
+            int32_t a10 = vgetq_lane_s32(acc, 2);
+            int32_t a11 = vgetq_lane_s32(acc, 3);
+            if (k < d) {
+                const int rem = d - k;
+                a00 += dot_i8_fast(x0 + k, w0 + k, rem);
+                a01 += dot_i8_fast(x0 + k, w1 + k, rem);
+                a10 += dot_i8_fast(x1 + k, w0 + k, rem);
+                a11 += dot_i8_fast(x1 + k, w1 + k, rem);
+            }
+            const float sw0 = w_scale[m];
+            const float sw1 = w_scale[m + 1];
+            out0[m]     = (float)a00 * (sx0 * sw0);
+            out0[m + 1] = (float)a01 * (sx0 * sw1);
+            out1[m]     = (float)a10 * (sx1 * sw0);
+            out1[m + 1] = (float)a11 * (sx1 * sw1);
+        }
+        if (m < m_end) {
+            const int8_t *wm = w_q + (size_t)m * d;
+            const float swm = w_scale[m];
+            out0[m] = (float)dot_i8_fast(x0, wm, d) * (sx0 * swm);
+            out1[m] = (float)dot_i8_fast(x1, wm, d) * (sx1 * swm);
+        }
+    }
+    if (n < n_end) {
+        const int8_t *xn = x_q + (size_t)n * d;
+        const float sx = x_scale[n];
+        float *out_n = out + (size_t)n * M;
+        for (int m = m_start; m < m_end; ++m) {
+            out_n[m] = (float)dot_i8_fast(xn, w_q + (size_t)m * d, d) * (sx * w_scale[m]);
+        }
+    }
+#else
+    for (int n = n_start; n < n_end; ++n) {
+        const int8_t *xn = x_q + (size_t)n * d;
+        const float sx = x_scale[n];
+        float *out_n = out + (size_t)n * M;
+        for (int m = m_start; m < m_end; ++m) {
+            int32_t acc = dot_i8_fast(xn, w_q + (size_t)m * d, d);
+            out_n[m] = (float)acc * (sx * w_scale[m]);
+        }
+    }
+#endif
+}
+
+#if !defined(_OPENMP) && !defined(_WIN32)
+typedef struct {
+    const int8_t *x_q;
+    const float *x_scale;
+    const int8_t *w_q;
+    const float *w_scale;
+    float *out;
+    int N;
+    int M;
+    int d;
+    int partition_row_pairs;
+} QGemmParCtx;
+
+static void qgemm_par_worker(int start, int end, void *raw_ctx) {
+    QGemmParCtx *ctx = (QGemmParCtx *)raw_ctx;
+    if (ctx->partition_row_pairs) {
+        int n_start = start * 2;
+        int n_end = end * 2;
+        if (n_end > ctx->N) n_end = ctx->N;
+        qgemm_int8_range(
+            ctx->x_q, ctx->x_scale, ctx->w_q, ctx->w_scale, ctx->out,
+            n_start, n_end, 0, ctx->M, ctx->M, ctx->d
+        );
+    } else {
+        int m_start = start * 2;
+        int m_end = end * 2;
+        if (m_end > ctx->M) m_end = ctx->M;
+        qgemm_int8_range(
+            ctx->x_q, ctx->x_scale, ctx->w_q, ctx->w_scale, ctx->out,
+            0, ctx->N, m_start, m_end, ctx->M, ctx->d
+        );
+    }
+}
+#endif
 
 void hadukenn_qgemm_int8_f32(
     const int8_t *x_q,
@@ -398,90 +690,334 @@ void hadukenn_qgemm_int8_f32(
     int M,
     int d
 ) {
-    #pragma omp parallel for schedule(static) if((size_t)N * (size_t)M >= 256)
-    for (int n = 0; n < N; ++n) {
-        const int8_t *xn = x_q + (size_t)n * d;
-        const float sx = x_scale[n];
-        float *out_n = out + (size_t)n * M;
-        for (int m = 0; m < M; ++m) {
-            int32_t acc = dot_i8_fast(xn, w_q + (size_t)m * d, d);
-            out_n[m] = (float)acc * (sx * w_scale[m]);
-        }
+    if (N <= 0 || M <= 0 || d < 0 || !x_q || !x_scale || !w_q || !w_scale || !out) return;
+    if (d == 0) {
+        memset(out, 0, (size_t)N * (size_t)M * sizeof(float));
+        return;
     }
-}
-
-
-enum { HADUKENN_CCE_BN = 4 };
-
-/* scale * H[n0:n0+bn] @ E[v0:v0+tv].T  into C[bn, tv], reusing each E row across BN tokens. */
-static void cce_logit_tile_bn(
-    const float *H,
-    const float *E,
-    float *C,
-    int n0,
-    int bn,
-    int v0,
-    int tv,
-    int d,
-    float scale
-) {
-#if defined(__AVX2__) && defined(__FMA__)
-    int ni = 0;
-    for (; ni + 4 <= bn; ni += 4) {
-        const float *h0 = H + (size_t)(n0 + ni) * d;
-        const float *h1 = H + (size_t)(n0 + ni + 1) * d;
-        const float *h2 = H + (size_t)(n0 + ni + 2) * d;
-        const float *h3 = H + (size_t)(n0 + ni + 3) * d;
-        for (int vi = 0; vi < tv; ++vi) {
-            const float *e = E + (size_t)(v0 + vi) * d;
-            __m256 acc0 = _mm256_setzero_ps();
-            __m256 acc1 = _mm256_setzero_ps();
-            __m256 acc2 = _mm256_setzero_ps();
-            __m256 acc3 = _mm256_setzero_ps();
-            int i = 0;
-            for (; i + 8 <= d; i += 8) {
-                __m256 ev = _mm256_loadu_ps(e + i);
-                acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(h0 + i), ev, acc0);
-                acc1 = _mm256_fmadd_ps(_mm256_loadu_ps(h1 + i), ev, acc1);
-                acc2 = _mm256_fmadd_ps(_mm256_loadu_ps(h2 + i), ev, acc2);
-                acc3 = _mm256_fmadd_ps(_mm256_loadu_ps(h3 + i), ev, acc3);
-            }
-            float s0 = hsum256_ps(acc0);
-            float s1 = hsum256_ps(acc1);
-            float s2 = hsum256_ps(acc2);
-            float s3 = hsum256_ps(acc3);
-            for (; i < d; ++i) {
-                const float ev = e[i];
-                s0 += h0[i] * ev;
-                s1 += h1[i] * ev;
-                s2 += h2[i] * ev;
-                s3 += h3[i] * ev;
-            }
-            C[(size_t)(ni + 0) * (size_t)tv + (size_t)vi] = scale * s0;
-            C[(size_t)(ni + 1) * (size_t)tv + (size_t)vi] = scale * s1;
-            C[(size_t)(ni + 2) * (size_t)tv + (size_t)vi] = scale * s2;
-            C[(size_t)(ni + 3) * (size_t)tv + (size_t)vi] = scale * s3;
-        }
+#ifdef _OPENMP
+    const int row_pairs = (N + 1) / 2;
+    #pragma omp parallel for schedule(static) if((size_t)N * (size_t)M >= 256u && (size_t)N * (size_t)M * (size_t)d >= 32768u)
+    for (int p = 0; p < row_pairs; ++p) {
+        int n_start = p * 2;
+        int n_end = n_start + 2;
+        if (n_end > N) n_end = N;
+        qgemm_int8_range(x_q, x_scale, w_q, w_scale, out, n_start, n_end, 0, M, M, d);
     }
-    for (; ni < bn; ++ni) {
-        const float *h = H + (size_t)(n0 + ni) * d;
-        for (int vi = 0; vi < tv; ++vi) {
-            C[(size_t)ni * (size_t)tv + (size_t)vi] = scale * dot_f32_fast(
-                h, E + (size_t)(v0 + vi) * d, d
-            );
+#elif !defined(_WIN32)
+    if ((size_t)N * (size_t)M >= 256u && (size_t)N * (size_t)M * (size_t)d >= 32768u) {
+        QGemmParCtx ctx = {x_q, x_scale, w_q, w_scale, out, N, M, d, (N >= 8) ? 1 : 0};
+        if (ctx.partition_row_pairs) {
+            hadukenn_parallel_for((N + 1) / 2, 0, 1, qgemm_par_worker, &ctx);
+        } else {
+            hadukenn_parallel_for((M + 1) / 2, 0, 8, qgemm_par_worker, &ctx);
         }
+    } else {
+        qgemm_int8_range(x_q, x_scale, w_q, w_scale, out, 0, N, 0, M, M, d);
     }
 #else
-    for (int ni = 0; ni < bn; ++ni) {
-        const float *h = H + (size_t)(n0 + ni) * d;
-        for (int vi = 0; vi < tv; ++vi) {
-            C[(size_t)ni * (size_t)tv + (size_t)vi] = scale * dot_f32_fast(
-                h, E + (size_t)(v0 + vi) * d, d
-            );
-        }
-    }
+    qgemm_int8_range(x_q, x_scale, w_q, w_scale, out, 0, N, 0, M, M, d);
 #endif
 }
+
+/* --- 4c. Tiled muP Cross-Entropy Forward/Backward --- */
+
+#if !defined(__aarch64__) && !defined(_M_ARM64)
+static inline void dot8x2_f32_fast(
+    const float *h0, const float *h1, const float *h2, const float *h3,
+    const float *h4, const float *h5, const float *h6, const float *h7,
+    const float *e0, const float *e1,
+    int d,
+    float scale,
+    float out_z0[8],
+    float out_z1[8]
+) {
+    const float *hs[8] = {h0, h1, h2, h3, h4, h5, h6, h7};
+    for (int r = 0; r < 8; ++r) {
+        out_z0[r] = scale * dot_f32_fast(hs[r], e0, d);
+        out_z1[r] = scale * dot_f32_fast(hs[r], e1, d);
+    }
+}
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((noinline))
+#endif
+static int tiled_cce_fwd_8x2_range(
+    const float * restrict H,
+    const float * restrict E,
+    const int32_t * restrict targets,
+    float * restrict out_loss,
+    int d,
+    int V,
+    int tile_V,
+    float logit_scale,
+    int n_start,
+    int n_end
+) {
+    float stack_buf[8 * 512];
+    float *heap_buf = NULL;
+    float * restrict tile_buf = stack_buf;
+    if (tile_V > 512) {
+        heap_buf = (float *)malloc((size_t)8 * (size_t)tile_V * sizeof(float));
+        if (!heap_buf) return n_start;
+        tile_buf = heap_buf;
+    }
+
+    int n = n_start;
+    for (; n + 7 < n_end; n += 8) {
+        const float * restrict h0 = H + (size_t)n * d;
+        const float * restrict h1 = H + (size_t)(n + 1) * d;
+        const float * restrict h2 = H + (size_t)(n + 2) * d;
+        const float * restrict h3 = H + (size_t)(n + 3) * d;
+        const float * restrict h4 = H + (size_t)(n + 4) * d;
+        const float * restrict h5 = H + (size_t)(n + 5) * d;
+        const float * restrict h6 = H + (size_t)(n + 6) * d;
+        const float * restrict h7 = H + (size_t)(n + 7) * d;
+        const float z_y0 = logit_scale * dot_f32_fast(h0, E + (size_t)targets[n] * d, d);
+        const float z_y1 = logit_scale * dot_f32_fast(h1, E + (size_t)targets[n + 1] * d, d);
+        const float z_y2 = logit_scale * dot_f32_fast(h2, E + (size_t)targets[n + 2] * d, d);
+        const float z_y3 = logit_scale * dot_f32_fast(h3, E + (size_t)targets[n + 3] * d, d);
+        const float z_y4 = logit_scale * dot_f32_fast(h4, E + (size_t)targets[n + 4] * d, d);
+        const float z_y5 = logit_scale * dot_f32_fast(h5, E + (size_t)targets[n + 5] * d, d);
+        const float z_y6 = logit_scale * dot_f32_fast(h6, E + (size_t)targets[n + 6] * d, d);
+        const float z_y7 = logit_scale * dot_f32_fast(h7, E + (size_t)targets[n + 7] * d, d);
+
+        float m_run[8] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
+        float s_run[8] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+        for (int v0 = 0; v0 < V; v0 += tile_V) {
+            int v1 = v0 + tile_V;
+            if (v1 > V) v1 = V;
+            float m_tile[8] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
+            int v = v0;
+            for (; v + 1 < v1; v += 2) {
+                const float * restrict e0 = E + (size_t)v * d;
+                const float * restrict e1 = E + (size_t)(v + 1) * d;
+                float z0[8], z1[8];
+#if defined(__aarch64__) || defined(_M_ARM64)
+                float32x4_t a0 = vdupq_n_f32(0.0f), a1 = vdupq_n_f32(0.0f);
+                float32x4_t a2 = vdupq_n_f32(0.0f), a3 = vdupq_n_f32(0.0f);
+                float32x4_t a4 = vdupq_n_f32(0.0f), a5 = vdupq_n_f32(0.0f);
+                float32x4_t a6 = vdupq_n_f32(0.0f), a7 = vdupq_n_f32(0.0f);
+                float32x4_t b0 = vdupq_n_f32(0.0f), b1 = vdupq_n_f32(0.0f);
+                float32x4_t b2 = vdupq_n_f32(0.0f), b3 = vdupq_n_f32(0.0f);
+                float32x4_t b4 = vdupq_n_f32(0.0f), b5 = vdupq_n_f32(0.0f);
+                float32x4_t b6 = vdupq_n_f32(0.0f), b7 = vdupq_n_f32(0.0f);
+                int i = 0;
+                for (; i + 8 <= d; i += 8) {
+                    float32x4_t ve0 = vld1q_f32(e0 + i), ve1 = vld1q_f32(e1 + i);
+                    float32x4_t vh0 = vld1q_f32(h0 + i), vh1 = vld1q_f32(h1 + i);
+                    float32x4_t vh2 = vld1q_f32(h2 + i), vh3 = vld1q_f32(h3 + i);
+                    float32x4_t vh4 = vld1q_f32(h4 + i), vh5 = vld1q_f32(h5 + i);
+                    float32x4_t vh6 = vld1q_f32(h6 + i), vh7 = vld1q_f32(h7 + i);
+                    a0 = vfmaq_f32(a0, vh0, ve0); a1 = vfmaq_f32(a1, vh1, ve0);
+                    a2 = vfmaq_f32(a2, vh2, ve0); a3 = vfmaq_f32(a3, vh3, ve0);
+                    a4 = vfmaq_f32(a4, vh4, ve0); a5 = vfmaq_f32(a5, vh5, ve0);
+                    a6 = vfmaq_f32(a6, vh6, ve0); a7 = vfmaq_f32(a7, vh7, ve0);
+                    b0 = vfmaq_f32(b0, vh0, ve1); b1 = vfmaq_f32(b1, vh1, ve1);
+                    b2 = vfmaq_f32(b2, vh2, ve1); b3 = vfmaq_f32(b3, vh3, ve1);
+                    b4 = vfmaq_f32(b4, vh4, ve1); b5 = vfmaq_f32(b5, vh5, ve1);
+                    b6 = vfmaq_f32(b6, vh6, ve1); b7 = vfmaq_f32(b7, vh7, ve1);
+
+                    ve0 = vld1q_f32(e0 + i + 4); ve1 = vld1q_f32(e1 + i + 4);
+                    vh0 = vld1q_f32(h0 + i + 4); vh1 = vld1q_f32(h1 + i + 4);
+                    vh2 = vld1q_f32(h2 + i + 4); vh3 = vld1q_f32(h3 + i + 4);
+                    vh4 = vld1q_f32(h4 + i + 4); vh5 = vld1q_f32(h5 + i + 4);
+                    vh6 = vld1q_f32(h6 + i + 4); vh7 = vld1q_f32(h7 + i + 4);
+                    a0 = vfmaq_f32(a0, vh0, ve0); a1 = vfmaq_f32(a1, vh1, ve0);
+                    a2 = vfmaq_f32(a2, vh2, ve0); a3 = vfmaq_f32(a3, vh3, ve0);
+                    a4 = vfmaq_f32(a4, vh4, ve0); a5 = vfmaq_f32(a5, vh5, ve0);
+                    a6 = vfmaq_f32(a6, vh6, ve0); a7 = vfmaq_f32(a7, vh7, ve0);
+                    b0 = vfmaq_f32(b0, vh0, ve1); b1 = vfmaq_f32(b1, vh1, ve1);
+                    b2 = vfmaq_f32(b2, vh2, ve1); b3 = vfmaq_f32(b3, vh3, ve1);
+                    b4 = vfmaq_f32(b4, vh4, ve1); b5 = vfmaq_f32(b5, vh5, ve1);
+                    b6 = vfmaq_f32(b6, vh6, ve1); b7 = vfmaq_f32(b7, vh7, ve1);
+                }
+                for (; i + 4 <= d; i += 4) {
+                    float32x4_t ve0 = vld1q_f32(e0 + i), ve1 = vld1q_f32(e1 + i);
+                    float32x4_t vh0 = vld1q_f32(h0 + i), vh1 = vld1q_f32(h1 + i);
+                    float32x4_t vh2 = vld1q_f32(h2 + i), vh3 = vld1q_f32(h3 + i);
+                    float32x4_t vh4 = vld1q_f32(h4 + i), vh5 = vld1q_f32(h5 + i);
+                    float32x4_t vh6 = vld1q_f32(h6 + i), vh7 = vld1q_f32(h7 + i);
+                    a0 = vfmaq_f32(a0, vh0, ve0); a1 = vfmaq_f32(a1, vh1, ve0);
+                    a2 = vfmaq_f32(a2, vh2, ve0); a3 = vfmaq_f32(a3, vh3, ve0);
+                    a4 = vfmaq_f32(a4, vh4, ve0); a5 = vfmaq_f32(a5, vh5, ve0);
+                    a6 = vfmaq_f32(a6, vh6, ve0); a7 = vfmaq_f32(a7, vh7, ve0);
+                    b0 = vfmaq_f32(b0, vh0, ve1); b1 = vfmaq_f32(b1, vh1, ve1);
+                    b2 = vfmaq_f32(b2, vh2, ve1); b3 = vfmaq_f32(b3, vh3, ve1);
+                    b4 = vfmaq_f32(b4, vh4, ve1); b5 = vfmaq_f32(b5, vh5, ve1);
+                    b6 = vfmaq_f32(b6, vh6, ve1); b7 = vfmaq_f32(b7, vh7, ve1);
+                }
+                float s0[8] = {
+                    vaddvq_f32(a0), vaddvq_f32(a1), vaddvq_f32(a2), vaddvq_f32(a3),
+                    vaddvq_f32(a4), vaddvq_f32(a5), vaddvq_f32(a6), vaddvq_f32(a7)
+                };
+                float s1[8] = {
+                    vaddvq_f32(b0), vaddvq_f32(b1), vaddvq_f32(b2), vaddvq_f32(b3),
+                    vaddvq_f32(b4), vaddvq_f32(b5), vaddvq_f32(b6), vaddvq_f32(b7)
+                };
+                for (; i < d; ++i) {
+                    float y0 = e0[i], y1 = e1[i];
+                    float x0 = h0[i], x1 = h1[i], x2 = h2[i], x3 = h3[i];
+                    float x4 = h4[i], x5 = h5[i], x6 = h6[i], x7 = h7[i];
+                    s0[0] += x0 * y0; s0[1] += x1 * y0; s0[2] += x2 * y0; s0[3] += x3 * y0;
+                    s0[4] += x4 * y0; s0[5] += x5 * y0; s0[6] += x6 * y0; s0[7] += x7 * y0;
+                    s1[0] += x0 * y1; s1[1] += x1 * y1; s1[2] += x2 * y1; s1[3] += x3 * y1;
+                    s1[4] += x4 * y1; s1[5] += x5 * y1; s1[6] += x6 * y1; s1[7] += x7 * y1;
+                }
+                for (int r = 0; r < 8; ++r) {
+                    z0[r] = logit_scale * s0[r];
+                    z1[r] = logit_scale * s1[r];
+                }
+#else
+                dot8x2_f32_fast(h0, h1, h2, h3, h4, h5, h6, h7, e0, e1, d, logit_scale, z0, z1);
+#endif
+                const int idx = v - v0;
+                for (int r = 0; r < 8; ++r) {
+                    float *rb = tile_buf + (size_t)r * tile_V;
+                    rb[idx] = z0[r];
+                    rb[idx + 1] = z1[r];
+                    if (z0[r] > m_tile[r]) m_tile[r] = z0[r];
+                    if (z1[r] > m_tile[r]) m_tile[r] = z1[r];
+                }
+            }
+            for (; v < v1; ++v) {
+                const float *ev = E + (size_t)v * d;
+                const int idx = v - v0;
+                float zv[8] = {
+                    logit_scale * dot_f32_fast(h0, ev, d),
+                    logit_scale * dot_f32_fast(h1, ev, d),
+                    logit_scale * dot_f32_fast(h2, ev, d),
+                    logit_scale * dot_f32_fast(h3, ev, d),
+                    logit_scale * dot_f32_fast(h4, ev, d),
+                    logit_scale * dot_f32_fast(h5, ev, d),
+                    logit_scale * dot_f32_fast(h6, ev, d),
+                    logit_scale * dot_f32_fast(h7, ev, d)
+                };
+                for (int r = 0; r < 8; ++r) {
+                    tile_buf[(size_t)r * tile_V + idx] = zv[r];
+                    if (zv[r] > m_tile[r]) m_tile[r] = zv[r];
+                }
+            }
+            const int len_v = v1 - v0;
+            for (int r = 0; r < 8; ++r) {
+                float m_new = (m_tile[r] > m_run[r]) ? m_tile[r] : m_run[r];
+                float s_tile = 0.0f;
+                const float *rb = tile_buf + (size_t)r * tile_V;
+                for (int idx = 0; idx < len_v; ++idx) {
+                    s_tile += expf(rb[idx] - m_new);
+                }
+                s_run[r] = s_run[r] * expf(m_run[r] - m_new) + s_tile;
+                m_run[r] = m_new;
+            }
+        }
+        out_loss[n]     = (m_run[0] + logf(s_run[0])) - z_y0;
+        out_loss[n + 1] = (m_run[1] + logf(s_run[1])) - z_y1;
+        out_loss[n + 2] = (m_run[2] + logf(s_run[2])) - z_y2;
+        out_loss[n + 3] = (m_run[3] + logf(s_run[3])) - z_y3;
+        out_loss[n + 4] = (m_run[4] + logf(s_run[4])) - z_y4;
+        out_loss[n + 5] = (m_run[5] + logf(s_run[5])) - z_y5;
+        out_loss[n + 6] = (m_run[6] + logf(s_run[6])) - z_y6;
+        out_loss[n + 7] = (m_run[7] + logf(s_run[7])) - z_y7;
+    }
+
+    if (heap_buf) free(heap_buf);
+    return n;
+}
+
+static void tiled_cce_range(
+    const float *H,
+    const float *E,
+    const int32_t *targets,
+    float *out_loss,
+    float *dH,
+    float *dE,
+    int N,
+    int d,
+    int V,
+    int tile_V,
+    float logit_scale,
+    int compute_grad,
+    int n_start,
+    int n_end
+) {
+    float tile_buf[4096];
+    int n = n_start;
+    if (!compute_grad && n_end - n_start >= 8) {
+        n = tiled_cce_fwd_8x2_range(H, E, targets, out_loss, d, V, tile_V, logit_scale, n_start, n_end);
+    }
+
+    for (; n < n_end; ++n) {
+        const float *h = H + (size_t)n * d;
+        const int32_t y = targets[n];
+        float m_run = -1e30f;
+        float s_run = 0.0f;
+        const float z_y = logit_scale * dot_f32_fast(h, E + (size_t)y * d, d);
+
+        for (int v0 = 0; v0 < V; v0 += tile_V) {
+            int v1 = v0 + tile_V;
+            if (v1 > V) v1 = V;
+            float m_tile = -1e30f;
+            for (int v = v0; v < v1; ++v) {
+                float z = logit_scale * dot_f32_fast(h, E + (size_t)v * d, d);
+                tile_buf[v - v0] = z;
+                if (z > m_tile) m_tile = z;
+            }
+            float m_new = (m_tile > m_run) ? m_tile : m_run;
+            float s_tile = 0.0f;
+            for (int v = v0; v < v1; ++v) {
+                s_tile += expf(tile_buf[v - v0] - m_new);
+            }
+            s_run = s_run * expf(m_run - m_new) + s_tile;
+            m_run = m_new;
+        }
+        const float lse = m_run + logf(s_run);
+        out_loss[n] = lse - z_y;
+
+        if (compute_grad && dH && dE) {
+            float *dh = dH + (size_t)n * d;
+            const float inv_N = logit_scale / (float)N;
+            for (int v0 = 0; v0 < V; v0 += tile_V) {
+                int v1 = v0 + tile_V;
+                if (v1 > V) v1 = V;
+                for (int v = v0; v < v1; ++v) {
+                    float z = logit_scale * dot_f32_fast(h, E + (size_t)v * d, d);
+                    float coeff = expf(z - lse) * inv_N;
+                    if (v == y) coeff -= inv_N;
+                    axpy_f32_fast(coeff, E + (size_t)v * d, dh, d);
+                    axpy_f32_fast(coeff, h, dE + (size_t)v * d, d);
+                }
+            }
+        }
+    }
+}
+
+#if !defined(_OPENMP) && !defined(_WIN32)
+typedef struct {
+    const float *H;
+    const float *E;
+    const int32_t *targets;
+    float *out_loss;
+    float *dH;
+    float *dE;
+    int N;
+    int d;
+    int V;
+    int tile_V;
+    float logit_scale;
+    int compute_grad;
+} TiledCceParCtx;
+
+static void tiled_cce_par_worker(int start, int end, void *raw_ctx) {
+    TiledCceParCtx *ctx = (TiledCceParCtx *)raw_ctx;
+    tiled_cce_range(
+        ctx->H, ctx->E, ctx->targets, ctx->out_loss, ctx->dH, ctx->dE,
+        ctx->N, ctx->d, ctx->V, ctx->tile_V, ctx->logit_scale, ctx->compute_grad,
+        start, end
+    );
+}
+#endif
 
 void hadukenn_tiled_cce_mup_fwd_bwd_f32(
     const float *H,
@@ -498,121 +1034,136 @@ void hadukenn_tiled_cce_mup_fwd_bwd_f32(
     int compute_grad,
     int num_threads
 ) {
+    if (N <= 0 || d <= 0 || V <= 0 || !H || !E || !targets || !out_loss) return;
     if (tile_V < 64) tile_V = 64;
     if (tile_V > 4096) tile_V = 4096;
 #ifdef _OPENMP
-    if (num_threads > 0) {
+    if (num_threads > 0 && !compute_grad) {
         omp_set_num_threads(num_threads);
+    }
+    #pragma omp parallel if(N >= 64 && !compute_grad && (size_t)N * (size_t)V * (size_t)d >= 65536u)
+    {
+        int tid = omp_get_thread_num();
+        int nthr = omp_get_num_threads();
+        int base = N / nthr;
+        int rem = N % nthr;
+        int n0 = tid * base + (tid < rem ? tid : rem);
+        int n1 = n0 + base + (tid < rem ? 1 : 0);
+        tiled_cce_range(H, E, targets, out_loss, dH, dE, N, d, V, tile_V, logit_scale, compute_grad, n0, n1);
+    }
+#elif !defined(_WIN32)
+    /* Keep compute_grad != 0 single-threaded to prevent concurrent dE[v, :] write races */
+    if (!compute_grad && N >= 64 && (size_t)N * (size_t)V * (size_t)d >= 65536u) {
+        TiledCceParCtx ctx = {H, E, targets, out_loss, dH, dE, N, d, V, tile_V, logit_scale, compute_grad};
+        hadukenn_parallel_for(N, num_threads, 8, tiled_cce_par_worker, &ctx);
+    } else {
+        tiled_cce_range(H, E, targets, out_loss, dH, dE, N, d, V, tile_V, logit_scale, compute_grad, 0, N);
     }
 #else
     (void)num_threads;
+    tiled_cce_range(H, E, targets, out_loss, dH, dE, N, d, V, tile_V, logit_scale, compute_grad, 0, N);
 #endif
-
-    if (compute_grad && dH && dE) {
-        for (int n = 0; n < N; ++n) {
-            const float *h = H + (size_t)n * d;
-            const int32_t y = targets[n];
-            float m_run = -1e30f;
-            float s_run = 0.0f;
-            const float z_y = logit_scale * dot_f32_fast(h, E + (size_t)y * d, d);
-            float tile_buf[4096];
-            for (int v0 = 0; v0 < V; v0 += tile_V) {
-                int v1 = v0 + tile_V;
-                if (v1 > V) v1 = V;
-                float m_tile = -1e30f;
-                for (int v = v0; v < v1; ++v) {
-                    float z = logit_scale * dot_f32_fast(h, E + (size_t)v * d, d);
-                    tile_buf[v - v0] = z;
-                    if (z > m_tile) m_tile = z;
-                }
-                float m_new = (m_tile > m_run) ? m_tile : m_run;
-                float s_tile = 0.0f;
-                for (int v = v0; v < v1; ++v) {
-                    s_tile += expf(tile_buf[v - v0] - m_new);
-                }
-                s_run = s_run * expf(m_run - m_new) + s_tile;
-                m_run = m_new;
-            }
-            const float lse = m_run + logf(s_run);
-            out_loss[n] = lse - z_y;
-            float *dh = dH + (size_t)n * d;
-            const float inv_N = logit_scale / (float)N;
-            for (int v = 0; v < V; ++v) {
-                float z = logit_scale * dot_f32_fast(h, E + (size_t)v * d, d);
-                float coeff = expf(z - lse) * inv_N;
-                if (v == y) coeff -= inv_N;
-                axpy_f32_fast(coeff, E + (size_t)v * d, dh, d);
-                axpy_f32_fast(coeff, h, dE + (size_t)v * d, d);
-            }
-        }
 #if defined(__AVX512F__) || defined(__AVX2__)
-        _mm256_zeroupper();
-#endif
-        return;
-    }
-
-    #pragma omp parallel if(N >= 64)
-    {
-        float *tile_buf = (float *)malloc((size_t)HADUKENN_CCE_BN * (size_t)tile_V * sizeof(float));
-        #pragma omp for schedule(static)
-        for (int n0 = 0; n0 < N; n0 += HADUKENN_CCE_BN) {
-            int bn = N - n0;
-            if (bn > HADUKENN_CCE_BN) bn = HADUKENN_CCE_BN;
-            if (tile_buf == NULL) {
-                for (int ni = 0; ni < bn; ++ni) {
-                    const float *h = H + (size_t)(n0 + ni) * d;
-                    const int32_t y = targets[n0 + ni];
-                    float m_run = -1e30f;
-                    float s_run = 0.0f;
-                    const float z_y = logit_scale * dot_f32_fast(h, E + (size_t)y * d, d);
-                    for (int v = 0; v < V; ++v) {
-                        float z = logit_scale * dot_f32_fast(h, E + (size_t)v * d, d);
-                        float m_new = (z > m_run) ? z : m_run;
-                        s_run = s_run * expf(m_run - m_new) + expf(z - m_new);
-                        m_run = m_new;
-                    }
-                    out_loss[n0 + ni] = (m_run + logf(s_run)) - z_y;
-                }
-                continue;
-            }
-            float m_run[HADUKENN_CCE_BN];
-            float s_run[HADUKENN_CCE_BN];
-            float z_y[HADUKENN_CCE_BN];
-            for (int ni = 0; ni < bn; ++ni) {
-                m_run[ni] = -1e30f;
-                s_run[ni] = 0.0f;
-                const float *h = H + (size_t)(n0 + ni) * d;
-                z_y[ni] = logit_scale * dot_f32_fast(h, E + (size_t)targets[n0 + ni] * d, d);
-            }
-            for (int v0 = 0; v0 < V; v0 += tile_V) {
-                int tv = V - v0;
-                if (tv > tile_V) tv = tile_V;
-                cce_logit_tile_bn(H, E, tile_buf, n0, bn, v0, tv, d, logit_scale);
-                for (int ni = 0; ni < bn; ++ni) {
-                    const float *row = tile_buf + (size_t)ni * (size_t)tv;
-                    float m_tile = -1e30f;
-                    for (int vi = 0; vi < tv; ++vi) {
-                        if (row[vi] > m_tile) m_tile = row[vi];
-                    }
-                    float m_new = (m_tile > m_run[ni]) ? m_tile : m_run[ni];
-                    float s_tile = 0.0f;
-                    for (int vi = 0; vi < tv; ++vi) {
-                        s_tile += expf(row[vi] - m_new);
-                    }
-                    s_run[ni] = s_run[ni] * expf(m_run[ni] - m_new) + s_tile;
-                    m_run[ni] = m_new;
-                }
-            }
-            for (int ni = 0; ni < bn; ++ni) {
-                out_loss[n0 + ni] = (m_run[ni] + logf(s_run[ni])) - z_y[ni];
-            }
-        }
-        free(tile_buf);
-    }
-#if defined(__AVX512F__) || defined(__AVX2__)
+    /* Prevent dirty upper ZMM/YMM transition stalls on hybrid & Xeon cores */
     _mm256_zeroupper();
 #endif
 }
+
+/* --- 4d. Sheaf Coboundary KV Prefix Gate --- */
+
+static void sheaf_kv_prefix_gate_range(
+    const float *query_stalk,
+    const float *nbr_stalks,
+    const float *nbr_values,
+    float *out_gated_prefix,
+    float *out_sheaf_energy,
+    int K_nbr,
+    int d_stalk,
+    int d_model,
+    float beta,
+    int n_start,
+    int n_end
+) {
+    if (n_start >= n_end) return;
+    float energies_stack[256];
+    float *heap_energies = NULL;
+    float *energies = energies_stack;
+    if (K_nbr > 256) {
+        heap_energies = (float *)malloc((size_t)K_nbr * sizeof(float));
+        if (!heap_energies) return;
+        energies = heap_energies;
+    }
+
+    for (int n = n_start; n < n_end; ++n) {
+        const float *q = query_stalk + (size_t)n * (size_t)d_stalk;
+        float *out_v = out_gated_prefix + (size_t)n * (size_t)d_model;
+        memset(out_v, 0, (size_t)d_model * sizeof(float));
+
+        if (K_nbr <= 0) {
+            out_sheaf_energy[n] = 0.0f;
+            continue;
+        }
+
+        const float qq = dot_f32_fast(q, q, d_stalk);
+        float energy_sum = 0.0f;
+        float e_min = 0.0f;
+        float e_max = 0.0f;
+
+        for (int k = 0; k < K_nbr; ++k) {
+            const float *nk = nbr_stalks + ((size_t)n * (size_t)K_nbr + (size_t)k) * (size_t)d_stalk;
+            /* Coboundary squared norm ||q - nk||_2^2 = ||q||^2 + ||nk||^2 - 2 <q, nk> */
+            float nn = dot_f32_fast(nk, nk, d_stalk);
+            float qn = dot_f32_fast(q, nk, d_stalk);
+            float e_k = qq + nn - 2.0f * qn;
+            if (e_k < 0.0f) e_k = 0.0f;
+            energies[k] = e_k;
+            energy_sum += e_k;
+            if (k == 0 || e_k < e_min) e_min = e_k;
+            if (k == 0 || e_k > e_max) e_max = e_k;
+        }
+
+        const float e_ref = (beta >= 0.0f) ? e_min : e_max;
+        float weight_sum = 0.0f;
+        for (int k = 0; k < K_nbr; ++k) {
+            float g = expf(-beta * (energies[k] - e_ref));
+            energies[k] = g;
+            weight_sum += g;
+        }
+
+        const float inv_w = (weight_sum > 0.0f) ? (1.0f / weight_sum) : 0.0f;
+        for (int k = 0; k < K_nbr; ++k) {
+            const float *vk = nbr_values + ((size_t)n * (size_t)K_nbr + (size_t)k) * (size_t)d_model;
+            axpy_f32_fast(energies[k] * inv_w, vk, out_v, d_model);
+        }
+        out_sheaf_energy[n] = energy_sum / (float)K_nbr;
+    }
+
+    free(heap_energies);
+}
+
+#if !defined(_OPENMP) && !defined(_WIN32)
+typedef struct {
+    const float *query_stalk;
+    const float *nbr_stalks;
+    const float *nbr_values;
+    float *out_gated_prefix;
+    float *out_sheaf_energy;
+    int K_nbr;
+    int d_stalk;
+    int d_model;
+    float beta;
+} SheafKvParCtx;
+
+static void sheaf_kv_par_worker(int start, int end, void *raw_ctx) {
+    SheafKvParCtx *ctx = (SheafKvParCtx *)raw_ctx;
+    sheaf_kv_prefix_gate_range(
+        ctx->query_stalk, ctx->nbr_stalks, ctx->nbr_values,
+        ctx->out_gated_prefix, ctx->out_sheaf_energy,
+        ctx->K_nbr, ctx->d_stalk, ctx->d_model, ctx->beta,
+        start, end
+    );
+}
+#endif
 
 void hadukenn_sheaf_kv_prefix_gate_f32(
     const float *query_stalk,
@@ -626,37 +1177,38 @@ void hadukenn_sheaf_kv_prefix_gate_f32(
     int d_model,
     float beta
 ) {
-    #pragma omp parallel for schedule(static) if(N >= 64)
-    for (int n = 0; n < N; ++n) {
-        const float *q = query_stalk + (size_t)n * d_stalk;
-        float *out_v = out_gated_prefix + (size_t)n * d_model;
-        memset(out_v, 0, (size_t)d_model * sizeof(float));
-
-        float weight_sum = 0.0f;
-        float energy_sum = 0.0f;
-        float gates[256];
-        const int k_cap = (K_nbr > 256) ? 256 : K_nbr;
-
-        for (int k = 0; k < k_cap; ++k) {
-            const float *nk = nbr_stalks + ((size_t)n * K_nbr + k) * d_stalk;
-            /* Coboundary squared norm ||q - nk||_2^2 = ||q||^2 + ||nk||^2 - 2 <q, nk> */
-            float qq = dot_f32_fast(q, q, d_stalk);
-            float nn = dot_f32_fast(nk, nk, d_stalk);
-            float qn = dot_f32_fast(q, nk, d_stalk);
-            float e_k = qq + nn - 2.0f * qn;
-            if (e_k < 0.0f) e_k = 0.0f;
-            energy_sum += e_k;
-            float g = expf(-beta * e_k);
-            gates[k] = g;
-            weight_sum += g;
-        }
-        const float inv_w = (weight_sum > 1e-12f) ? (1.0f / weight_sum) : 0.0f;
-        for (int k = 0; k < k_cap; ++k) {
-            const float *vk = nbr_values + ((size_t)n * K_nbr + k) * d_model;
-            axpy_f32_fast(gates[k] * inv_w, vk, out_v, d_model);
-        }
-        out_sheaf_energy[n] = (k_cap > 0) ? (energy_sum / (float)k_cap) : 0.0f;
+    if (N <= 0 || K_nbr < 0 || d_stalk < 0 || d_model <= 0 ||
+        !query_stalk || !out_gated_prefix || !out_sheaf_energy) {
+        return;
     }
+    if (K_nbr > 0 && (!nbr_stalks || !nbr_values)) return;
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(static) if(N >= 64 && (size_t)N * (size_t)K_nbr * (size_t)(d_stalk + d_model) >= 32768u)
+    for (int n = 0; n < N; ++n) {
+        sheaf_kv_prefix_gate_range(
+            query_stalk, nbr_stalks, nbr_values, out_gated_prefix, out_sheaf_energy,
+            K_nbr, d_stalk, d_model, beta, n, n + 1
+        );
+    }
+#elif !defined(_WIN32)
+    if (N >= 64 && (size_t)N * (size_t)K_nbr * (size_t)(d_stalk + d_model) >= 32768u) {
+        SheafKvParCtx ctx = {
+            query_stalk, nbr_stalks, nbr_values, out_gated_prefix, out_sheaf_energy,
+            K_nbr, d_stalk, d_model, beta
+        };
+        hadukenn_parallel_for(N, 0, 4, sheaf_kv_par_worker, &ctx);
+    } else {
+        sheaf_kv_prefix_gate_range(
+            query_stalk, nbr_stalks, nbr_values, out_gated_prefix, out_sheaf_energy,
+            K_nbr, d_stalk, d_model, beta, 0, N
+        );
+    }
+#else
+    sheaf_kv_prefix_gate_range(
+        query_stalk, nbr_stalks, nbr_values, out_gated_prefix, out_sheaf_energy,
+        K_nbr, d_stalk, d_model, beta, 0, N
+    );
+#endif
 }
 
 int hadukenn_scan_causal_spans_u8(

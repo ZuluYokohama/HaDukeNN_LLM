@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ctypes
 import json
 from pathlib import Path
 
@@ -168,3 +169,148 @@ def test_t46_campaign_verifier_and_cli_roundtrip(tmp_path: Path, capsys):
     rc_bad = cli_main(["campaign", "--json", "--mode", "t46-tri-machine-hal", "--path", str(bad_json)])
     assert rc_bad == 1
     _ = capsys.readouterr()
+
+
+def test_qgemm_i8mm_odd_shapes_and_pthreads_parallel():
+    lib = get_tri_machine_lib()
+    assert lib is not None
+
+    f32_p = ctypes.POINTER(ctypes.c_float)
+    rng = np.random.default_rng(77)
+
+    # Odd M, K, and N values exercise M % 2 != 0 and K % 8 != 0 tail loops on i8mm/SDOT
+    for n_tok, m_out, k_dim in ((1, 1, 13), (3, 7, 17), (17, 19, 31)):
+        x = rng.standard_normal((n_tok, k_dim)).astype(np.float32)
+        w = rng.standard_normal((m_out, k_dim)).astype(np.float32)
+        xq, xs = quantize_symmetric_int8(x)
+        wq, ws = quantize_symmetric_int8(w)
+        out_c = hal_qgemm_int8(xq, xs, wq, ws)
+        ref_i32 = xq.astype(np.int32) @ wq.astype(np.int32).T
+        out_ref = ref_i32.astype(np.float32) * (xs[:, None] * ws[None, :])
+        assert out_c.shape == (n_tok, m_out)
+        assert np.max(np.abs(out_c - out_ref)) < 1e-4
+
+    # Large matrix triggers row-partitioned pthreads parallel branch
+    xf = rng.standard_normal((64, 128)).astype(np.float32)
+    wf = rng.standard_normal((128, 128)).astype(np.float32)
+    gemv_c = np.empty((64, 128), dtype=np.float32)
+    lib.hadukenn_gemv_f32(
+        xf.ctypes.data_as(f32_p),
+        wf.ctypes.data_as(f32_p),
+        gemv_c.ctypes.data_as(f32_p),
+        64,
+        128,
+        128,
+        ctypes.c_float(0.5),
+    )
+    gemv_ref = 0.5 * (xf @ wf.T)
+    assert np.max(np.abs(gemv_c - gemv_ref)) < 1e-4
+
+    # Narrow-row GEMV triggers column-partitioned pthreads path (N < 4 and N*M*d >= 32768)
+    xf2 = rng.standard_normal((2, 256)).astype(np.float32)
+    wf2 = rng.standard_normal((256, 256)).astype(np.float32)
+    gemv2_c = np.empty((2, 256), dtype=np.float32)
+    lib.hadukenn_gemv_f32(
+        xf2.ctypes.data_as(f32_p),
+        wf2.ctypes.data_as(f32_p),
+        gemv2_c.ctypes.data_as(f32_p),
+        2,
+        256,
+        256,
+        ctypes.c_float(0.25),
+    )
+    gemv2_ref = 0.25 * (xf2 @ wf2.T)
+    assert np.max(np.abs(gemv2_c - gemv2_ref)) < 1e-4
+
+
+def test_compiler_probe_respects_cc_env_override(monkeypatch):
+    assert get_tri_machine_lib() is not None
+    monkeypatch.setenv("CC", "/nonexistent/compiler/path_xyz")
+    assert get_tri_machine_lib() is None
+    assert detect_host_isa()["backend"] == "python_numpy_fallback"
+    monkeypatch.delenv("CC", raising=False)
+    assert get_tri_machine_lib() is not None
+    assert detect_host_isa()["backend"] != "python_numpy_fallback"
+
+
+def _sheaf_kv_fp64_ref(
+    q: np.ndarray,
+    ns: np.ndarray,
+    nv: np.ndarray,
+    beta: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    diff = q[:, None, :].astype(np.float64) - ns.astype(np.float64)
+    e_k = np.sum(diff * diff, axis=-1)
+    e_min = np.min(e_k, axis=-1, keepdims=True)
+    gates = np.exp(-float(beta) * (e_k - e_min))
+    gates /= np.sum(gates, axis=-1, keepdims=True)
+    pref = np.einsum("nk,nkd->nd", gates, nv.astype(np.float64)).astype(np.float32)
+    energy = np.mean(e_k, axis=-1).astype(np.float32)
+    return pref, energy
+
+
+def test_sheaf_kv_prefix_gate_shifted_softmax_and_large_k(monkeypatch):
+    rng = np.random.default_rng(123)
+    cases = [
+        (16, 8, 64, 32, 0.5),
+        (65, 32, 33, 65, 0.5),
+        (4, 300, 8, 8, 0.5),
+    ]
+    for n_rows, k_nbr, d_stalk, d_model, beta in cases:
+        q = rng.standard_normal((n_rows, d_stalk)).astype(np.float32)
+        ns = rng.standard_normal((n_rows, k_nbr, d_stalk)).astype(np.float32)
+        nv = rng.standard_normal((n_rows, k_nbr, d_model)).astype(np.float32)
+        pref_ref, energy_ref = _sheaf_kv_fp64_ref(q, ns, nv, beta)
+
+        assert get_tri_machine_lib() is not None
+        pref_c, energy_c = hal_sheaf_kv_prefix_gate(q, ns, nv, beta=beta)
+        assert not np.all(pref_c == 0.0)
+        assert np.max(np.abs(pref_c - pref_ref)) < 1e-4
+        assert np.max(np.abs(energy_c - energy_ref)) < 1e-4
+
+        monkeypatch.setenv("CC", "/nonexistent/compiler/path_xyz")
+        assert get_tri_machine_lib() is None
+        pref_py, energy_py = hal_sheaf_kv_prefix_gate(q, ns, nv, beta=beta)
+        assert np.max(np.abs(pref_py - pref_ref)) < 1e-4
+        assert np.max(np.abs(energy_py - energy_ref)) < 1e-4
+        monkeypatch.delenv("CC", raising=False)
+
+
+def test_arena_rejects_negative_and_size_t_overflow(monkeypatch):
+    lib = get_tri_machine_lib()
+    assert lib is not None
+    size_max = ctypes.c_size_t(-1).value
+    for bad_cap in (0, -1):
+        with pytest.raises(ValueError):
+            StaticSlabArena(bad_cap)
+    for overflow_cap in (size_max - 62, size_max, 2**64, 2**64 + 1, 2**64 + 64):
+        with pytest.raises(MemoryError):
+            StaticSlabArena(overflow_cap)
+
+    with StaticSlabArena(128) as arena:
+        with pytest.raises(ValueError):
+            arena.alloc_bytes(-1)
+        assert arena.stats()["alloc_count"] == 0
+        assert arena.stats()["overflow_count"] == 0
+
+        ptr = lib.hadukenn_arena_alloc(ctypes.byref(arena._c_arena), size_max)
+        assert not ptr
+        assert arena.stats()["overflow_count"] == 1
+        assert arena.stats()["offset_bytes"] == 0
+
+        with pytest.raises(MemoryError):
+            arena.alloc_bytes(size_max)
+        assert arena.stats()["overflow_count"] == 2
+
+    monkeypatch.setenv("CC", "/nonexistent/compiler/path_xyz")
+    assert get_tri_machine_lib() is None
+    for overflow_cap in (size_max - 62, size_max, 2**64, 2**64 + 1, 2**64 + 64):
+        with pytest.raises(MemoryError):
+            StaticSlabArena(overflow_cap)
+    with StaticSlabArena(128) as py_arena:
+        with pytest.raises(ValueError):
+            py_arena.alloc_bytes(-1)
+        with pytest.raises(MemoryError):
+            py_arena.alloc_bytes(2**64 + 1)
+        assert py_arena.stats()["overflow_count"] == 1
+    monkeypatch.delenv("CC", raising=False)

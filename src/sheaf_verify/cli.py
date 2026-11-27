@@ -22,6 +22,7 @@ from sheaf_verify.attestation import (
 from sheaf_verify.campaign import (
     audit_cluster_geometry,
     head_flop_scaling_table,
+    verify_t46_snapdragon_local,
 )
 from sheaf_verify.hashing import SheafError, canonical_bytes, is_sha256, reject_symlink
 from sheaf_verify.ledger import Ledger
@@ -167,13 +168,21 @@ def main(argv: list[str] | None = None) -> int:
             "t43-all-realms",
             "t44-glassbox",
             "t45-sheaf-bridge",
+            "t46-snapdragon-local",
             "t46-tri-machine-hal",
             "t47-cosimilar-trace",
             "t48-roadmap-complete",
             "t49-hst-foundation",
+            "t49-hst-foundation-stage",
         ),
     )
-    campaign_cmd.add_argument("--path", type=Path, help="input JSON file for the selected campaign mode")
+    campaign_cmd.add_argument(
+        "--path",
+        "--in",
+        dest="path",
+        type=Path,
+        help="input JSON file for the selected campaign mode",
+    )
     campaign_cmd.add_argument("--addendum", type=Path, help="optional paired-seed addendum JSON for t38-prereg")
     campaign_cmd.add_argument("--vocab", type=int, default=32768)
     campaign_cmd.add_argument("--nc", type=int, default=256)
@@ -505,6 +514,14 @@ def _campaign(args) -> int:
         _emit(args, payload)
         return 0 if res.recommended else 1
 
+    if mode == "t46-snapdragon-local":
+        if args.path is None or not args.path.is_file():
+            raise SheafError(f"--path is required for campaign mode {mode!r}")
+        doc = validate_strict_json_bytes(reject_symlink(args.path, "campaign JSON").read_bytes())
+        ok_flag, criteria, advisories = verify_t46_snapdragon_local(doc)
+        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
+        return 0 if ok_flag else 1
+
     live = bool(getattr(args, "live", False))
     replay = bool(getattr(args, "replay", False))
     if live and replay:
@@ -527,6 +544,7 @@ def _selftest(args) -> int:
 
     ok_flag, report = run_full_verification()
     if args.report_out is not None:
+        args.report_out.parent.mkdir(parents=True, exist_ok=True)
         args.report_out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     _emit(args, report)
     return 0 if ok_flag else 1

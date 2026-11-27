@@ -83,7 +83,8 @@ def run_t47_cosimilar_campaign() -> dict:
         kern, cosim_part, coarse_part = _build_cosimilar_block_kernel(seed)
         laws = kern.verify_trace_laws(outer_window=[0, 1, 2, 3, 4, 5], inner_window=[0, 2, 4])
         discovered_quotient = compute_cosimilar_quotient(
-            {"step": kern.matrix}, observables=["obs_0"] * 4 + ["obs_1"] * 4
+            {"step": kern.matrix},
+            observables=["obs_0"] * 4 + ["obs_1"] * 4,
         )
         if (
             laws.stochastic_exact
@@ -113,27 +114,26 @@ def run_t47_cosimilar_campaign() -> dict:
 
     # (b) State-space memory scaling for n=9 interacting ternary agents (K=3 -> K^n = 19,683 states)
     n_agents, k_states = 9, 3
-    cartesian_states = k_states**n_agents
+    cartesian_states = k_states ** n_agents
     cartesian_matrix_entries = cartesian_states * cartesian_states  # 387,420,489 float64 entries!
     cartesian_bytes = cartesian_matrix_entries * 8
 
     hg_edges_9 = [
         HyperedgeSpec(
-            edge_id=f"he_{i}", nodes=(i % n_agents, (i + 1) % n_agents, (i + 2) % n_agents), roles=("a", "b", "c")
+            edge_id=f"he_{i}",
+            nodes=(i % n_agents, (i + 1) % n_agents, (i + 2) % n_agents),
+            roles=("a", "b", "c"),
         )
         for i in range(n_agents * 4)
     ]
-    hg_9 = ActiveHypergraphTraceSearcher(
-        num_nodes=n_agents * k_states,
-        edges=[
-            HyperedgeSpec(
-                edge_id=e.edge_id,
-                nodes=tuple(u * k_states + (idx % k_states) for idx, u in enumerate(e.nodes)),
-                roles=e.roles,
-            )
-            for e in hg_edges_9
-        ],
-    )
+    hg_9 = ActiveHypergraphTraceSearcher(num_nodes=n_agents * k_states, edges=[
+        HyperedgeSpec(
+            edge_id=e.edge_id,
+            nodes=tuple(u * k_states + (idx % k_states) for idx, u in enumerate(e.nodes)),
+            roles=e.roles,
+        )
+        for e in hg_edges_9
+    ])
     incidence_bytes = hg_9.incidence_storage_ints() * 8
     memory_compression_ratio = cartesian_bytes / max(incidence_bytes, 1)
 
@@ -230,7 +230,8 @@ def run_t47_cosimilar_campaign() -> dict:
         if iv["reused"] == ["obs_island2"] and len(iv["recomputed"]) == 3:
             selective_reuse_seeds += 1
 
-        # Inject a fabricated local Markov trace on obs_beta -> overlap witnesses with alpha & gamma must catch obs_beta!
+        # Inject a fabricated local Markov trace on obs_beta -> overlap
+        # witnesses with alpha & gamma must catch obs_beta!
         spoof_mat = [list(row) for row in branch.cache["obs_beta"].traced_matrix]
         spoof_mat[0] = [0.70, 0.10, 0.10, 0.10]
         spoof_coh = branch.check_overlap_coherence(external_overrides={"obs_beta": spoof_mat})

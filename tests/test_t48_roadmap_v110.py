@@ -123,3 +123,23 @@ def test_sealed_t48_artifact_and_cli_mode() -> None:
     # Quick smoke of campaign runner on 1 seed
     smoke = run_t48_roadmap_campaign(seeds=(13,))
     assert smoke["scitt_verified"] is True
+
+
+def test_t48_rejects_negative_disagreement() -> None:
+    artifact = ROOT / "iterations" / "t48-roadmap-complete" / "T48_ROADMAP_COMPLETE_RESULTS.json"
+    doc = json.loads(artifact.read_text(encoding="utf-8"))
+    bad_doc = json.loads(json.dumps(doc))
+    bad_doc["phase_d_learned_neural_hypergraph_bridge"]["int8_vs_fp32_action_disagreement_mean"] = -0.5
+    ok_flag, criteria, _ = verify_t48_roadmap_complete(bad_doc)
+    assert ok_flag is False
+    assert any(c.id == "T48_LEARNED_BRIDGE_AND_LOOPED_INT8_NPU" and not c.passed for c in criteria)
+
+
+def test_t48_rejects_ood_accuracy_above_one() -> None:
+    artifact = ROOT / "iterations" / "t48-roadmap-complete" / "T48_ROADMAP_COMPLETE_RESULTS.json"
+    doc = json.loads(artifact.read_text(encoding="utf-8"))
+    bad_doc = json.loads(json.dumps(doc))
+    bad_doc["phase_d_learned_neural_hypergraph_bridge"]["int8_looped_npu_ood_accuracy_mean"] = 1.5
+    ok_flag, criteria, _ = verify_t48_roadmap_complete(bad_doc)
+    assert ok_flag is False
+    assert any(c.id == "T48_LEARNED_BRIDGE_AND_LOOPED_INT8_NPU" and not c.passed for c in criteria)

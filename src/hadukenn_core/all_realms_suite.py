@@ -51,6 +51,8 @@ from hadukenn_core.benchmark_suite import (
     load_clean_technical_corpus,
 )
 from hadukenn_core.exec_bridge import IncrementalHypergraphKernel, _ensure_exec_pkg_path
+from hadukenn_core.fast_ops import detect_oryon_capabilities
+from hadukenn_core.npu_qnn_backend import run_int8_matmul_htp
 from hadukenn_core.partitions import build_balanced_partition
 from hadukenn_core.tokenization import ByteBPETokenizer, PMISpanLexicon
 from hadukenn_core.transformer_lm import CausalTransformerLM, TransformerConfig
@@ -748,20 +750,60 @@ class VerifiableGraphCheckpointer:
 class QuantizedINT8NPULoopEngine:
     """Exact symmetric per-channel INT8 -> INT32 accumulator + MeZO vs Split-LP benchmark."""
 
-    def __init__(self, weight_fp32: np.ndarray) -> None:
-        max_abs = np.maximum(np.max(np.abs(weight_fp32), axis=0, keepdims=True), 1e-8)
+    def __init__(self, weight_fp32: np.ndarray, *, force_tier: str | None = None) -> None:
+        w_f32 = np.asarray(weight_fp32, dtype=np.float32)
+        if w_f32.ndim != 2 or w_f32.shape[0] < 1 or w_f32.shape[1] < 1:
+            raise ValueError(f"weight_fp32 must be a non-empty 2D matrix, got shape {w_f32.shape}")
+        max_abs = np.maximum(np.max(np.abs(w_f32), axis=0, keepdims=True), 1e-8)
         self.w_scale = (max_abs / 127.0).astype(np.float32)
-        self.w_int8 = np.clip(np.round(weight_fp32 / self.w_scale), -127, 127).astype(np.int8)
+        self.w_int8 = np.clip(np.round(w_f32 / self.w_scale), -127, 127).astype(np.int8)
+        self.force_tier = force_tier
+        self.last_tier_used: str | None = None
+        self.last_canary_ok: bool | None = None
 
-    def forward_npu_int8(self, x_fp32: np.ndarray) -> np.ndarray:
-        max_x = np.maximum(np.max(np.abs(x_fp32), axis=-1, keepdims=True), 1e-8)
+    def forward_npu_int8(self, x_fp32: np.ndarray, *, force_tier: str | None = None) -> np.ndarray:
+        x_arr = np.asarray(x_fp32, dtype=np.float32)
+        if x_arr.ndim < 1 or x_arr.size == 0:
+            raise ValueError(f"x_fp32 must be non-empty with ndim >= 1, got shape {x_arr.shape}")
+        orig_shape = x_arr.shape
+        if x_arr.ndim == 1:
+            x_2d = x_arr.reshape(1, -1)
+        elif x_arr.ndim == 2:
+            x_2d = x_arr
+        else:
+            x_2d = x_arr.reshape(-1, orig_shape[-1])
+        if x_2d.shape[1] != self.w_int8.shape[0]:
+            raise ValueError(
+                f"Input feature dim {x_2d.shape[1]} does not match weight in_features {self.w_int8.shape[0]}"
+            )
+
+        max_x = np.maximum(np.max(np.abs(x_2d), axis=-1, keepdims=True), 1e-8)
         x_scale = (max_x / 127.0).astype(np.float32)
-        x_int8 = np.clip(np.round(x_fp32 / x_scale), -127, 127).astype(np.int8)
-        acc_i32 = x_int8.astype(np.int32) @ self.w_int8.astype(np.int32)
-        return acc_i32.astype(np.float32) * (x_scale * self.w_scale)
+        x_int8 = np.clip(np.round(x_2d / x_scale), -127, 127).astype(np.int8)
+
+        m, k = int(x_int8.shape[0]), int(x_int8.shape[1])
+        n = int(self.w_int8.shape[1])
+        req_tier = self.force_tier if force_tier is None else force_tier
+        eff_tier = "auto" if req_tier is None else req_tier
+        if eff_tier == "auto" and m * k * n < 65536:
+            eff_tier = "oryon_i8mm" if detect_oryon_capabilities().get("has_i8mm") else "numpy_ref"
+
+        res = run_int8_matmul_htp(x_int8, self.w_int8, force_tier=eff_tier)
+        self.last_tier_used = str(res["tier_used"])
+        self.last_canary_ok = bool(res["canary_ok"])
+        out_2d = res["output"].astype(np.float32) * (x_scale * self.w_scale)
+        if x_arr.ndim == 1:
+            return out_2d.reshape(n)
+        if x_arr.ndim == 2:
+            return out_2d
+        return out_2d.reshape(*orig_shape[:-1], n)
 
 
-def _benchmark_edge_npu_and_5070_realm(seeds: tuple[int, ...] = HEADLINE_SEEDS) -> dict[str, Any]:
+def _benchmark_edge_npu_and_5070_realm(
+    seeds: tuple[int, ...] = HEADLINE_SEEDS,
+    *,
+    force_tier: str | None = None,
+) -> dict[str, Any]:
     """Compare FP32, Looped INT8-NPU MeZO, and Split INT8-NPU Backbone + CPU Exact LP across 5 seeds."""
     docs = load_clean_technical_corpus()
     texts = [d.text[:1200] for d in docs[:16]]
@@ -790,12 +832,15 @@ def _benchmark_edge_npu_and_5070_realm(seeds: tuple[int, ...] = HEADLINE_SEEDS) 
         nll_nats = float(-np.sum(logp[np.arange(len(val_ids) - 1), val_ids[1:]]))
         return nll_nats / (math.log(2.0) * max(val_byte_count, 1.0))
 
+    last_tier_used: str | None = None
+    last_canary_ok: bool | None = None
+
     for s in seeds:
         rng = np.random.default_rng(s)
         emb = rng.normal(0.0, 0.25, size=(v_sz, d_in)).astype(np.float32)
         w1 = rng.normal(0.0, 0.25, size=(d_in, d_hid)).astype(np.float32)
         head0 = rng.normal(0.0, 0.05, size=(d_hid, v_sz)).astype(np.float32)
-        npu = QuantizedINT8NPULoopEngine(w1)
+        npu = QuantizedINT8NPULoopEngine(w1, force_tier=force_tier)
 
         untrained_bpbs.append(_eval_bpb(emb, npu, w1, head0))
 
@@ -860,6 +905,8 @@ def _benchmark_edge_npu_and_5070_realm(seeds: tuple[int, ...] = HEADLINE_SEEDS) 
         logp_v = lg_v - np.log(np.sum(np.exp(lg_v), axis=1, keepdims=True))
         nll_v = float(-np.sum(logp_v[np.arange(len(val_ids) - 1), val_ids[1:]]))
         mezo_bpbs.append(nll_v / (math.log(2.0) * max(val_byte_count, 1.0)))
+        last_tier_used = npu.last_tier_used
+        last_canary_ok = npu.last_canary_ok
 
     hardware_envelopes = [
         {
@@ -891,6 +938,8 @@ def _benchmark_edge_npu_and_5070_realm(seeds: tuple[int, ...] = HEADLINE_SEEDS) 
         "int8_npu_vs_fp32_abs_drift_bpb": round(abs(float(np.mean(split_lp_bpbs) - np.mean(fp32_bpbs))), 6),
         "split_npu_lp_vs_untrained": _adjudicate_paired(untrained_bpbs, split_lp_bpbs),
         "mezo_vs_untrained": _adjudicate_paired(untrained_bpbs, mezo_bpbs),
+        "npu_backend_tier": last_tier_used,
+        "npu_backend_canary_ok": last_canary_ok,
     }
 
 

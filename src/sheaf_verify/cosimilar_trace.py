@@ -38,7 +38,11 @@ def _frac_invert(mat: list[list[Fraction]]) -> list[list[Fraction]]:
     n = len(mat)
     if n == 0:
         return []
-    aug = [[Fraction(mat[r][c]) for c in range(n)] + [Fraction(1 if r == c else 0) for c in range(n)] for r in range(n)]
+    aug = [
+        [Fraction(mat[r][c]) for c in range(n)]
+        + [Fraction(1 if r == c else 0) for c in range(n)]
+        for r in range(n)
+    ]
     for col in range(n):
         piv = None
         for r in range(col, n):
@@ -80,7 +84,10 @@ def _float_invert(mat: list[list[float]]) -> list[list[float]]:
     n = len(mat)
     if n == 0:
         return []
-    aug = [[float(mat[r][c]) for c in range(n)] + [1.0 if r == c else 0.0 for c in range(n)] for r in range(n)]
+    aug = [
+        [float(mat[r][c]) for c in range(n)] + [1.0 if r == c else 0.0 for c in range(n)]
+        for r in range(n)
+    ]
     for col in range(n):
         piv = max(range(col, n), key=lambda r: abs(aug[r][col]))
         if abs(aug[piv][col]) < 1e-13:
@@ -203,7 +210,8 @@ class ExactRationalMarkovKernel:
                     stack.append(v)
         if not reach_from_vis:
             return ExactRationalMarkovKernel(
-                [[self.matrix[i][j] for j in vis] for i in vis], [self.state_names[i] for i in vis]
+                [[self.matrix[i][j] for j in vis] for i in vis],
+                [self.state_names[i] for i in vis],
             )
         hid = sorted(reach_from_vis)
         m_ss = [[self.matrix[i][j] for j in vis] for i in vis]
@@ -240,9 +248,9 @@ class ExactRationalMarkovKernel:
         mass_inner = sum(pi_full[i] for i in inner_window)
         mass_inner_in_outer = sum(pi_outer[k] for k in rel_inner)
 
-        stat_ok = all(pi_inner[pos] == pi_full[idx] / mass_inner for pos, idx in enumerate(inner_window)) and all(
-            pi_outer[pos] == pi_full[idx] / mass_outer for pos, idx in enumerate(outer_window)
-        )
+        stat_ok = all(
+            pi_inner[pos] == pi_full[idx] / mass_inner for pos, idx in enumerate(inner_window)
+        ) and all(pi_outer[pos] == pi_full[idx] / mass_outer for pos, idx in enumerate(outer_window))
 
         tau_outer = Fraction(1, 1) / mass_outer
         tau_inner_given_outer = Fraction(1, 1) / mass_inner_in_outer
@@ -337,7 +345,7 @@ def compute_cosimilar_quotient(
     groups: dict[str, list[int]] = {}
     for idx, label in enumerate(obs):
         groups.setdefault(label, []).append(idx)
-    partition = [sorted(block) for _, block in sorted(groups.items(), key=lambda kv: kv[1][0])]
+    partition = [ sorted(block) for _, block in sorted(groups.items(), key=lambda kv: kv[1][0]) ]
 
     while True:
         new_partition: list[list[int]] = []
@@ -444,7 +452,8 @@ class ActiveHypergraphTraceSearcher:
         if len(vis) == self.num_nodes:
             return [[base[i][j] for j in vis] for i in vis]
         vis_set = set(vis)
-        # Restrict hidden states to those reachable from vis so disconnected recurrent islands do not singularize I - M_BB
+        # Restrict hidden states to those reachable from vis so disconnected
+        # recurrent islands do not singularize I - M_BB
         reach_from_vis: set[int] = set()
         stack = list(vis)
         while stack:
@@ -460,7 +469,10 @@ class ActiveHypergraphTraceSearcher:
         m_ss = [[base[i][j] for j in vis] for i in vis]
         m_sb = [[base[i][j] for j in hid] for i in vis]
         m_bs = [[base[i][j] for j in vis] for i in hid]
-        i_mbb = [[(1.0 if r == c else 0.0) - base[hid[r]][hid[c]] for c in range(len(hid))] for r in range(len(hid))]
+        i_mbb = [
+            [(1.0 if r == c else 0.0) - base[hid[r]][hid[c]] for c in range(len(hid))]
+            for r in range(len(hid))
+        ]
         inv_mbb = _float_invert(i_mbb)
         indirect = _float_matmul(_float_matmul(m_sb, inv_mbb), m_bs)
         out = [[m_ss[r][c] + indirect[r][c] for c in range(len(vis))] for r in range(len(vis))]
@@ -615,7 +627,9 @@ class CosimilarObserverSheafEngine:
         self._recompute_observers(set(self.observer_windows.keys()), reason="init")
 
     def _build_searcher(self) -> ActiveHypergraphTraceSearcher:
-        return ActiveHypergraphTraceSearcher(self.num_nodes, [self.edges[k] for k in sorted(self.edges.keys())])
+        return ActiveHypergraphTraceSearcher(
+            self.num_nodes, [self.edges[k] for k in sorted(self.edges.keys())]
+        )
 
     @staticmethod
     def _digest_matrix(oid: str, window: tuple[int, ...], mat: list[list[float]]) -> str:
@@ -682,7 +696,9 @@ class CosimilarObserverSheafEngine:
                 visited.add(curr)
                 stack.extend(adj[curr] - visited)
 
-        impacted = {oid for oid, win in self.observer_windows.items() if any(u in visited for u in win)}
+        impacted = {
+            oid for oid, win in self.observer_windows.items() if any(u in visited for u in win)
+        }
         self._recompute_observers(impacted, reason=f"intervention:{edge_id}={new_weight:.4f}")
         return {
             "recomputed": sorted(impacted),
@@ -699,7 +715,10 @@ class CosimilarObserverSheafEngine:
         m_ss = [[mat[i][j] for j in sub_positions] for i in sub_positions]
         m_sb = [[mat[i][j] for j in hid] for i in sub_positions]
         m_bs = [[mat[i][j] for j in sub_positions] for i in hid]
-        i_mbb = [[(1.0 if r == c else 0.0) - mat[hid[r]][hid[c]] for c in range(len(hid))] for r in range(len(hid))]
+        i_mbb = [
+            [(1.0 if r == c else 0.0) - mat[hid[r]][hid[c]] for c in range(len(hid))]
+            for r in range(len(hid))
+        ]
         inv_mbb = _float_invert(i_mbb)
         ind = _float_matmul(_float_matmul(m_sb, inv_mbb), m_bs)
         return [[m_ss[r][c] + ind[r][c] for c in range(len(sub_positions))] for r in range(len(sub_positions))]
@@ -719,34 +738,50 @@ class CosimilarObserverSheafEngine:
         max_discrepancy = 0.0
         violating_pairs: list[tuple[str, str, float]] = []
         fault_votes: dict[str, int] = {oid: 0 for oid in oids}
+        matrices = {oid: overrides.get(oid, self.cache[oid].traced_matrix) for oid in oids}
+        finite_map = {
+            oid: all(math.isfinite(val) for row in matrices[oid] for val in row)
+            for oid in oids
+        }
+        non_finite_obs = [oid for oid in oids if not finite_map[oid]]
 
         for idx_a in range(len(oids)):
             for idx_b in range(idx_a + 1, len(oids)):
                 oa, ob = oids[idx_a], oids[idx_b]
                 wa, wb = self.observer_windows[oa], self.observer_windows[ob]
                 overlap = [u for u in wa if u in set(wb)]
-                if len(overlap) < 2:
+                if not (finite_map[oa] and finite_map[ob]):
+                    l1_err = float("inf")
+                elif len(overlap) < 2:
                     continue
-                mat_a = overrides.get(oa, self.cache[oa].traced_matrix)
-                mat_b = overrides.get(ob, self.cache[ob].traced_matrix)
-                pos_a = [wa.index(u) for u in overlap]
-                pos_b = [wb.index(u) for u in overlap]
-                tr_a = self._subtrace_float(mat_a, pos_a)
-                tr_b = self._subtrace_float(mat_b, pos_b)
-                l1_err = max(
-                    sum(abs(tr_a[r][c] - tr_b[r][c]) for c in range(len(overlap))) for r in range(len(overlap))
-                )
-                if l1_err > max_discrepancy:
+                else:
+                    mat_a, mat_b = matrices[oa], matrices[ob]
+                    pos_a = [wa.index(u) for u in overlap]
+                    pos_b = [wb.index(u) for u in overlap]
+                    tr_a = self._subtrace_float(mat_a, pos_a)
+                    tr_b = self._subtrace_float(mat_b, pos_b)
+                    l1_err = max(
+                        sum(abs(tr_a[r][c] - tr_b[r][c]) for c in range(len(overlap)))
+                        for r in range(len(overlap))
+                    )
+                    if not math.isfinite(l1_err):
+                        l1_err = float("inf")
+                if not math.isfinite(l1_err) or l1_err > max_discrepancy:
                     max_discrepancy = l1_err
-                if l1_err > tol:
+                if not math.isfinite(l1_err) or l1_err > tol:
                     violating_pairs.append((oa, ob, l1_err))
                     fault_votes[oa] += 1
                     fault_votes[ob] += 1
 
+        if non_finite_obs and not violating_pairs:
+            max_discrepancy = float("inf")
+            for oid in non_finite_obs:
+                fault_votes[oid] += 1
+
         # Majority coboundary witness localization (distinguishes 1-vs-1 tie from multi-witness fault)
         flagged: list[str] = []
         verdict = "COHERENT"
-        if violating_pairs:
+        if violating_pairs or non_finite_obs:
             max_v = max(fault_votes.values())
             top = [oid for oid, v in fault_votes.items() if v == max_v]
             if max_v >= 2 and len(top) == 1:
@@ -757,11 +792,13 @@ class CosimilarObserverSheafEngine:
                 verdict = "AMBIGUOUS_CONFLICT"
 
         return {
-            "coherent": len(violating_pairs) == 0,
+            "coherent": len(violating_pairs) == 0 and not non_finite_obs,
             "flagged_observers": flagged,
             "max_overlap_l1_discrepancy": max_discrepancy,
             "verdict": verdict,
-            "violating_pairs": [{"l1_error": err, "observer_a": a, "observer_b": b} for a, b, err in violating_pairs],
+            "violating_pairs": [
+                {"l1_error": err, "observer_a": a, "observer_b": b} for a, b, err in violating_pairs
+            ],
         }
 
     def emit_scitt_audit_bundle(self, signing_key: bytes, system_id: str = "hadukenn-cosimilar-trace-v1.0.0") -> dict:

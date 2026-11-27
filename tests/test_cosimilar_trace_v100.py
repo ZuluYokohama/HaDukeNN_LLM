@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from fractions import Fraction
 from pathlib import Path
 
@@ -158,7 +159,7 @@ def test_observer_sheaf_fork_selective_cache_spoof_and_scitt():
 
 
 def test_t47_campaign_and_cli_roundtrip(tmp_path: Path):
-    artifact = write_t47_artifacts(ROOT)
+    artifact = write_t47_artifacts(tmp_path)
     doc = json.loads(artifact.read_text(encoding="utf-8"))
     ok_flag, criteria, advisories = verify_t47_cosimilar_trace(doc)
     assert ok_flag is True
@@ -179,3 +180,78 @@ def test_t47_campaign_and_cli_roundtrip(tmp_path: Path):
 
     direct = run_t47_cosimilar_campaign()
     assert direct["realm_1_trace_and_cosimilarity"]["seeds_passing_all_4_trace_laws"] == 5
+
+
+def test_observer_sheaf_rejects_non_finite_matrices():
+    edges = [
+        HyperedgeSpec("e0", (0, 1, 2), ("a", "b", "c"), weight=1.5),
+        HyperedgeSpec("e1", (1, 2, 3), ("a", "b", "c"), weight=1.5),
+        HyperedgeSpec("e2", (2, 3, 4), ("a", "b", "c"), weight=1.5),
+    ]
+    observers = {"obs_a": [0, 1, 2, 3], "obs_b": [1, 2, 3, 4], "obs_c": [0, 1, 2, 4]}
+    eng = CosimilarObserverSheafEngine(5, edges, observers)
+
+    nan_mat = [[float("nan")] * 4 for _ in range(4)]
+    res_nan = eng.check_overlap_coherence(external_overrides={"obs_b": nan_mat})
+    assert res_nan["coherent"] is False
+    assert res_nan["verdict"] == "SPOOF_LOCALIZED"
+    assert res_nan["flagged_observers"] == ["obs_b"]
+    assert math.isinf(float(res_nan["max_overlap_l1_discrepancy"]))
+
+    inf_mat = [[float("inf")] * 4 for _ in range(4)]
+    res_inf = eng.check_overlap_coherence(external_overrides={"obs_a": inf_mat})
+    assert res_inf["coherent"] is False
+    assert res_inf["verdict"] == "SPOOF_LOCALIZED"
+    assert res_inf["flagged_observers"] == ["obs_a"]
+
+    eng2 = CosimilarObserverSheafEngine(5, edges, {"obs_a": [0, 1, 2, 3], "obs_b": [1, 2, 3, 4]})
+    res_tie = eng2.check_overlap_coherence(external_overrides={"obs_b": nan_mat})
+    assert res_tie["coherent"] is False
+    assert res_tie["verdict"] == "AMBIGUOUS_CONFLICT"
+    assert res_tie["flagged_observers"] == ["obs_a", "obs_b"]
+
+    eng_1node = CosimilarObserverSheafEngine(5, edges, {"obs_a": [0, 1], "obs_b": [1, 4]})
+    nan_2x2 = [[float("nan")] * 2 for _ in range(2)]
+    res_1node = eng_1node.check_overlap_coherence(external_overrides={"obs_b": nan_2x2})
+    assert res_1node["coherent"] is False
+    assert res_1node["verdict"] == "AMBIGUOUS_CONFLICT"
+    assert math.isinf(float(res_1node["max_overlap_l1_discrepancy"]))
+
+
+def test_t47_campaign_handles_null_nested_sections_without_crash(tmp_path: Path, capsys):
+    artifact = ROOT / "iterations" / "t47-cosimilar-trace" / "T47_COSIMILAR_TRACE_RESULTS.json"
+    base_doc = json.loads(artifact.read_text(encoding="utf-8"))
+    for key in (
+        "realm_1_trace_and_cosimilarity",
+        "realm_2_hypergraph_vs_2d_markov",
+        "realm_3_active_window_search",
+        "realm_4_observer_sheaf_and_interventions",
+    ):
+        null_doc = dict(base_doc)
+        null_doc[key] = None
+        ok_flag, criteria, _ = verify_t47_cosimilar_trace(null_doc)
+        assert ok_flag is False
+        assert any(not c.passed for c in criteria)
+
+    null_path = tmp_path / "t47_null.json"
+    bad_doc = dict(base_doc)
+    bad_doc["realm_1_trace_and_cosimilarity"] = None
+    null_path.write_text(json.dumps(bad_doc), encoding="utf-8")
+    rc = cli_main(["campaign", "--mode", "t47-cosimilar-trace", "--path", str(null_path), "--json"])
+    assert rc == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is False
+
+
+def test_t47_campaign_rejects_top_level_non_dict(tmp_path: Path, capsys):
+    for bad_root in (None, [], 42, "bad", True, False):
+        ok_flag, criteria, advisories = verify_t47_cosimilar_trace(bad_root)  # type: ignore[arg-type]
+        assert ok_flag is False and advisories == []
+        assert len(criteria) == 1 and criteria[0].id == "T47_SCHEMA_AND_SEEDS" and not criteria[0].passed
+
+    for idx, raw in enumerate(("null", "[]", "42")):
+        p = tmp_path / f"root_{idx}.json"
+        p.write_text(raw, encoding="utf-8")
+        for flag in ("--path", "--in"):
+            assert cli_main(["campaign", "--mode", "t47-cosimilar-trace", flag, str(p), "--json"]) == 1
+            assert json.loads(capsys.readouterr().out)["ok"] is False

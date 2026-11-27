@@ -1,4 +1,4 @@
-"""Drop-in static-shape PyTorch `nn.Module` kernels (`torch.compile(fullgraph=True)` & RTX 5070 ready).
+"""Drop-in static-shape PyTorch `nn.Module` kernels (CPU/ARM64 portable & `torch.compile`-ready).
 
 Uses explicit low-level tensor contractions (`@`, `torch.bmm`, `logsumexp`, `gather`) with
 exact `NC * S == V` bijection (`256 x 128`, `1024 x 128`, `2048 x 128`), `chunk_tokens = 256`
@@ -20,7 +20,7 @@ try:
     import torch.nn as nn
 
     TORCH_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     TORCH_AVAILABLE = False
 
 NF4_VALUES = (
@@ -45,7 +45,7 @@ NF4_VALUES = (
 
 def _explicit_nll_from_logits(logits: torch.Tensor, target_idx: torch.Tensor) -> torch.Tensor:
     lse = torch.logsumexp(logits.float(), dim=-1)
-    chosen = logits.float().gather(1, target_idx.unsqueeze(1)).squeeze(1)
+    chosen = logits.float().gather(1, target_idx.to(torch.long).unsqueeze(1)).squeeze(1)
     return (lse - chosen).mean()
 
 
@@ -53,11 +53,11 @@ if TORCH_AVAILABLE:  # pragma: no cover
 
     class ParadigmaticClusterISHeadTorch(nn.Module):
         """
-        Frontier-5070 Output Head (`256x128`, `1024x128` @ 131k, `2048x128` @ 262k):
+        Cluster-IS Output Head (`256x128`, `1024x128` @ 131k, `2048x128` @ 262k):
           - Shares `base_weight` (`[V, d]`, `struct_rank = 0`, `resid = none`).
           - Trains detached root proposal `C_c = mean_{j in c}(E_j) + delta_root[c]`.
           - Micro-slices `[0 : n_tok]` into `chunk_tokens = 256` slices so 3D `e_cl[active_c]`
-            peaks at `<= 1.00 GiB` on an 8B (`d = 4096`) model instead of `16.0 GiB` OOM!
+            stays compact on CPU/ARM64 and unified-memory targets instead of `16.0 GiB` OOM.
         """
 
         def __init__(
@@ -68,22 +68,35 @@ if TORCH_AVAILABLE:  # pragma: no cover
             chunk_tokens: int = 256,
         ) -> None:
             super().__init__()
+            if isinstance(d_model, bool) or not isinstance(d_model, int) or d_model < 1:
+                raise ValueError(f"d_model must be a positive integer, got {d_model!r}")
+            if isinstance(k_neg, bool) or not isinstance(k_neg, int):
+                raise ValueError(f"k_neg must be an integer, got {k_neg!r}")
+            if isinstance(chunk_tokens, bool) or not isinstance(chunk_tokens, int) or chunk_tokens < 1:
+                raise ValueError(f"chunk_tokens must be a positive integer, got {chunk_tokens!r}")
             nc, s_sz = cluster_units.shape
-            self.n_clusters = int(nc)
+            nc_int = int(nc)
+            k_neg_int = int(k_neg)
+            if nc_int < 2:
+                raise ValueError(f"n_clusters must be >= 2, got {nc_int}")
+            if k_neg_int < 1 or k_neg_int >= nc_int:
+                raise ValueError(f"k_neg must satisfy 1 <= k_neg < n_clusters ({nc_int}), got {k_neg_int}")
+            dev = cluster_units.device
+            self.n_clusters = nc_int
             self.cluster_size = int(s_sz)
-            self.k_neg = int(k_neg)
+            self.k_neg = k_neg_int
             self.chunk_tokens = max(int(chunk_tokens), 16)
             self.register_buffer("cluster_units", cluster_units.to(torch.long))
-            inv_c = torch.empty(nc * s_sz, dtype=torch.long)
-            inv_m = torch.empty(nc * s_sz, dtype=torch.long)
-            ar_m = torch.arange(s_sz, dtype=torch.long)
+            inv_c = torch.empty(nc * s_sz, dtype=torch.long, device=dev)
+            inv_m = torch.empty(nc * s_sz, dtype=torch.long, device=dev)
+            ar_m = torch.arange(s_sz, dtype=torch.long, device=dev)
             for c in range(nc):
                 members = cluster_units[c].to(torch.long)
                 inv_c[members] = c
                 inv_m[members] = ar_m
             self.register_buffer("token_to_cluster", inv_c)
             self.register_buffer("token_to_member", inv_m)
-            self.delta_root = nn.Parameter(torch.zeros(nc, d_model))
+            self.delta_root = nn.Parameter(torch.zeros(nc, d_model, device=dev, dtype=torch.float32))
 
         def forward(
             self,
@@ -92,13 +105,21 @@ if TORCH_AVAILABLE:  # pragma: no cover
             base_weight: torch.Tensor,
         ) -> tuple[torch.Tensor, torch.Tensor]:
             h_flat = hidden.reshape(-1, hidden.size(-1))
-            y_flat = targets.reshape(-1)
+            dt = h_flat.dtype
+            y_flat = targets.reshape(-1).to(torch.long)
             n_tok = h_flat.size(0)
+            if n_tok == 0:
+                zero_h = 0.0 * h_flat.sum().to(torch.float32)
+                zero_base = 0.0 * base_weight.sum().to(torch.float32)
+                zero_root = 0.0 * self.delta_root.sum().to(torch.float32)
+                lm_loss = zero_h + zero_base + zero_root
+                root_nll = zero_root
+                return lm_loss, root_nll
             tc = self.token_to_cluster[y_flat]
             tm = self.token_to_member[y_flat]
 
             e_cl = base_weight[self.cluster_units]
-            c_root = e_cl.detach().mean(dim=1) + self.delta_root
+            c_root = e_cl.detach().mean(dim=1).to(dt) + self.delta_root.to(dt)
             root_logits = h_flat.detach() @ c_root.t()
             root_nll = _explicit_nll_from_logits(root_logits, tc)
 
@@ -117,19 +138,19 @@ if TORCH_AVAILABLE:  # pragma: no cover
                 neg_c = gumbel.topk(self.k_neg, dim=-1).indices
                 q_neg = q_tilde.gather(1, neg_c)
                 p_incl = 1.0 - (1.0 - q_neg).clamp_min(0.0).pow(self.k_neg)
-                log_w_neg = -p_incl.clamp_min(1e-7).log().to(hidden.dtype)
+                log_w_neg = -p_incl.clamp_min(1e-7).log().to(dt)
 
             active_c = torch.cat([tc.unsqueeze(1), neg_c], dim=1)
             lm_loss_accum = torch.zeros((), device=hidden.device, dtype=torch.float32)
             for start in range(0, n_tok, self.chunk_tokens):
                 end = min(start + self.chunk_tokens, n_tok)
                 m_sub = end - start
-                e_act = e_cl[active_c[start:end]].reshape(m_sub, (1 + self.k_neg) * self.cluster_size, -1)
+                e_act = e_cl[active_c[start:end]].to(dt).reshape(m_sub, (1 + self.k_neg) * self.cluster_size, -1)
                 dots = torch.bmm(e_act, h_flat[start:end].unsqueeze(-1)).squeeze(-1)
                 dots_blk = dots.view(m_sub, 1 + self.k_neg, self.cluster_size)
                 bias = torch.cat(
                     [
-                        torch.zeros(m_sub, 1, self.cluster_size, device=hidden.device, dtype=hidden.dtype),
+                        torch.zeros(m_sub, 1, self.cluster_size, device=hidden.device, dtype=dt),
                         log_w_neg[start:end].unsqueeze(-1).expand(-1, -1, self.cluster_size),
                     ],
                     dim=1,
@@ -141,11 +162,15 @@ if TORCH_AVAILABLE:  # pragma: no cover
     class NF4FrozenLinearTorch(nn.Module):
         """
         Dettmers et al. (2023) 4-bit NormalFloat (`NF4`) + double-quantized `uint8` block scales
-        with optional LoRA (`rank = 16`) adapter for 3B / 8B checkpoint surgery inside 12 GB VRAM.
+        with optional LoRA (`rank = 16`) adapter for CPU/ARM64 and unified-memory execution.
         """
 
         def __init__(self, weight_fp: torch.Tensor, block_size: int = 64, lora_rank: int = 16) -> None:
             super().__init__()
+            if isinstance(block_size, bool) or not isinstance(block_size, int) or block_size < 2 or block_size % 2 != 0:
+                raise ValueError(f"block_size must be an even integer >= 2, got {block_size!r}")
+            if isinstance(lora_rank, bool) or not isinstance(lora_rank, int) or lora_rank < 0:
+                raise ValueError(f"lora_rank must be a non-negative integer, got {lora_rank!r}")
             out_features, in_features = weight_fp.shape
             self.in_features = int(in_features)
             self.out_features = int(out_features)
@@ -205,10 +230,11 @@ if TORCH_AVAILABLE:  # pragma: no cover
             self.alpha = nn.Parameter(torch.full((1,), 0.15))
 
         def forward(self, base_emb: torch.Tensor, ending_span_ids: torch.Tensor) -> torch.Tensor:
-            valid = (ending_span_ids >= 0).unsqueeze(-1).to(base_emb.dtype)
-            safe_ids = ending_span_ids.clamp_min(0)
-            span_vec = (self.span_table[safe_ids] @ self.w_proj) * valid
-            return base_emb + torch.tanh(self.alpha) * span_vec
+            dt = base_emb.dtype
+            valid = (ending_span_ids >= 0).unsqueeze(-1).to(dt)
+            safe_ids = ending_span_ids.clamp_min(0).to(torch.long)
+            span_vec = (self.span_table[safe_ids].to(dt) @ self.w_proj.to(dt)) * valid
+            return base_emb + torch.tanh(self.alpha.to(dt)) * span_vec
 
     class AsymmetricSheafKVPrefixTorch(nn.Module):
         """
@@ -219,6 +245,11 @@ if TORCH_AVAILABLE:  # pragma: no cover
 
         def __init__(self, d_model: int, d_stalk: int, n_heads: int) -> None:
             super().__init__()
+            for name, val in (("d_model", d_model), ("d_stalk", d_stalk), ("n_heads", n_heads)):
+                if isinstance(val, bool) or not isinstance(val, int) or val < 1:
+                    raise ValueError(f"{name} must be a positive integer, got {val!r}")
+            if d_model % n_heads != 0:
+                raise ValueError(f"d_model ({d_model}) must be divisible by n_heads ({n_heads})")
             self.d_model = int(d_model)
             self.d_stalk = int(d_stalk)
             self.n_heads = int(n_heads)
@@ -238,11 +269,13 @@ if TORCH_AVAILABLE:  # pragma: no cover
             self_excluded_stalks: torch.Tensor,
         ) -> tuple[torch.Tensor, torch.Tensor]:
             bsz, m_slots, _ = self_excluded_stalks.shape
-            gate_logits = (q_ctx @ self.w_sq).unsqueeze(1) + (self_excluded_stalks @ self.w_se) + self.b_s
-            transported = torch.sigmoid(gate_logits) * self_excluded_stalks
-            k_mem = (transported @ self.w_mk).view(bsz, m_slots, self.n_heads, self.head_dim).transpose(1, 2)
-            v_mem = (transported @ self.w_mv).view(bsz, m_slots, self.n_heads, self.head_dim).transpose(1, 2)
-            v_mem = v_mem * torch.tanh(self.alpha_kv).view(1, self.n_heads, 1, 1)
+            dt = q_ctx.dtype
+            stalks = self_excluded_stalks.to(dt)
+            gate_logits = (q_ctx @ self.w_sq.to(dt)).unsqueeze(1) + (stalks @ self.w_se.to(dt)) + self.b_s.to(dt)
+            transported = torch.sigmoid(gate_logits) * stalks
+            k_mem = (transported @ self.w_mk.to(dt)).view(bsz, m_slots, self.n_heads, self.head_dim).transpose(1, 2)
+            v_mem = (transported @ self.w_mv.to(dt)).view(bsz, m_slots, self.n_heads, self.head_dim).transpose(1, 2)
+            v_mem = v_mem * torch.tanh(self.alpha_kv.to(dt)).view(1, self.n_heads, 1, 1)
             return k_mem, v_mem
 
         def compute_hybrid_scores(
@@ -253,6 +286,6 @@ if TORCH_AVAILABLE:  # pragma: no cover
             k_rot: torch.Tensor,
         ) -> torch.Tensor:
             scale = 1.0 / math.sqrt(float(self.head_dim))
-            s_mem = (q_unrot @ k_mem.transpose(-1, -2)) * scale
-            s_seq = (q_rot @ k_rot.transpose(-1, -2)) * scale
+            s_mem = (q_unrot @ k_mem.to(q_unrot.dtype).transpose(-1, -2)) * scale
+            s_seq = (q_rot @ k_rot.to(q_rot.dtype).transpose(-1, -2)) * scale
             return torch.cat([s_mem, s_seq], dim=-1)

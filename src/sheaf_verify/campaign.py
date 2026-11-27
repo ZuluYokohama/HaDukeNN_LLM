@@ -21,12 +21,14 @@ Connects ``sheaf-verify`` directly to the active HaDukeN HGNLLM research tracks:
 
 from __future__ import annotations
 
+import hmac
 import math
+import re
 from dataclasses import dataclass
 from typing import Any
 
 from sheaf_verify.checks import Criterion, bad, ok
-from sheaf_verify.hashing import SheafError, as_int, as_real, fmt_float
+from sheaf_verify.hashing import SheafError, as_int, as_real, canonical_bytes, fmt_float, is_sha256, sha256_hex
 from sheaf_verify.numerics import NON_TENSOR_CORE_ARCHS
 from sheaf_verify.stats import mean, one_sided_less, paired_t, sample_variance, welch
 
@@ -1036,6 +1038,238 @@ def verify_t45_sheaf_bridge(doc: dict) -> tuple[bool, list[Criterion], list[str]
     return all(c.passed for c in criteria), criteria, advisories
 
 
+_T46_SCHEMA = "sheaf-verify.t46-snapdragon-local.v1"
+_T46_VERSION = "0.9.0"
+_T46_TIER_ORDER = ("51M", "125M", "1.5B", "3.2B", "8B")
+_T46_CSR_MAX_BYTES = 8 * 1024 * 1024
+_T46_PEAK_RAM_MAX_BYTES = 64 * 1024 * 1024
+_T46_BANNED_DRIVES = tuple(f"{d}:" + "\\" for d in ("c", "d", "e", "h"))
+_T46_DRIVE_PATH_RE = re.compile(r"[a-z]:" + re.escape(chr(92)))
+_T46_MAX_SAFE_INT = (1 << 53) - 1
+
+
+def _t46_opt_real(val: Any) -> float | None:
+    if isinstance(val, bool) or not isinstance(val, (int, float)):
+        return None
+    try:
+        out = float(val)
+    except OverflowError:
+        return None
+    if not math.isfinite(out):
+        return None
+    return 0.0 if out == 0.0 else out
+
+
+def _t46_opt_int(val: Any) -> int | None:
+    if isinstance(val, bool) or not isinstance(val, int):
+        return None
+    if abs(val) > _T46_MAX_SAFE_INT:
+        return None
+    return val
+
+
+def _t46_check_tiers(tiers: Any, phys_ram: float | None, avail_ram: float | None) -> bool:
+    if not isinstance(tiers, list) or len(tiers) != len(_T46_TIER_ORDER):
+        return False
+    prev_params = -1.0
+    prev_ram = -1.0
+    prev_tok_s = math.inf
+    any_live = False
+    any_small_fits = False
+    for expected_name, tier in zip(_T46_TIER_ORDER, tiers):
+        if not isinstance(tier, dict) or tier.get("name") != expected_name:
+            return False
+        if "tier" in tier and tier.get("tier") != expected_name:
+            return False
+        if _t46_opt_int(tier.get("vocab_size")) != 32768 or tier.get("head_kind") != "flat_dense_struct32k":
+            return False
+        params = _t46_opt_real(tier.get("total_params_m"))
+        ram = _t46_opt_real(tier.get("required_ram_gib"))
+        tok_s = _t46_opt_real(tier.get("bandwidth_tok_s"))
+        power_w = _t46_opt_real(tier.get("power_w"))
+        if None in (params, ram, tok_s, power_w):
+            return False
+        assert params is not None and ram is not None and tok_s is not None and power_w is not None
+        if params <= 0.0 or ram <= 0.0 or tok_s <= 0.0 or not (0.0 < power_w <= 14.5):
+            return False
+        fits_phys = tier.get("fits_physical_ram")
+        fits_wsl2 = tier.get("fits_wsl2_mem_available")
+        live = tier.get("live_executed")
+        if not (isinstance(fits_phys, bool) and isinstance(fits_wsl2, bool) and isinstance(live, bool)):
+            return False
+        if live and not fits_wsl2:
+            return False
+        if phys_ram is not None and fits_phys != (ram <= phys_ram):
+            return False
+        if avail_ram is not None and fits_wsl2 != (ram <= avail_ram):
+            return False
+        if params <= prev_params or ram <= prev_ram or tok_s > prev_tok_s:
+            return False
+        prev_params = params
+        prev_ram = ram
+        prev_tok_s = tok_s
+        any_live = any_live or live
+        if expected_name in {"51M", "125M"} and fits_wsl2:
+            any_small_fits = True
+    if any_small_fits and not any_live:
+        return False
+    return True
+
+
+def _t46_check_execution_tiers(exec_tiers: Any) -> bool:
+    if not isinstance(exec_tiers, dict):
+        return False
+    oryon_tier = exec_tiers.get("oryon_i8mm")
+    numpy_tier = exec_tiers.get("numpy_ref")
+    if not (isinstance(oryon_tier, dict) and oryon_tier.get("parity_ok") is True):
+        return False
+    if not (isinstance(numpy_tier, dict) and numpy_tier.get("parity_ok") is True):
+        return False
+    if "auto_selected" in exec_tiers:
+        auto_tier = exec_tiers.get("auto_selected")
+        if not isinstance(auto_tier, dict):
+            return False
+        if auto_tier.get("tier_used") == "htp_qnn" and auto_tier.get("canary_ok") is not True:
+            return False
+        if "canary_ok" in auto_tier and auto_tier.get("canary_ok") is not True:
+            return False
+        if "parity_ok" in auto_tier and auto_tier.get("parity_ok") is not True:
+            return False
+    return True
+
+
+def verify_t46_snapdragon_local(doc: dict[str, Any]) -> tuple[bool, list[Criterion], list[str]]:
+    """Verify a T-46 Snapdragon X Plus local E2E deployment report using pure stdlib."""
+    if not isinstance(doc, dict):
+        return False, [bad("T46_SCHEMA_VERSION", "T-46 document must be a JSON object.")], []
+
+    criteria: list[Criterion] = []
+    advisories: list[str] = []
+
+    schema_ok = doc.get("schema") == _T46_SCHEMA and doc.get("version") == _T46_VERSION
+    criteria.append(
+        (ok if schema_ok else bad)(
+            "T46_SCHEMA_VERSION",
+            "Report carries schema 'sheaf-verify.t46-snapdragon-local.v1' at version '0.9.0'.",
+        )
+    )
+
+    hw = doc.get("hardware")
+    phys_ram: float | None = None
+    avail_ram: float | None = None
+    hw_ok = False
+    if isinstance(hw, dict):
+        bw = _t46_opt_real(hw.get("bandwidth_gb_s"))
+        tdp = _t46_opt_real(hw.get("tdp_watts"))
+        phys_ram = _t46_opt_real(hw.get("physical_ram_gib"))
+        avail_ram = _t46_opt_real(hw.get("wsl2_mem_available_gib"))
+        hw_ok = (
+            hw.get("soc") == "X1P-42-100"
+            and _t46_opt_int(hw.get("cores")) == 8
+            and bw is not None
+            and math.isclose(bw, 135.0, rel_tol=0.0, abs_tol=1e-6)
+            and tdp is not None
+            and 0.0 < tdp <= 14.5
+            and phys_ram is not None
+            and 15.0 <= phys_ram <= 16.5
+            and avail_ram is not None
+            and 0.0 <= avail_ram <= phys_ram
+        )
+    criteria.append(
+        (ok if hw_ok else bad)(
+            "T46_HARDWARE_AND_MEMINFO",
+            "Snapdragon X Plus (X1P-42-100, 8 cores, 135 GB/s, <=14.5W TDP) and /proc/meminfo bounds verified.",
+        )
+    )
+
+    tiers_ok = _t46_check_tiers(doc.get("tiers"), phys_ram, avail_ram)
+    criteria.append(
+        (ok if tiers_ok else bad)(
+            "T46_TIERS_STRUCT32K_AND_GATING",
+            "All 5 tiers (51M..8B) preserve struct32k flat_dense_struct32k heads, monotonicity, and WSL2 RAM gating.",
+        )
+    )
+
+    sb = doc.get("sheaf_bridge_csr")
+    sb_ok = False
+    if isinstance(sb, dict):
+        csr_b = _t46_opt_int(sb.get("csr_bytes"))
+        ram_b = _t46_opt_int(sb.get("peak_ram_bytes"))
+        top_csr = _t46_opt_int(doc["csr_bytes"]) if "csr_bytes" in doc else csr_b
+        top_ram = _t46_opt_int(doc["peak_ram_bytes"]) if "peak_ram_bytes" in doc else ram_b
+        sb_ok = (
+            _t46_opt_int(sb.get("vocab_size")) == 32768
+            and csr_b is not None
+            and 0 < csr_b <= _T46_CSR_MAX_BYTES
+            and top_csr is not None
+            and 0 < top_csr <= _T46_CSR_MAX_BYTES
+            and top_csr == csr_b
+            and ram_b is not None
+            and 0 <= ram_b < _T46_PEAK_RAM_MAX_BYTES
+            and top_ram is not None
+            and 0 <= top_ram < _T46_PEAK_RAM_MAX_BYTES
+            and top_ram == ram_b
+            and sb.get("within_budget") is True
+            and sb.get("dense_flat_head_preserved") is True
+        )
+    criteria.append(
+        (ok if sb_ok else bad)(
+            "T46_SHEAF_BRIDGE_CSR_32K_BUDGET",
+            "Chunked sparse CSR Sheaf-Bridge at V=32,768 stays <= 8 MiB CSR and < 64 MiB peak RAM.",
+        )
+    )
+
+    speedup = _t46_opt_real(doc.get("oryon_simd_speedup_vs_numpy"))
+    max_err = _t46_opt_real(doc.get("int8_max_abs_err"))
+    op_counter = doc.get("op_counter")
+    exec_tiers = doc.get("execution_tiers")
+    auto_tier = exec_tiers.get("auto_selected") if isinstance(exec_tiers, dict) else None
+    auto_tier_match = True if not isinstance(auto_tier, dict) else auto_tier.get("tier_used") == doc.get("npu_tier_used")
+    mac_ops = _t46_opt_int(op_counter.get("mac_ops")) if isinstance(op_counter, dict) else None
+    exec_ok = (
+        doc.get("torch_bridge_audit_ok") is True
+        and doc.get("torch_bridge_violations") == []
+        and doc.get("int8_parity_ok") is True
+        and max_err == 0.0
+        and speedup is not None
+        and speedup > 1.0
+        and mac_ops is not None
+        and mac_ops > 0
+        and _t46_check_execution_tiers(exec_tiers)
+        and auto_tier_match
+        and doc.get("npu_tier_used") in {"htp_qnn", "oryon_i8mm", "numpy_ref"}
+        and doc.get("npu_canary_ok") is True
+    )
+    criteria.append(
+        (ok if exec_ok else bad)(
+            "T46_TORCH_AUDIT_AND_PARITY",
+            "torch_bridge AST audit clean, INT8 parity exact, OpCounter active, and Oryon/NPU speedup > 1.0x.",
+        )
+    )
+
+    sig = doc.get("manifest_sha256")
+    manifest_ok = False
+    if doc.get("no_wslconfig_modified") is True and doc.get("no_network_downloads") is True and is_sha256(sig):
+        try:
+            body_bytes = canonical_bytes({k: v for k, v in doc.items() if k != "manifest_sha256"})
+            full_lower = canonical_bytes(doc).decode("utf-8").lower()
+            no_drive_leaks = _T46_DRIVE_PATH_RE.search(full_lower) is None
+            manifest_ok = hmac.compare_digest(sha256_hex(body_bytes), sig) and no_drive_leaks
+        except SheafError:
+            manifest_ok = False
+    criteria.append(
+        (ok if manifest_ok else bad)(
+            "T46_MANIFEST_SHA256_AND_HYGIENE",
+            "Canonical manifest_sha256 verified with zero drive-letter leaks, .wslconfig edits, or network downloads.",
+        )
+    )
+
+    advisories.append(
+        "SNAPDRAGON_X_PLUS_LOCAL_READY: Unified LPDDR5x planner, Oryon SIMD, HTP NPU, and sparse V=32,768 CSR verified."
+    )
+    return all(c.passed for c in criteria), criteria, advisories
+
+
 def _t46_ready_advisory(doc: dict[str, Any]) -> str:
     """Describe recorded / probed CUDA inventory; do not hardcode sm_120/sm_75."""
     host = doc.get("host_probe") if isinstance(doc.get("host_probe"), dict) else {}
@@ -1054,20 +1288,47 @@ def _t46_ready_advisory(doc: dict[str, Any]) -> str:
     )
 
 
+def _dict_or_empty(obj: object) -> dict[str, Any]:
+    return obj if isinstance(obj, dict) else {}
+
+
 def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     """Verify sealed T-46 Tri-Machine Bare-Metal HAL records (WBeast, LapBeast, Zenbook)."""
+    if not isinstance(doc, dict):
+        return (
+            False,
+            [
+                bad(
+                    "T46_SCHEMA_AND_THREE_MACHINES",
+                    "Record configures wbeast, lapbeast (battery-gated), and zenbook (13.0 GiB looped NPU) at v0.9.0.",
+                )
+            ],
+            [],
+        )
+
     criteria: list[Criterion] = []
     advisories: list[str] = []
 
-    machines = doc.get("machines_configured", [])
-    profiles = doc.get("profiles", {})
+    machines = doc.get("machines_configured")
+    machines_ok = (
+        isinstance(machines, list)
+        and len(machines) == 3
+        and all(isinstance(m, str) for m in machines)
+        and set(machines) == {"wbeast", "lapbeast", "zenbook"}
+    )
+    profiles = doc.get("profiles")
+    zenbook_prof = profiles.get("zenbook") if isinstance(profiles, dict) else None
+    lapbeast_prof = profiles.get("lapbeast") if isinstance(profiles, dict) else None
+    zen_cap = _t46_opt_real(zenbook_prof.get("ram_arena_cap_gib")) if isinstance(zenbook_prof, dict) else None
     schema_ok = (
         doc.get("schema") == "sheaf-verify.tri-machine-hal.v1"
-        and doc.get("version") == "0.9.0"
-        and set(machines) == {"wbeast", "lapbeast", "zenbook"}
-        and profiles.get("zenbook", {}).get("ram_arena_cap_gib") == 13.0
-        and profiles.get("zenbook", {}).get("npu_loop_enabled") is True
-        and profiles.get("lapbeast", {}).get("battery_gated") is True
+        and doc.get("version") == _T46_VERSION
+        and machines_ok
+        and zen_cap == 13.0
+        and isinstance(zenbook_prof, dict)
+        and zenbook_prof.get("npu_loop_enabled") is True
+        and isinstance(lapbeast_prof, dict)
+        and lapbeast_prof.get("battery_gated") is True
     )
     criteria.append(
         (ok if schema_ok else bad)(
@@ -1076,14 +1337,25 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    bm = doc.get("benchmarks_and_parity", {})
+    bm = doc.get("benchmarks_and_parity")
+    bm_dict = bm if isinstance(bm, dict) else {}
+    cce_loss = _t46_opt_real(bm_dict.get("cce_loss_max_abs_err"))
+    cce_dh = _t46_opt_real(bm_dict.get("cce_dh_max_abs_err"))
+    cce_de = _t46_opt_real(bm_dict.get("cce_de_max_abs_err"))
+    sheaf_err = _t46_opt_real(bm_dict.get("sheaf_kv_gate_max_abs_err"))
+    sheaf_mass = _t46_opt_real(bm_dict.get("sheaf_coherent_neighbor_mass"))
     parity_ok = (
-        float(bm.get("cce_loss_max_abs_err", 1.0)) < 1e-4
-        and float(bm.get("cce_dh_max_abs_err", 1.0)) < 1e-4
-        and float(bm.get("cce_de_max_abs_err", 1.0)) < 1e-4
-        and float(bm.get("sheaf_kv_gate_max_abs_err", 1.0)) < 1e-4
-        and float(bm.get("sheaf_coherent_neighbor_mass", 0.0)) > 0.99
-        and bm.get("causal_span_prefix_invariance") is True
+        cce_loss is not None
+        and 0.0 <= cce_loss < 1e-4
+        and cce_dh is not None
+        and 0.0 <= cce_dh < 1e-4
+        and cce_de is not None
+        and 0.0 <= cce_de < 1e-4
+        and sheaf_err is not None
+        and 0.0 <= sheaf_err < 1e-4
+        and sheaf_mass is not None
+        and 0.99 < sheaf_mass <= 1.0
+        and bm_dict.get("causal_span_prefix_invariance") is True
     )
     criteria.append(
         (ok if parity_ok else bad)(
@@ -1092,9 +1364,16 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    perf_mup_ok = float(bm.get("c11_speedup_over_py_loop", 0.0)) > 1.5 and float(
-        bm.get("mup_logit_std_scaled_d768", 99.0)
-    ) < float(bm.get("mup_logit_std_unscaled_d768", 0.0))
+    speedup = _t46_opt_real(bm_dict.get("c11_speedup_over_py_loop"))
+    std_scaled = _t46_opt_real(bm_dict.get("mup_logit_std_scaled_d768"))
+    std_unscaled = _t46_opt_real(bm_dict.get("mup_logit_std_unscaled_d768"))
+    perf_mup_ok = (
+        speedup is not None
+        and speedup > 1.5
+        and std_scaled is not None
+        and std_unscaled is not None
+        and 0.0 <= std_scaled < std_unscaled
+    )
     criteria.append(
         (ok if perf_mup_ok else bad)(
             "T46_NATIVE_SPEEDUP_AND_MUP_SCALING",
@@ -1102,12 +1381,17 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
+    cos_sim = _t46_opt_real(bm_dict.get("zenbook_npu_int8_cosine_sim"))
+    dyn_allocs = _t46_opt_int(bm_dict.get("zenbook_npu_loop_dynamic_allocs"))
+    reg = doc.get("regulatory_compliance")
     edge_guard_ok = (
-        float(bm.get("zenbook_npu_int8_cosine_sim", 0.0)) >= 0.995
-        and int(bm.get("zenbook_npu_loop_dynamic_allocs", 99)) == 0
-        and bm.get("slab_overflow_refusal_verified") is True
-        and bm.get("lapbeast_watchdog_rc143_verified") is True
-        and doc.get("regulatory_compliance", {}).get("scitt_rfc9943_verified") is True
+        cos_sim is not None
+        and 0.995 <= cos_sim <= 1.0
+        and dyn_allocs == 0
+        and bm_dict.get("slab_overflow_refusal_verified") is True
+        and bm_dict.get("lapbeast_watchdog_rc143_verified") is True
+        and isinstance(reg, dict)
+        and reg.get("scitt_rfc9943_verified") is True
     )
     criteria.append(
         (ok if edge_guard_ok else bad)(
@@ -1122,6 +1406,8 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
 
 def verify_t47_cosimilar_trace(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     """Verify sealed T-47 Cosimilar Hypergraph Recursive Trace & Observer Engine records."""
+    if not isinstance(doc, dict):
+        return False, [bad("T47_SCHEMA_AND_SEEDS", "Campaign record must be a JSON object.")], []
     criteria: list[Criterion] = []
     advisories: list[str] = []
 
@@ -1138,12 +1424,18 @@ def verify_t47_cosimilar_trace(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    r1 = doc.get("realm_1_trace_and_cosimilarity", {})
+    r1 = _dict_or_empty(doc.get("realm_1_trace_and_cosimilarity"))
+    r1_seeds = _t46_opt_int(r1.get("seeds_passing_all_4_trace_laws"))
+    r1_cosim = _t46_opt_real(r1.get("cosimilar_quotient_max_surprise_bpb"))
+    r1_coarse = _t46_opt_real(r1.get("coarse_lumping_min_surprise_bpb"))
+    r1_dil = _t46_opt_real(r1.get("mean_step_dilation_factor"))
     trace_ok = (
-        int(r1.get("seeds_passing_all_4_trace_laws", 0)) == 5
-        and float(r1.get("cosimilar_quotient_max_surprise_bpb", 1.0)) == 0.0
-        and float(r1.get("coarse_lumping_min_surprise_bpb", 0.0)) > 0.005
-        and float(r1.get("mean_step_dilation_factor", 0.0)) > 1.0
+        r1_seeds == 5
+        and r1_cosim == 0.0
+        and r1_coarse is not None
+        and r1_coarse > 0.005
+        and r1_dil is not None
+        and r1_dil > 1.0
     )
     criteria.append(
         (ok if trace_ok else bad)(
@@ -1152,11 +1444,16 @@ def verify_t47_cosimilar_trace(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    r2 = doc.get("realm_2_hypergraph_vs_2d_markov", {})
+    r2 = _dict_or_empty(doc.get("realm_2_hypergraph_vs_2d_markov"))
+    r2_hg = _t46_opt_real(r2.get("hypergraph_3way_xor_accuracy"))
+    r2_pw = _t46_opt_real(r2.get("pairwise_2d_markov_xor_accuracy"))
+    r2_mem = _t46_opt_real(r2.get("memory_compression_factor"))
     hg_ok = (
-        float(r2.get("hypergraph_3way_xor_accuracy", 0.0)) == 1.0
-        and abs(float(r2.get("pairwise_2d_markov_xor_accuracy", 0.0)) - 0.5) < 1e-6
-        and float(r2.get("memory_compression_factor", 0.0)) > 100000.0
+        r2_hg == 1.0
+        and r2_pw is not None
+        and abs(r2_pw - 0.5) < 1e-6
+        and r2_mem is not None
+        and r2_mem > 100000.0
     )
     criteria.append(
         (ok if hg_ok else bad)(
@@ -1165,15 +1462,19 @@ def verify_t47_cosimilar_trace(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    r3 = doc.get("realm_3_active_window_search", {})
-    r4 = doc.get("realm_4_observer_sheaf_and_interventions", {})
+    r3 = _dict_or_empty(doc.get("realm_3_active_window_search"))
+    r4 = _dict_or_empty(doc.get("realm_4_observer_sheaf_and_interventions"))
+    r3_opt = _t46_opt_real(r3.get("mean_optimality_ratio_vs_bruteforce_v18"))
+    r3_red = _t46_opt_real(r3.get("mean_eval_reduction_factor_v18"))
     search_and_sheaf_ok = (
-        float(r3.get("mean_optimality_ratio_vs_bruteforce_v18", 0.0)) >= 0.95
-        and float(r3.get("mean_eval_reduction_factor_v18", 0.0)) >= 50.0
-        and int(r4.get("fork_isolation_and_coherence_seeds", 0)) == 5
-        and int(r4.get("selective_disconnected_cache_reuse_seeds", 0)) == 5
-        and int(r4.get("spoof_observer_localized_seeds", 0)) == 5
-        and int(r4.get("scitt_rfc9943_verified_seeds", 0)) == 5
+        r3_opt is not None
+        and r3_opt >= 0.95
+        and r3_red is not None
+        and r3_red >= 50.0
+        and _t46_opt_int(r4.get("fork_isolation_and_coherence_seeds")) == 5
+        and _t46_opt_int(r4.get("selective_disconnected_cache_reuse_seeds")) == 5
+        and _t46_opt_int(r4.get("spoof_observer_localized_seeds")) == 5
+        and _t46_opt_int(r4.get("scitt_rfc9943_verified_seeds")) == 5
     )
     criteria.append(
         (ok if search_and_sheaf_ok else bad)(
@@ -1190,6 +1491,8 @@ def verify_t47_cosimilar_trace(doc: dict) -> tuple[bool, list[Criterion], list[s
 
 def verify_t48_roadmap_complete(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     """Verify sealed T-48 Live T-38 Scaling Audit & Learned Hypergraph Bridge records."""
+    if not isinstance(doc, dict):
+        return False, [bad("T48_SCHEMA_SEEDS_AND_SCITT", "Campaign record must be a JSON object.")], []
     criteria: list[Criterion] = []
     advisories: list[str] = []
 
@@ -1206,14 +1509,16 @@ def verify_t48_roadmap_complete(doc: dict) -> tuple[bool, list[Criterion], list[
         )
     )
 
-    t38 = doc.get("phase_a_t38_live_scaling_audit", {})
-    holm = t38.get("holm_bonferroni_alpha_0p01", {})
-    fit_nb = t38.get("scaling_fit_n_body", {})
+    t38 = _dict_or_empty(doc.get("phase_a_t38_live_scaling_audit"))
+    headline = _dict_or_empty(t38.get("headline_M_4ep"))
+    holm = _dict_or_empty(t38.get("holm_bonferroni_alpha_0p01"))
+    fit_nb = _dict_or_empty(t38.get("scaling_fit_n_body"))
+    t38_rho = _t46_opt_real(t38.get("spearman_rho_4ep_vs_N"))
     t38_ok = (
         t38.get("scitt_verified") is True
-        and t38.get("headline_M_4ep", {}).get("verdict") == "KILL"
-        and int(holm.get("cells_killing_H", 0)) == 8
-        and float(t38.get("spearman_rho_4ep_vs_N", 1.0)) == -1.0
+        and headline.get("verdict") == "KILL"
+        and _t46_opt_int(holm.get("cells_killing_H")) == 8
+        and t38_rho == -1.0
         and t38.get("stage3_stop_fired") is False
         and fit_nb.get("pass_scaling_in_favor_of_H") is False
     )
@@ -1224,14 +1529,22 @@ def verify_t48_roadmap_complete(doc: dict) -> tuple[bool, list[Criterion], list[
         )
     )
 
-    br = doc.get("phase_d_learned_neural_hypergraph_bridge", {})
+    br = _dict_or_empty(doc.get("phase_d_learned_neural_hypergraph_bridge"))
+    br_ood = _t46_opt_real(br.get("int8_looped_npu_ood_accuracy_mean"))
+    br_gain = _t46_opt_real(br.get("ood_gain_over_flat_neural"))
+    br_dis = _t46_opt_real(br.get("int8_vs_fp32_action_disagreement_mean"))
+    br_rep = _t46_opt_real(br.get("semantic_replay_pass_rate_mean"))
+    br_spoof = _t46_opt_real(br.get("spoof_conservation_refusal_rate_mean"))
     br_ok = (
         br.get("arena_fits_13gib_npu_budget") is True
-        and float(br.get("int8_looped_npu_ood_accuracy_mean", 0.0)) >= 0.75
-        and float(br.get("ood_gain_over_flat_neural", 0.0)) >= 0.35
-        and float(br.get("int8_vs_fp32_action_disagreement_mean", 1.0)) <= 0.02
-        and float(br.get("semantic_replay_pass_rate_mean", 0.0)) == 1.0
-        and float(br.get("spoof_conservation_refusal_rate_mean", 0.0)) == 1.0
+        and br_ood is not None
+        and 0.75 <= br_ood <= 1.0
+        and br_gain is not None
+        and br_gain >= 0.35
+        and br_dis is not None
+        and 0.0 <= br_dis <= 0.02
+        and br_rep == 1.0
+        and br_spoof == 1.0
     )
     criteria.append(
         (ok if br_ok else bad)(
@@ -1248,6 +1561,8 @@ def verify_t48_roadmap_complete(doc: dict) -> tuple[bool, list[Criterion], list[
 
 def verify_t49_hst_foundation(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     """Verify sealed T-49 HST-v1 Open Tokenization Standard & HaDukeNN-LM Foundation records."""
+    if not isinstance(doc, dict):
+        return False, [bad("T49_SCHEMA_SEEDS_AND_SCITT", "Campaign record must be a JSON object.")], []
     criteria: list[Criterion] = []
     advisories: list[str] = []
 
@@ -1264,13 +1579,17 @@ def verify_t49_hst_foundation(doc: dict) -> tuple[bool, list[Criterion], list[st
         )
     )
 
-    p1 = doc.get("pillar_1_hst_v1_tokenization_standard", {})
+    p1 = _dict_or_empty(doc.get("pillar_1_hst_v1_tokenization_standard"))
+    p1_super = _t46_opt_int(p1.get("stage_b_pmi_superspans"))
+    p1_red = _t46_opt_real(p1.get("token_sequence_reduction_pct"))
     tok_ok = (
         p1.get("manifest_schema") == "hadukenn.hst.manifest.v1"
         and p1.get("manifest_verified") is True
         and p1.get("digit_atomic_verified") is True
-        and int(p1.get("stage_b_pmi_superspans", 0)) >= 20
-        and float(p1.get("token_sequence_reduction_pct", 0.0)) >= 12.0
+        and p1_super is not None
+        and p1_super >= 20
+        and p1_red is not None
+        and 12.0 <= p1_red <= 100.0
     )
     criteria.append(
         (ok if tok_ok else bad)(
@@ -1279,12 +1598,18 @@ def verify_t49_hst_foundation(doc: dict) -> tuple[bool, list[Criterion], list[st
         )
     )
 
-    p2 = doc.get("pillar_2_equal_bytes_foundation_lm", {})
+    p2 = _dict_or_empty(doc.get("pillar_2_equal_bytes_foundation_lm"))
+    p2_gain = _t46_opt_real(p2.get("hst_gain_over_bpe_sp_bpb"))
+    p2_pen = _t46_opt_real(p2.get("factored_bottleneck_penalty_vs_flat_bpb"))
+    p2_pval = _t46_opt_real(p2.get("p_one_sided_hst_beats_bpe"))
     lm_ok = (
         p2.get("wins_all_5_seeds") is True
-        and float(p2.get("hst_gain_over_bpe_sp_bpb", 0.0)) > 0.02
-        and float(p2.get("factored_bottleneck_penalty_vs_flat_bpb", -1.0)) > 0.0
-        and float(p2.get("p_one_sided_hst_beats_bpe", 1.0)) < 0.01
+        and p2_gain is not None
+        and p2_gain > 0.02
+        and p2_pen is not None
+        and p2_pen > 0.0
+        and p2_pval is not None
+        and 0.0 <= p2_pval < 0.01
     )
     criteria.append(
         (ok if lm_ok else bad)(
@@ -1293,13 +1618,15 @@ def verify_t49_hst_foundation(doc: dict) -> tuple[bool, list[Criterion], list[st
         )
     )
 
-    p3 = doc.get("pillar_3_mup_zero_shot_width_transfer", {})
-    p4 = doc.get("pillar_4_inline_receipt_gated_decoding", {})
+    p3 = _dict_or_empty(doc.get("pillar_3_mup_zero_shot_width_transfer"))
+    p4 = _dict_or_empty(doc.get("pillar_4_inline_receipt_gated_decoding"))
+    p3_mup = _t46_opt_real(p3.get("mup_beats_sp_at_max_width_bpb"))
     mup_and_gate_ok = (
         p3.get("mup_monotone_improving_with_width") is True
-        and float(p3.get("mup_beats_sp_at_max_width_bpb", 0.0)) > 0.01
-        and float(p4.get("spoof_refusal_rate", 0.0)) == 1.0
-        and float(p4.get("semantic_replay_rate", 0.0)) == 1.0
+        and p3_mup is not None
+        and p3_mup > 0.01
+        and _t46_opt_real(p4.get("spoof_refusal_rate")) == 1.0
+        and _t46_opt_real(p4.get("semantic_replay_rate")) == 1.0
     )
     criteria.append(
         (ok if mup_and_gate_ok else bad)(
@@ -1309,6 +1636,7 @@ def verify_t49_hst_foundation(doc: dict) -> tuple[bool, list[Criterion], list[st
     )
 
     advisories.append(
-        "HST_FOUNDATION_STAGE_READY: HST-v1 standard, muP width scaling, Sheaf-KV + Tiled-CCE, and inline receipts verified."
+        "HST_FOUNDATION_STAGE_READY: HST-v1 standard, muP width scaling, "
+        "Sheaf-KV + Tiled-CCE, and inline receipts verified."
     )
     return all(c.passed for c in criteria), criteria, advisories

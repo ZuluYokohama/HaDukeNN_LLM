@@ -751,6 +751,8 @@ class HSTTokenizer:
         """Encode UTF-8 text (parsing <|hst:...|> control tags into universal IDs 256..263)."""
         if not text:
             return []
+        if not self.control_map:
+            return self.encode_bytes(text.encode("utf-8"), mode=mode)
         ctrl_pattern = "|".join(re.escape(k) for k in self.control_map)
         out: list[int] = []
         last = 0
@@ -887,44 +889,107 @@ class HSTTokenizer:
     @classmethod
     def from_manifest(cls, doc: dict[str, Any]) -> HSTTokenizer:
         """Reconstruct and cryptographically verify an HSTTokenizer from its wire manifest."""
+        if not isinstance(doc, dict):
+            raise ValueError(f"Unsupported HST manifest schema: expected dict, got {type(doc).__name__}")
         if doc.get("schema") != HST_SCHEMA_ID:
             raise ValueError(f"Unsupported HST manifest schema: {doc.get('schema')!r}")
-        ctrl_map = {str(k): int(v) for k, v in doc.get("control_tokens", {}).items()}
+        if "vocab_size" not in doc:
+            raise ValueError("Missing required 'vocab_size' in HST manifest")
+        raw_vocab_size = doc["vocab_size"]
+        if isinstance(raw_vocab_size, bool) or not isinstance(raw_vocab_size, int) or raw_vocab_size < 256:
+            raise ValueError(f"Invalid HST manifest vocab_size: {raw_vocab_size!r}")
+        raw_max_span = doc.get("max_span_bytes", 16)
+        if isinstance(raw_max_span, bool) or not isinstance(raw_max_span, int) or raw_max_span < 1:
+            raise ValueError(f"Invalid HST manifest max_span_bytes: {raw_max_span!r}")
+        raw_ctrl = doc.get("control_tokens", {})
+        if not isinstance(raw_ctrl, dict):
+            raise ValueError(f"Invalid HST manifest 'control_tokens': expected dict, got {type(raw_ctrl).__name__}")
+        ctrl_map: dict[str, int] = {}
+        for k, v in raw_ctrl.items():
+            if not isinstance(k, str) or isinstance(v, bool) or not isinstance(v, int):
+                raise ValueError(f"Invalid control_tokens entry ({k!r}: {v!r})")
+            ctrl_map[k] = v
         id_to_bytes: list[bytes] = [bytes([b]) for b in range(256)]
         for name, cid in sorted(ctrl_map.items(), key=lambda kv: kv[1]):
             if cid != len(id_to_bytes):
                 raise ValueError(f"Control token {name!r} at non-universal slot {cid}, expected {len(id_to_bytes)}")
             id_to_bytes.append(name.encode("utf-8"))
 
+        raw_merges = doc.get("merges", [])
+        if not isinstance(raw_merges, list):
+            raise ValueError(f"Invalid HST manifest 'merges': expected list, got {type(raw_merges).__name__}")
         rules: list[HSTMergedRule] = []
-        for entry in doc.get("merges", []):
-            tid = int(entry["token_id"])
-            lid = int(entry["left_id"])
-            rid = int(entry["right_id"])
+        for idx, entry in enumerate(raw_merges):
+            if not isinstance(entry, dict):
+                raise ValueError(f"Invalid merge entry at index {idx}: expected dict, got {type(entry).__name__}")
+            raw_tid = entry.get("token_id")
+            raw_lid = entry.get("left_id")
+            raw_rid = entry.get("right_id")
+            if (
+                isinstance(raw_tid, bool)
+                or not isinstance(raw_tid, int)
+                or isinstance(raw_lid, bool)
+                or not isinstance(raw_lid, int)
+                or isinstance(raw_rid, bool)
+                or not isinstance(raw_rid, int)
+            ):
+                raise ValueError(
+                    f"Merge IDs must be non-bool integers: token_id={raw_tid!r}, "
+                    f"left_id={raw_lid!r}, right_id={raw_rid!r}"
+                )
+            tid = raw_tid
+            lid = raw_lid
+            rid = raw_rid
             if tid != len(id_to_bytes):
                 raise ValueError(f"Non-contiguous merge token_id={tid}, expected {len(id_to_bytes)}")
+            if lid < 0 or lid >= len(id_to_bytes) or rid < 0 or rid >= len(id_to_bytes):
+                raise ValueError(
+                    f"Out-of-bounds merge child ID at token_id={tid}: "
+                    f"left_id={lid}, right_id={rid}, valid=[0, {len(id_to_bytes)})"
+                )
             raw = id_to_bytes[lid] + id_to_bytes[rid]
-            expected_raw = base64.b64decode(entry["token_b64"])
+            raw_b64 = entry.get("token_b64")
+            if not isinstance(raw_b64, str):
+                raise ValueError(f"Invalid token_b64 at token_id={tid}: expected base64 str")
+            expected_raw = base64.b64decode(raw_b64, validate=True)
             if raw != expected_raw:
                 raise ValueError(f"Token byte mismatch at token_id={tid}")
+            raw_blen = entry.get("byte_len")
+            if not isinstance(raw_blen, int) or isinstance(raw_blen, bool) or raw_blen != len(raw):
+                raise ValueError(
+                    f"Merge byte_len mismatch at token_id={tid}: manifest={raw_blen!r} vs actual={len(raw)}"
+                )
+            raw_stage = entry.get("stage")
+            if not isinstance(raw_stage, str) or raw_stage not in ("A_lexical", "B_superspan"):
+                raise ValueError(f"Invalid merge stage at token_id={tid}: {raw_stage!r}")
+            raw_pmi = entry.get("pmi_bits")
+            if isinstance(raw_pmi, bool) or not isinstance(raw_pmi, (int, float)) or not math.isfinite(float(raw_pmi)):
+                raise ValueError(f"Invalid pmi_bits at token_id={tid}: {raw_pmi!r}")
+            raw_count = entry.get("count")
+            if isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count < 0:
+                raise ValueError(f"Invalid count at token_id={tid}: {raw_count!r}")
             id_to_bytes.append(raw)
             rules.append(
                 HSTMergedRule(
                     token_id=tid,
                     left_id=lid,
                     right_id=rid,
-                    stage=str(entry["stage"]),
-                    pmi_bits=float(entry["pmi_bits"]),
-                    count=int(entry["count"]),
-                    byte_len=int(entry["byte_len"]),
+                    stage=raw_stage,
+                    pmi_bits=float(raw_pmi),
+                    count=raw_count,
+                    byte_len=raw_blen,
                 )
             )
+        if len(id_to_bytes) != raw_vocab_size:
+            raise ValueError(
+                f"HST manifest vocab_size mismatch: declared={raw_vocab_size} vs actual={len(id_to_bytes)}"
+            )
         tok = cls(
-            vocab_size=int(doc["vocab_size"]),
+            vocab_size=raw_vocab_size,
             id_to_bytes=id_to_bytes,
             rules=rules,
             control_map=ctrl_map,
-            max_span_bytes=int(doc.get("max_span_bytes", 16)),
+            max_span_bytes=raw_max_span,
         )
         computed_root = tok.merkle_root_sha256()
         if computed_root != doc.get("merkle_root_sha256"):

@@ -18,14 +18,17 @@ typed hypergraph verifier (`IncrementalHypergraphKernel` / PR #9 `exec-digest-v0
 from __future__ import annotations
 
 import hashlib
+import threading
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 
 from hadukenn_core.exec_bridge import IncrementalHypergraphKernel
+from hadukenn_core.npu_qnn_backend import _VALID_DCVS_MODES, HexagonQNNBackend
 from hadukenn_core.tokenization import ByteBPETokenizer
+from hadukenn_core.tri_machine import hal_qgemm_int8, quantize_symmetric_int8
 from sheaf_verify.compliance import emit_regulatory_bundle, verify_regulatory_bundle
 from sheaf_verify.hashing import canonical_bytes
 from sheaf_verify.t38_scaling_audit import run_t38_live_audit
@@ -393,7 +396,7 @@ class LearnedSheafHypergraphBridge:
         tokenizer: ByteBPETokenizer,
         episodes: list[EpisodeSpec],
         epochs: int = 55,
-        lr: float = 0.45,
+        lr: float = 0.045,
     ) -> float:
         xs_list: list[np.ndarray] = []
         y_op: list[int] = []
@@ -421,12 +424,22 @@ class LearnedSheafHypergraphBridge:
           for q_all in range(len(QUANTITIES)):
             drill_steps.append(
                 UtteranceStep(
-                    text=_render_utterance(q_all % 4, q_all % 4, (q_all + 1) % 4 if (q_all % 4) else (q_all % 4), q_all, (q_all + rep_v) % 3),
+                    text=_render_utterance(
+                        q_all % 4,
+                        q_all % 4,
+                        (q_all + 1) % 4 if (q_all % 4) else (q_all % 4),
+                        q_all,
+                        (q_all + rep_v) % 3,
+                    ),
                     op_idx=q_all % 4,
                     src_idx=q_all % 4,
                     dst_idx=(q_all + 1) % 4 if (q_all % 4) else (q_all % 4),
                     qty_idx=q_all,
-                    sheaf_hint_vec=_entity_sheaf_register(q_all % 4, (q_all + 1) % 4 if (q_all % 4) else (q_all % 4), q_all % 4),
+                    sheaf_hint_vec=_entity_sheaf_register(
+                        q_all % 4,
+                        (q_all + 1) % 4 if (q_all % 4) else (q_all % 4),
+                        q_all % 4,
+                    ),
                 )
             )
         for st in drill_steps:
@@ -451,7 +464,7 @@ class LearnedSheafHypergraphBridge:
 
         opt = _AdamW(
             [self.w_in, self.b_in, self.w_loop, self.b_loop, self.w_op, self.w_src, self.w_dst, self.w_qty],
-            lr=0.045,
+            lr=lr,
             wd=1e-4,
         )
         for ep_idx in range(epochs):
@@ -512,47 +525,214 @@ class LearnedSheafHypergraphBridge:
         return final_loss
 
 
+_VALID_BRIDGE_BACKENDS = frozenset({"numpy", "hal_c11", "oryon_i8mm", "htp_qnn", "auto"})
+_BRIDGE_BACKEND_TO_QNN_TIER: dict[str, str] = {
+    "oryon_i8mm": "oryon_i8mm",
+    "htp_qnn": "htp_qnn",
+    "auto": "auto",
+}
+
+
 class QuantizedLoopedBridgeNPU:
     """Symmetric per-channel INT8 looped NPU inference port (<64 MiB inside 13.0 GiB budget @ 14.5 W)."""
 
-    def __init__(self, fp_model: LearnedSheafHypergraphBridge) -> None:
+    def __init__(
+        self,
+        fp_model: LearnedSheafHypergraphBridge,
+        *,
+        backend: str = "numpy",
+        dcvs_mode: str = "burst",
+    ) -> None:
+        if not isinstance(backend, str) or backend not in _VALID_BRIDGE_BACKENDS:
+            raise ValueError(
+                f"Unsupported backend {backend!r}; expected one of {sorted(_VALID_BRIDGE_BACKENDS)}"
+            )
+        if not isinstance(dcvs_mode, str) or dcvs_mode not in _VALID_DCVS_MODES:
+            raise ValueError(
+                f"Unsupported dcvs_mode {dcvs_mode!r}; expected one of {sorted(_VALID_DCVS_MODES)}"
+            )
+
         self.vocab_size = fp_model.vocab_size
         self.d_model = fp_model.d_model
         self.use_sheaf_prefix = fp_model.use_sheaf_prefix
         self.loop_steps = fp_model.loop_steps
         self.mup_scale = fp_model.mup_scale
-        self.w_in_q, self.s_in = self._quantize_int8(fp_model.w_in)
-        self.b_in = fp_model.b_in.astype(np.float32)
-        self.w_loop_q, self.s_loop = self._quantize_int8(fp_model.w_loop)
-        self.b_loop = fp_model.b_loop.astype(np.float32)
-        self.w_op_q, self.s_op = self._quantize_int8(fp_model.w_op)
-        self.w_src_q, self.s_src = self._quantize_int8(fp_model.w_src)
-        self.w_dst_q, self.s_dst = self._quantize_int8(fp_model.w_dst)
-        self.w_qty_q, self.s_qty = self._quantize_int8(fp_model.w_qty)
+        self.backend = backend
+        self.dcvs_mode = dcvs_mode
         self.fp_ref = fp_model
+        self._closed: bool = False
+        self._lifecycle_lock = threading.Lock()
+        self._qnn_backend: HexagonQNNBackend | None = None
+        self.last_tier_used: str | None = None
+        self.last_canary_ok: bool | None = None
+        self.last_providers: list[str] = []
+
+        for w_name, w_arr in (
+            ("w_in", fp_model.w_in),
+            ("b_in", fp_model.b_in),
+            ("w_loop", fp_model.w_loop),
+            ("b_loop", fp_model.b_loop),
+            ("w_op", fp_model.w_op),
+            ("w_src", fp_model.w_src),
+            ("w_dst", fp_model.w_dst),
+            ("w_qty", fp_model.w_qty),
+        ):
+            if not np.all(np.isfinite(w_arr)):
+                raise ValueError(f"fp_model.{w_name} contains non-finite values")
+
+        try:
+            if backend in _BRIDGE_BACKEND_TO_QNN_TIER:
+                self._qnn_backend = HexagonQNNBackend(
+                    force_tier=_BRIDGE_BACKEND_TO_QNN_TIER[backend],
+                    dcvs_mode=dcvs_mode,
+                )
+
+            self.w_in_q, self.s_in, self._g_in = self._quantize_equalized_int8(fp_model.w_in)
+            self.w_in_qt = np.ascontiguousarray(self.w_in_q.T)
+            self._s_in_1d = np.ascontiguousarray(self.s_in.reshape(-1), dtype=np.float32)
+            self.b_in = np.ascontiguousarray(fp_model.b_in, dtype=np.float32)
+
+            self.w_loop_q, self.s_loop, self._g_loop = self._quantize_equalized_int8(fp_model.w_loop)
+            self.w_loop_qt = np.ascontiguousarray(self.w_loop_q.T)
+            self._s_loop_1d = np.ascontiguousarray(self.s_loop.reshape(-1), dtype=np.float32)
+            self.b_loop = np.ascontiguousarray(fp_model.b_loop, dtype=np.float32)
+
+            w_heads_fp = np.hstack([fp_model.w_op, fp_model.w_src, fp_model.w_dst, fp_model.w_qty])
+            self.w_heads_q, self.s_heads, self._g_heads = self._quantize_equalized_int8(w_heads_fp)
+            self.w_heads_qt = np.ascontiguousarray(self.w_heads_q.T)
+            self._s_heads_1d = np.ascontiguousarray(self.s_heads.reshape(-1), dtype=np.float32)
+
+            o1 = len(OPS)
+            o2 = o1 + len(ENTITIES)
+            o3 = o2 + len(ENTITIES)
+            self._head_offsets = (o1, o2, o3)
+            self.w_op_q = self.w_heads_q[:, :o1]
+            self.s_op = self.s_heads[:, :o1]
+            self.w_src_q = self.w_heads_q[:, o1:o2]
+            self.s_src = self.s_heads[:, o1:o2]
+            self.w_dst_q = self.w_heads_q[:, o2:o3]
+            self.s_dst = self.s_heads[:, o2:o3]
+            self.w_qty_q = self.w_heads_q[:, o3:]
+            self.s_qty = self.s_heads[:, o3:]
+        except Exception:
+            if self._qnn_backend is not None:
+                self._qnn_backend.close()
+                self._qnn_backend = None
+            self._closed = True
+            raise
 
     @staticmethod
     def _quantize_int8(w: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         max_abs = np.maximum(np.max(np.abs(w), axis=0, keepdims=True), 1e-8)
         scale = (max_abs / 127.0).astype(np.float32)
-        q = np.clip(np.round(w / scale), -127, 127).astype(np.int8)
+        q = np.ascontiguousarray(np.clip(np.round(w / scale), -127, 127).astype(np.int8))
         return q, scale
 
+    @staticmethod
+    def _quantize_equalized_int8(w: np.ndarray, alpha: float = 0.5) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        row_max = np.maximum(np.max(np.abs(w), axis=1), 1e-6)
+        med = float(np.median(row_max))
+        g = np.power(row_max / max(med, 1e-6), alpha).astype(np.float32)
+        w_eq = w / g[:, None]
+        q, scale = QuantizedLoopedBridgeNPU._quantize_int8(w_eq)
+        return q, scale, np.ascontiguousarray(g.reshape(1, -1), dtype=np.float32)
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+    def close(self) -> None:
+        with self._lifecycle_lock:
+            if self._closed:
+                return
+            self._closed = True
+            qnn = self._qnn_backend
+            self._qnn_backend = None
+        if qnn is not None:
+            qnn.close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        self.close()
+
     def arena_bytes(self) -> int:
-        arrays = (self.w_in_q, self.w_loop_q, self.w_op_q, self.w_src_q, self.w_dst_q, self.w_qty_q)
+        arrays = (self.w_in_q, self.w_loop_q, self.w_heads_q)
         return sum(int(a.nbytes) for a in arrays) + 4096
 
-    def predict_step(self, raw_text: str, tok_ids: np.ndarray, sheaf_vec: tuple[float, ...]) -> tuple[int, int, int, int]:
-        x = self.fp_ref._featurize(raw_text, tok_ids, sheaf_vec).astype(np.float32)[None, :]
-        h0 = np.tanh(x @ (self.w_in_q.astype(np.float32) * self.s_in) + self.b_in)
+    def _qgemm_step(
+        self,
+        x_f32: np.ndarray,
+        g_1d: np.ndarray,
+        w_q: np.ndarray,
+        w_qt: np.ndarray,
+        s_1d: np.ndarray,
+    ) -> np.ndarray:
+        x_eq = np.ascontiguousarray(x_f32 * g_1d, dtype=np.float32)
+        if self.backend == "numpy":
+            return x_eq @ (w_q.astype(np.float32) * s_1d)
+        batch = int(x_eq.shape[0])
+        x_q1, x_s1 = quantize_symmetric_int8(x_eq)
+        rem = x_eq - (x_q1.astype(np.float32) * x_s1[:, None])
+        x_q2, x_s2 = quantize_symmetric_int8(rem)
+        x_q_pair = np.ascontiguousarray(np.vstack([x_q1, x_q2]))
+        x_s_pair = np.ascontiguousarray(np.concatenate([x_s1, x_s2]))
+        if self.backend == "hal_c11":
+            with self._lifecycle_lock:
+                if self._closed:
+                    raise RuntimeError("QuantizedLoopedBridgeNPU is closed")
+            y_pair = hal_qgemm_int8(x_q_pair, x_s_pair, w_qt, s_1d)
+        else:
+            with self._lifecycle_lock:
+                if self._closed:
+                    raise RuntimeError("QuantizedLoopedBridgeNPU is closed")
+                qnn_backend = self._qnn_backend
+            if qnn_backend is None:
+                raise RuntimeError("QuantizedLoopedBridgeNPU QNN backend is not initialized")
+            y_pair = qnn_backend.qgemm_int8_f32(x_q_pair, x_s_pair, w_q, s_1d)
+        return y_pair[:batch] + y_pair[batch:]
+
+    def predict_step(
+        self,
+        raw_text: str,
+        tok_ids: np.ndarray,
+        sheaf_vec: tuple[float, ...],
+    ) -> tuple[int, int, int, int]:
+        with self._lifecycle_lock:
+            if self._closed:
+                raise RuntimeError("QuantizedLoopedBridgeNPU is closed")
+            qnn_backend = self._qnn_backend
+        sheaf_arr = np.asarray(sheaf_vec, dtype=np.float64)
+        if not np.all(np.isfinite(sheaf_arr)):
+            raise ValueError("sheaf_vec contains non-finite values")
+        x_f64 = self.fp_ref._featurize(raw_text, tok_ids, sheaf_vec)
+        if not np.all(np.isfinite(x_f64)) or (x_f64.size > 0 and np.max(np.abs(x_f64)) > np.finfo(np.float32).max):
+            raise ValueError("featurized input contains non-finite values")
+        x = x_f64.astype(np.float32)[None, :]
+        h0 = np.tanh(self._qgemm_step(x, self._g_in, self.w_in_q, self.w_in_qt, self._s_in_1d) + self.b_in)
         h = h0
-        w_l = self.w_loop_q.astype(np.float32) * self.s_loop
         for _ in range(self.loop_steps):
-            h = np.tanh(h0 + h @ w_l + self.b_loop)
-        op_i = int(np.argmax(h @ (self.w_op_q.astype(np.float32) * self.s_op)))
-        src_i = int(np.argmax(h @ (self.w_src_q.astype(np.float32) * self.s_src)))
-        dst_i = int(np.argmax(h @ (self.w_dst_q.astype(np.float32) * self.s_dst)))
-        qty_i = int(np.argmax(h @ (self.w_qty_q.astype(np.float32) * self.s_qty)))
+            h_step = self._qgemm_step(h, self._g_loop, self.w_loop_q, self.w_loop_qt, self._s_loop_1d)
+            h = np.tanh(h0 + h_step + self.b_loop)
+        logits = self._qgemm_step(h, self._g_heads, self.w_heads_q, self.w_heads_qt, self._s_heads_1d)
+        if self.backend == "numpy":
+            self.last_tier_used = "numpy"
+            self.last_canary_ok = True
+            self.last_providers = ["NumPyReference"]
+        elif self.backend == "hal_c11":
+            self.last_tier_used = "hal_c11"
+            self.last_canary_ok = True
+            self.last_providers = ["C11HAL"]
+        elif qnn_backend is not None:
+            self.last_tier_used = qnn_backend.last_tier_used
+            self.last_canary_ok = qnn_backend.last_canary_ok
+            self.last_providers = list(qnn_backend.last_providers)
+        o1, o2, o3 = self._head_offsets
+        op_i = int(np.argmax(logits[0, :o1]))
+        src_i = int(np.argmax(logits[0, o1:o2]))
+        dst_i = int(np.argmax(logits[0, o2:o3]))
+        qty_i = int(np.argmax(logits[0, o3:]))
         return op_i, src_i, dst_i, qty_i
 
 
@@ -771,31 +951,32 @@ def run_t48_roadmap_campaign(seeds: tuple[int, ...] = (13, 21, 34, 55, 89)) -> d
             seed=seed,
         )
         bridge.train_policy(tokenizer, train_eps, epochs=140, lr=0.045)
-        npu = QuantizedLoopedBridgeNPU(bridge)
-        arena_bytes = npu.arena_bytes()
+        with QuantizedLoopedBridgeNPU(bridge) as npu:
+            arena_bytes = npu.arena_bytes()
 
-        exact_hits = 0
-        spoof_hits = 0
-        replay_hits = 0
-        step_total = 0
-        step_agree = 0
+            exact_hits = 0
+            spoof_hits = 0
+            replay_hits = 0
+            step_total = 0
+            step_agree = 0
 
-        for ep in ood_eps:
-            for st in ep.steps:
-                tids = tokenizer.encode(st.text)
-                _, (lo, ls, ld, lq) = bridge.forward_batch(bridge._featurize(st.text, tids, st.sheaf_hint_vec)[None, :])
-                fp_pred = (int(np.argmax(lo)), int(np.argmax(ls)), int(np.argmax(ld)), int(np.argmax(lq)))
-                q_pred = npu.predict_step(st.text, tids, st.sheaf_hint_vec)
-                step_total += 1
-                if fp_pred == q_pred:
-                    step_agree += 1
-            ok_state, ok_spoof, ok_replay = execute_predicted_episode(npu, tokenizer, ep)
-            if ok_state:
-                exact_hits += 1
-            if ok_spoof:
-                spoof_hits += 1
-            if ok_replay:
-                replay_hits += 1
+            for ep in ood_eps:
+                for st in ep.steps:
+                    tids = tokenizer.encode(st.text)
+                    x_feat = bridge._featurize(st.text, tids, st.sheaf_hint_vec)[None, :]
+                    _, (lo, ls, ld, lq) = bridge.forward_batch(x_feat)
+                    fp_pred = (int(np.argmax(lo)), int(np.argmax(ls)), int(np.argmax(ld)), int(np.argmax(lq)))
+                    q_pred = npu.predict_step(st.text, tids, st.sheaf_hint_vec)
+                    step_total += 1
+                    if fp_pred == q_pred:
+                        step_agree += 1
+                ok_state, ok_spoof, ok_replay = execute_predicted_episode(npu, tokenizer, ep)
+                if ok_state:
+                    exact_hits += 1
+                if ok_spoof:
+                    spoof_hits += 1
+                if ok_replay:
+                    replay_hits += 1
 
         bridge_ood_accs.append(exact_hits / len(ood_eps))
         int8_drifts.append(1.0 - step_agree / max(1, step_total))

@@ -1,0 +1,75 @@
+{
+  "bundle_schema": "sheaf-verify.regulatory-bundle.v1",
+  "created_at": "2026-11-27T03:46:05Z",
+  "dsse_statement_envelope": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMjdUMDM6NDY6MDVaIiwiZXVfYWlfYWN0X2FydGljbGVfMTIiOnsiYXV0b21hdGljX2xpZmV0aW1lX2xvZ2dpbmciOnRydWUsImVzY2FsYXRlZF9ldmVudF9pbmRpY2VzIjpbXSwiaHVtYW5fb3ZlcnNpZ2h0X2FydGljbGVfMTRfcmVhZHkiOnRydWUsIm1pbmltdW1fcmV0ZW50aW9uX21vbnRocyI6NzIsInJlZnVzZWRfZXZlbnRfaW5kaWNlcyI6WzFdLCJ0b3RhbF9ldmVudHNfbG9nZ2VkIjozfSwiZmlucmFfcnVsZV8zMTEwX3dvcm0iOnsiYm9va3NfYW5kX3JlY29yZHNfcmVjb25zdHJ1Y3RpYmxlIjp0cnVlLCJwb2xpY3lfc25hcHNob3Rfc2hhMjU2IjoiZWVlMzg5Y2M3MjMyMWY5YWVjMzZjODIxMmZkZTNhNDA3ZjEyNTA0MjViZDMyOWY3ZDRlODUxYTY2ZjBhNWNkZiIsInJldGVudGlvbl95ZWFyc19mbG9vciI6Niwic3VwZXJ2aXNvcnlfZXNjYWxhdGlvbl9jb3VudCI6MCwid29ybV9pbnRlZ3JpdHlfc2hhMjU2IjoiNjdjMDdjOGNmNGE5MzRiN2Y1ZGRkNDUzYWZhMzJjZDY1NmZkM2M5MjBiZjFlYWM5OTM5NjAwYTU5NTcyNTFhYSJ9LCJpZXRmX3NjaXR0X3JmYzk5NDMiOnsibWVya2xlX3RyZWVfYWxnIjoiUkZDOTE2Mi1TSEEyNTYiLCJyZWNlaXB0X3RyZWVfc2l6ZSI6Mywic2lnbmVkX3N0YXRlbWVudF9hbGciOiJEU1NFLXYxLUhNQUMtU0hBMjU2In0sInN5c3RlbV9pZCI6ImhhZHVrZW5uLXRyaS1tYWNoaW5lLWhhbC12MC45LjAifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vaGFkdWtlbm4ub3JnL2NvbXBsaWFuY2Uvc2NpdHQtZXVhaTEyLWZpbnJhMzExMC92MSIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiI2N2MwN2M4Y2Y0YTkzNGI3ZjVkZGQ0NTNhZmEzMmNkNjU2ZmQzYzkyMGJmMWVhYzk5Mzk2MDBhNTk1NzI1MWFhIn0sIm5hbWUiOiJoYWR1a2Vubi10cmktbWFjaGluZS1oYWwtdjAuOS4wL2V2ZW50cy5qc29uIn0seyJkaWdlc3QiOnsic2hhMjU2IjoiYWU5Nzg5YWU4YjEyMjBmZjM4MmIwYjQzOGM1NDUwNzVmMjZhYWZiMTU1NGY0YmE1MzdlOTIzYWQ5NTQyMmNkMCJ9LCJuYW1lIjoiaGFkdWtlbm4tdHJpLW1hY2hpbmUtaGFsLXYwLjkuMC90cmFjZV9oZWFkIn0seyJkaWdlc3QiOnsic2hhMjU2IjoiNTM2NmM2ZDk5NjkxMTJmNmVlZWE5YzhjYjZlZjgyMjgxZGIwYzYyYjFmZDU4MzI5OGUxMjk5YzIyMWI1MDg1OSJ9LCJuYW1lIjoiaGFkdWtlbm4tdHJpLW1hY2hpbmUtaGFsLXYwLjkuMC9zdGF0ZV9kaWdlc3QifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "alg": "hmac-sha256",
+        "keyid": "e396d3c80c7589fdd24390ef6f8a53e866bb58416d3635adc226f8a9f4de9070",
+        "sig": "Sv/WKJMV8y3wlX/eO0C/Dcsej1+ZYYXq+XrwSsOOgwI="
+      }
+    ]
+  },
+  "events": [
+    {
+      "approved": true,
+      "machine": "wbeast",
+      "op": "mup_tiled_cce",
+      "seq": 0,
+      "verdict": "VALID"
+    },
+    {
+      "approved": false,
+      "machine": "lapbeast",
+      "op": "watchdog_rc143",
+      "seq": 1,
+      "status": "error"
+    },
+    {
+      "approved": true,
+      "machine": "zenbook",
+      "op": "looped_int8_npu",
+      "seq": 2,
+      "verdict": "VALID"
+    }
+  ],
+  "events_sha256": "67c07c8cf4a934b7f5ddd453afa32cd656fd3c920bf1eac9939600a5957251aa",
+  "policy_sha256": "eee389cc72321f9aec36c8212fde3a407f1250425bd329f7d4e851a66f0a5cdf",
+  "scitt_merkle_receipt": {
+    "audit_path": [
+      "07d78bc0bd871c2fe0844406f0f9c99f91b15dbbc7953553f17d9e1a9461b911"
+    ],
+    "dsse": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiZ2F0ZV9pZCI6IkVWRU5UXzIiLCJtZXJrbGVfcm9vdF9zaGEyNTYiOiIxNjE4YWNjOGE4NjlhMmVlYzNjYmRhZDdmOTRmZThlMmY3N2NkMDg3MDAyYzQ2NmEyNGJjOTNlOWU5NDBiYzliIiwic3RhdHVzIjoiUEFTU0VEIiwidHJlZV9zaXplIjozfSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vaGFkdWtlbm4ub3JnL3NoZWFmLXZlcmlmeS9nYXRlLXZlcmRpY3QvdjIiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiNDBjOWU0YzE2ZTA4OTBmY2I2YTdhMmE4MWI0ZTc0YmM2NzM0NjEwYWYxZDQzY2I0MmZmNGQ3YmYzYWQ1NjczOCJ9LCJuYW1lIjoibGVkZ2VyL3NlcS8yIn1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "alg": "hmac-sha256",
+          "keyid": "e396d3c80c7589fdd24390ef6f8a53e866bb58416d3635adc226f8a9f4de9070",
+          "sig": "ShhOQYGSPhRKCprFiPuu9miFdT6+zMYvWMrTRAtI3Qw="
+        }
+      ]
+    },
+    "format": "sheaf-verify.scitt-merkle-receipt.v1",
+    "gate_id": "EVENT_2",
+    "leaf_index": 2,
+    "merkle_root_sha256": "1618acc8a869a2eec3cbdad7f94fe8e2f77cd087002c466a24bc93e9e940bc9b",
+    "record": {
+      "created_at": "2026-11-27T03:46:05Z",
+      "event_sha256": "182b9b22c52f39264ca6888ea8f34e47c8045055d726e4b58dc02f239f30ec64",
+      "format": "sheaf-verify.ledger.v1",
+      "gate_id": "EVENT_2",
+      "prev_sha256": "a15f74ee8aa18c2e9711dd3847705813595a568eef96c989ec9d4261e9804edf",
+      "record_sha256": "40c9e4c16e0890fcb6a7a2a81b4e74bc6734610af1d43cb42ff4d7bf3ad56738",
+      "seq": 2,
+      "status": "PASSED"
+    },
+    "record_sha256": "40c9e4c16e0890fcb6a7a2a81b4e74bc6734610af1d43cb42ff4d7bf3ad56738",
+    "tree_size": 3
+  },
+  "state_digest_sha256": "5366c6d9969112f6eeea9c8cb6ef82281db0c62b1fd583298e1299c221b50859",
+  "system_id": "hadukenn-tri-machine-hal-v0.9.0",
+  "trace_head_sha256": "ae9789ae8b1220ff382b0b438c545075f26aafb1554f4ba537e923ad95422cd0"
+}
