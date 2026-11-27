@@ -36,3 +36,7 @@ The original parent repository checks remain required. The added root pytest wra
 Training, natural-language extraction, learned segmentation, spectral/sheaf advantage, general reasoning benchmarks, a capability comparison with frontier models, an audit-matched speed comparison, user-hardware throughput, cryptographic authorship, external truth, and any change to T-38 or packing status.
 
 The original specification remains unchanged. Development amendments and repairs are explicit. The same public deterministic fixtures are reusable regression cases; calling the stabilized run `confirmation` is an engineering reproducibility check, not an untouched model-generalization holdout.
+
+## Post-confirmation addition
+
+`IncrementalKernel` (`hadukenn_exec/incremental.py`) was added from `origin/main` after the confirmation run recorded in `results/confirmation/`. It is covered by repository tests, not by the sealed confirmation manifest. The confirmation `code_sha256` set is unchanged and remains the canonical hash record of that run.

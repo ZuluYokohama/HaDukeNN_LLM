@@ -28,6 +28,7 @@ The demonstration includes a conservation check, a hypothetical branch, a later 
 - `spec/REVIEW.md`: independent review and remaining limits.
 - `results/confirmation/REPORT.md`: recorded engineering findings after the implementation stabilized.
 - `results/confirmation/run_manifest.json`: code, input, and specification hashes.
+- `hadukenn_exec/incremental.py`: post-confirmation `IncrementalKernel` from `origin/main` (integrity checksum, not a cryptographic commitment). Not part of the sealed confirmation `code_sha256` set.
 - `results/demo/trace.json`: replayable demonstration receipts.
 - `results/demo/graph.json`: named-port relation graph and source provenance.
 
@@ -38,3 +39,5 @@ The supplied formal commands stand in for an oracle interpreter. The byte/span e
 Trace hashes detect changes relative to a retained head. They do not provide signatures, independent timestamps, or guarantees about source truth. The kernel is a Python reference implementation and does not benchmark the user's GPU.
 
 Frozen T-38 and the existing campaign ledger are outside this iteration.
+
+`IncrementalKernel` is a later code-only addition. Adding it does not change the confirmation run. Tests in `tests/test_exec_incremental.py` pin leaf-encoding injectivity, add/retract inversion, and command-by-command parity with `core.Kernel`.

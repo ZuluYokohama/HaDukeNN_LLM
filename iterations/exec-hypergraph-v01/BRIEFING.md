@@ -48,3 +48,7 @@ The prototype logs and hashes full semantic state; the conventional baseline omi
 - Existing fixture ledger head before and after: `307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4`.
 - The fixture was verified read-only and was not changed. These prototype results were not registered as passes in the old campaign gates.
 - Prototype trace anchors are relative integrity references, not signatures or independent timestamps.
+
+## Post-confirmation addition
+
+`hadukenn_exec/incremental.py` (`IncrementalKernel`) was merged from `origin/main` after this confirmation run. It uses canonical-JSON leaves so field boundaries cannot be forged by string content. The state digest is an integrity checksum against accidental drift, not a cryptographic commitment. A colliding pair from an earlier delimiter-joined draft is kept as a regression test. This file is not in `results/confirmation/run_manifest.json` `code_sha256`. The confirmation hashes remain canonical and were not rewritten to include it.
