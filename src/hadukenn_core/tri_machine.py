@@ -203,7 +203,6 @@ LAPBEAST_PROFILE = MachineProfile(
         "--use_fast_math",
         "-std=c++17",
         "-gencode=arch=compute_89,code=sm_89",
-        "-gencode=arch=compute_120,code=sm_120",
     ),
 )
 

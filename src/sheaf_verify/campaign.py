@@ -939,6 +939,29 @@ def verify_t45_sheaf_bridge(doc: dict) -> tuple[bool, list[Criterion], list[str]
     return all(c.passed for c in criteria), criteria, advisories
 
 
+
+def _t46_ready_advisory(doc: dict[str, Any]) -> str:
+    """Describe recorded / probed CUDA inventory; do not hardcode sm_120/sm_75."""
+    host = doc.get("host_probe") if isinstance(doc.get("host_probe"), dict) else {}
+    lap = doc.get("profiles", {}).get("lapbeast") if isinstance(doc.get("profiles"), dict) else {}
+    if not isinstance(lap, dict):
+        lap = {}
+    arch = (
+        (host.get("cuda_arch_primary") if isinstance(host, dict) else None)
+        or lap.get("cuda_arch_primary")
+        or "unspecified"
+    )
+    accel = (
+        (host.get("primary_accel") if isinstance(host, dict) else None)
+        or lap.get("primary_accel")
+        or "GPU"
+    )
+    return (
+        f"TRI_MACHINE_HAL_READY: Bare-metal C11 SIMD, CUDA {arch} ({accel}), "
+        "OpenCL FP16, and QNN HTP loop recorded in this result file."
+    )
+
+
 def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
     """Verify sealed T-46 Tri-Machine Bare-Metal HAL records (WBeast, LapBeast, Zenbook)."""
     criteria: list[Criterion] = []
@@ -1002,7 +1025,5 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    advisories.append(
-        "TRI_MACHINE_HAL_READY: Bare-metal C11 SIMD, CUDA sm_120/sm_75, OpenCL FP16, and QNN HTP loop verified."
-    )
+    advisories.append(_t46_ready_advisory(doc))
     return all(c.passed for c in criteria), criteria, advisories
