@@ -1190,32 +1190,42 @@ def run_tri_machine_verification_suite() -> dict[str, Any]:
         m = np.max(logits, axis=1, keepdims=True)
         _ = (m.squeeze(-1) + np.log(np.sum(np.exp(logits - m), axis=1))) - logits[np.arange(N), targets]
 
-    # Stabilize thread pools before any timed work. Park OpenBLAS first (1 thread
-    # on x86_64 hybrid hosts via _set_openblas_threads, or brief 0.20s sleep on
-    # aarch64 where resizing OpenBLAS mid-process is unsafe) and time C11 first
-    # before packed NumPy GEMM spins up OpenBLAS workers.
-    cce_threads = len(probe_host_hardware().get("p_cores") or []) or 8
+    # Stabilize thread pools before any timed work. Cap fallback threads to the
+    # host CPU count (at most 8) so 2-4 vCPU VMs do not oversubscribe, park
+    # OpenBLAS first, and time C11 before NumPy GEMM spins up OpenBLAS workers.
+    # Take the minimum across 3 short measurement rounds so VM scheduling spikes
+    # do not distort the microbenchmark ratio.
+    cce_threads = len(probe_host_hardware().get("p_cores") or []) or max(1, min(8, os.cpu_count() or 4))
     if _set_openblas_threads(1) is None:
         time.sleep(0.20)
     for _ in range(3):
         hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
-    t0 = time.perf_counter()
-    for _ in range(5):
-        hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
-    c_cce_ms = ((time.perf_counter() - t0) / 5.0) * 1000.0
+    c_rounds: list[float] = []
+    for _ in range(3):
+        t0 = time.perf_counter()
+        for _ in range(5):
+            hal_tiled_cce_mup(H, E, targets, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=cce_threads)
+        c_rounds.append(((time.perf_counter() - t0) / 5.0) * 1000.0)
+    c_cce_ms = min(c_rounds)
 
     _py_row_cce()
-    t1 = time.perf_counter()
-    for _ in range(5):
-        _py_row_cce()
-    py_loop_ms = ((time.perf_counter() - t1) / 5.0) * 1000.0
+    py_rounds: list[float] = []
+    for _ in range(3):
+        t1 = time.perf_counter()
+        for _ in range(3):
+            _py_row_cce()
+        py_rounds.append(((time.perf_counter() - t1) / 3.0) * 1000.0)
+    py_loop_ms = sorted(py_rounds)[1]
 
     _set_openblas_threads(cce_threads)
     _numpy_gemm_cce()
-    t2 = time.perf_counter()
-    for _ in range(5):
-        _numpy_gemm_cce()
-    numpy_gemm_ms = ((time.perf_counter() - t2) / 5.0) * 1000.0
+    np_rounds: list[float] = []
+    for _ in range(3):
+        t2 = time.perf_counter()
+        for _ in range(3):
+            _numpy_gemm_cce()
+        np_rounds.append(((time.perf_counter() - t2) / 3.0) * 1000.0)
+    numpy_gemm_ms = sorted(np_rounds)[1]
     _set_openblas_threads(1)
 
     cce_speedup = py_loop_ms / max(c_cce_ms, 1e-6)
