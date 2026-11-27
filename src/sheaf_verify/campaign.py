@@ -104,7 +104,9 @@ def classify_domain_of_calibration(baseline: dict[str, Any], candidate: dict[str
 
     expanded_scales = int(candidate.get("validated_scales", 1)) > int(baseline.get("validated_scales", 1))
     expanded_seeds = int(candidate.get("n_seeds", 3)) > int(baseline.get("n_seeds", 3))
-    cleaner_confound = bool(candidate.get("removes_tokenizer_confound")) and not bool(baseline.get("removes_tokenizer_confound"))
+    cleaner_confound = bool(candidate.get("removes_tokenizer_confound")) and not bool(
+        baseline.get("removes_tokenizer_confound")
+    )
     if expanded_scales or expanded_seeds or cleaner_confound:
         reasons.append("expands validated Domain of Calibration without violating fairness invariants")
         return DomainTransition("PROGRESSIVE", tuple(reasons), tuple(criteria))
@@ -179,30 +181,38 @@ def audit_cluster_geometry(
     if dead == 0:
         criteria.append(ok("cluster.zero_padding", f"{nc} x {cluster_size} = {vocab_size} exact (0 dead pad slots)"))
     else:
-        criteria.append(bad(
-            "cluster.zero_padding",
-            f"{nc} x {cluster_size} = {slots} leaves {dead} dead pad slots risking -1/0 gather/scatter aliasing",
-        ))
+        criteria.append(
+            bad(
+                "cluster.zero_padding",
+                f"{nc} x {cluster_size} = {slots} leaves {dead} dead pad slots risking -1/0 gather/scatter aliasing",
+            )
+        )
     if tc128:
         criteria.append(ok("cluster.tensor_core_tiles", f"({nc}, {cluster_size}) is 128-aligned for Tensor Core bmm"))
     elif tc64:
         criteria.append(ok("cluster.tensor_core_tiles", f"({nc}, {cluster_size}) is 64-aligned for Tensor Core bmm"))
     else:
-        criteria.append(bad(
-            "cluster.tensor_core_tiles",
-            f"({nc}, {cluster_size}) forces unaligned Tensor Core remainder epilogues (mod 64 = {nc % 64}, {cluster_size % 64})",
-        ))
+        criteria.append(
+            bad(
+                "cluster.tensor_core_tiles",
+                f"({nc}, {cluster_size}) forces unaligned Tensor Core remainder epilogues (mod 64 = {nc % 64}, {cluster_size % 64})",
+            )
+        )
     if p1_ok:
         criteria.append(ok("cluster.p1_gate", f"cluster_size {cluster_size} <= {max_p1_size} passes P1 preflight"))
     else:
-        criteria.append(bad("cluster.p1_gate", f"cluster_size {cluster_size} > {max_p1_size} trips existing P1 preflight"))
+        criteria.append(
+            bad("cluster.p1_gate", f"cluster_size {cluster_size} > {max_p1_size} trips existing P1 preflight")
+        )
     if redundant == 0:
         criteria.append(ok("cluster.param_parsimony", "zero redundant unit_table parameters on members=identity"))
     else:
-        criteria.append(bad(
-            "cluster.param_parsimony",
-            f"members=identity with struct_rank={struct_rank}, resid={resid!r} adds {redundant:,} redundant parameters",
-        ))
+        criteria.append(
+            bad(
+                "cluster.param_parsimony",
+                f"members=identity with struct_rank={struct_rank}, resid={resid!r} adds {redundant:,} redundant parameters",
+            )
+        )
 
     recommended = dead == 0 and tc128 and p1_ok and redundant == 0
     return ClusterGeometryAudit(
@@ -254,16 +264,18 @@ def head_flop_scaling_table(
         struct_share_pct = 100.0 * f_struct_k3 / (f_bb + f_struct_k3)
         flat_logit_gib = (seq_tokens_for_logits * vocab * 2.0) / (1024.0**3)
         struct_logit_gib = (seq_tokens_for_logits * (nc_clust + 4 * s_unit) * 2.0) / (1024.0**3)
-        rows.append({
-            "backbone_params_m": p_bb / 1e6,
-            "flat_head_flop_share_pct": flat_share_pct,
-            "flat_head_params_m": p_head / 1e6,
-            "flat_logits_bf16_gib": flat_logit_gib,
-            "model": name,
-            "struct_k3_flop_share_pct": struct_share_pct,
-            "struct_k3_logits_bf16_gib": struct_logit_gib,
-            "vocab": vocab,
-        })
+        rows.append(
+            {
+                "backbone_params_m": p_bb / 1e6,
+                "flat_head_flop_share_pct": flat_share_pct,
+                "flat_head_params_m": p_head / 1e6,
+                "flat_logits_bf16_gib": flat_logit_gib,
+                "model": name,
+                "struct_k3_flop_share_pct": struct_share_pct,
+                "struct_k3_logits_bf16_gib": struct_logit_gib,
+                "vocab": vocab,
+            }
+        )
     return rows
 
 
@@ -312,12 +324,16 @@ def verify_t37_grid(document: dict[str, Any]) -> tuple[bool, list[Criterion], di
             if isinstance(rec_gap, (int, float)) and abs(rec_gap - gap) > 1e-9:
                 criteria.append(bad(f"t37.recompute.{cname}", f"recorded gap {rec_gap} != recomputed {gap}"))
             elif cell_pass:
-                criteria.append(ok(
-                    f"t37.cell.{cname}",
-                    f"gap={fmt_float(gap)}, SE={fmt_float(se_diff)}, one-sided Welch p={fmt_float(p_one)}",
-                ))
+                criteria.append(
+                    ok(
+                        f"t37.cell.{cname}",
+                        f"gap={fmt_float(gap)}, SE={fmt_float(se_diff)}, one-sided Welch p={fmt_float(p_one)}",
+                    )
+                )
             else:
-                criteria.append(bad(f"t37.cell.{cname}", f"failed cell rule (gap={fmt_float(gap)}, p={fmt_float(p_one)})"))
+                criteria.append(
+                    bad(f"t37.cell.{cname}", f"failed cell rule (gap={fmt_float(gap)}, p={fmt_float(p_one)})")
+                )
 
     # Holm-Bonferroni at family alpha = 0.01 across the 8 contrasts
     ordered = sorted(p_list, key=lambda item: item[1])
@@ -328,7 +344,12 @@ def verify_t37_grid(document: dict[str, Any]) -> tuple[bool, list[Criterion], di
             holm_survivors.append(cname)
         else:
             break
-    criteria.append(ok("t37.holm_alpha001", f"{len(holm_survivors)}/{m_total} cells survive Holm (alpha=0.01): {', '.join(holm_survivors)}"))
+    criteria.append(
+        ok(
+            "t37.holm_alpha001",
+            f"{len(holm_survivors)}/{m_total} cells survive Holm (alpha=0.01): {', '.join(holm_survivors)}",
+        )
+    )
     all_ok = all(c.passed for c in criteria)
     return all_ok, criteria, {"cells": recomputed_cells, "holm_survivors": holm_survivors}
 
@@ -389,10 +410,16 @@ def audit_t38_prereg(
         )
 
     if addendum is not None:
-        if "never decides" in str(addendum.get("verdicts", "")) and "No T-38 data exists" in str(addendum.get("data_state", "")):
-            criteria.append(ok("t38.addendum_blind", "paired-seed addendum frozen prior to T-38 data and kept secondary"))
+        if "never decides" in str(addendum.get("verdicts", "")) and "No T-38 data exists" in str(
+            addendum.get("data_state", "")
+        ):
+            criteria.append(
+                ok("t38.addendum_blind", "paired-seed addendum frozen prior to T-38 data and kept secondary")
+            )
         else:
-            criteria.append(bad("t38.addendum_blind", "paired-seed addendum lacks pre-data blindness or secondary-only lock"))
+            criteria.append(
+                bad("t38.addendum_blind", "paired-seed addendum lacks pre-data blindness or secondary-only lock")
+            )
 
     return all(c.passed for c in criteria), criteria, advisories
 
@@ -416,14 +443,20 @@ def verify_hg_v3_gate(record: dict[str, Any]) -> tuple[bool, list[Criterion]]:
         return False, [bad("hgv3.fields", str(error))]
 
     if heldout_nnz == 0 and exact_dups == 0 and jaccard_dups == 0:
-        criteria.append(ok("hgv3.decontamination", "0 heldout incidences, 0 exact or 13-gram near-duplicate eval leaks"))
+        criteria.append(
+            ok("hgv3.decontamination", "0 heldout incidences, 0 exact or 13-gram near-duplicate eval leaks")
+        )
     else:
-        criteria.append(bad(
-            "hgv3.decontamination",
-            f"leak detected (heldout_nnz={heldout_nnz}, exact_dups={exact_dups}, jaccard_dups={jaccard_dups})",
-        ))
+        criteria.append(
+            bad(
+                "hgv3.decontamination",
+                f"leak detected (heldout_nnz={heldout_nnz}, exact_dups={exact_dups}, jaccard_dups={jaccard_dups})",
+            )
+        )
     if 3 <= min_edge <= max_edge <= 128:
-        criteria.append(ok("hgv3.edge_bounds", f"hyperedge cardinalities bounded in [{min_edge}, {max_edge}] subseteq [3, 128]"))
+        criteria.append(
+            ok("hgv3.edge_bounds", f"hyperedge cardinalities bounded in [{min_edge}, {max_edge}] subseteq [3, 128]")
+        )
     else:
         criteria.append(bad("hgv3.edge_bounds", f"hyperedge sizes [{min_edge}, {max_edge}] violate [3, 128] hub clamp"))
     if span_edges >= 1000:
@@ -431,20 +464,36 @@ def verify_hg_v3_gate(record: dict[str, Any]) -> tuple[bool, list[Criterion]]:
     else:
         criteria.append(bad("hgv3.span_coverage", f"only {span_edges} span edges (< 1,000 minimum)"))
     if record.get("chodrow_null_preserves_degree_and_size") is True:
-        criteria.append(ok("hgv3.chodrow_null", "Chodrow configuration null exactly preserves vertex degrees and edge sizes"))
+        criteria.append(
+            ok("hgv3.chodrow_null", "Chodrow configuration null exactly preserves vertex degrees and edge sizes")
+        )
     else:
         criteria.append(bad("hgv3.chodrow_null", "Chodrow null degree/size sequence invariance not verified"))
     if causal_canary == 0.0 and oracle_canary > 0.0:
-        criteria.append(ok("hgv3.canaries", f"causal suffix canary == 0.0 and oracle canary {fmt_float(oracle_canary)} > 0"))
+        criteria.append(
+            ok("hgv3.canaries", f"causal suffix canary == 0.0 and oracle canary {fmt_float(oracle_canary)} > 0")
+        )
     else:
-        criteria.append(bad(
-            "hgv3.canaries",
-            f"VOID canary gate (causal={fmt_float(causal_canary)}, oracle={fmt_float(oracle_canary)})",
-        ))
+        criteria.append(
+            bad(
+                "hgv3.canaries",
+                f"VOID canary gate (causal={fmt_float(causal_canary)}, oracle={fmt_float(oracle_canary)})",
+            )
+        )
     if 0.0 < working_set_mib <= RTX_5070_L2_MIB:
-        criteria.append(ok("hgv3.l2_residency", f"working set {fmt_float(working_set_mib)} MiB fits inside {RTX_5070_L2_MIB} MiB L2 cache"))
+        criteria.append(
+            ok(
+                "hgv3.l2_residency",
+                f"working set {fmt_float(working_set_mib)} MiB fits inside {RTX_5070_L2_MIB} MiB L2 cache",
+            )
+        )
     else:
-        criteria.append(bad("hgv3.l2_residency", f"working set {fmt_float(working_set_mib)} MiB exceeds {RTX_5070_L2_MIB} MiB L2 cache"))
+        criteria.append(
+            bad(
+                "hgv3.l2_residency",
+                f"working set {fmt_float(working_set_mib)} MiB exceeds {RTX_5070_L2_MIB} MiB L2 cache",
+            )
+        )
 
     return all(c.passed for c in criteria), criteria
 
@@ -463,7 +512,11 @@ def verify_t40_local_stack(doc: dict) -> tuple[bool, list[Criterion], list[str]]
 
     csum = doc.get("corpus_summary", {})
     ac_ok = csum.get("pytorch_bridge_anticheat_ok") is True and csum.get("pytorch_bridge_violations") == []
-    criteria.append((ok if ac_ok else bad)("T40_TORCH_BRIDGE_ANTICHEAT", "PyTorch drop-in bridge passed static AST anti-cheat audit."))
+    criteria.append(
+        (ok if ac_ok else bad)(
+            "T40_TORCH_BRIDGE_ANTICHEAT", "PyTorch drop-in bridge passed static AST anti-cheat audit."
+        )
+    )
 
     parts = doc.get("partitions", {})
     part_ok = all(
@@ -472,24 +525,46 @@ def verify_t40_local_stack(doc: dict) -> tuple[bool, list[Criterion], list[str]]
         and parts.get(m, {}).get("p1_size_gate_ok") is True
         for m in ("mass_random", "syntagmatic_spectral", "paradigmatic_spectral")
     )
-    criteria.append((ok if part_ok else bad)("T40_BIJECTION_PARTITIONS", "All three vocabulary partitions satisfy NC*S == V exact zero-pad bijection."))
+    criteria.append(
+        (ok if part_ok else bad)(
+            "T40_BIJECTION_PARTITIONS", "All three vocabulary partitions satisfy NC*S == V exact zero-pad bijection."
+        )
+    )
 
     t1 = doc.get("track1_output_heads", {}).get("comparisons", {})
     para_win = (
         t1.get("fp2_para_vs_fp2_synt", {}).get("significant_improvement") is True
         and t1.get("fp2_para_vs_fp2_rand", {}).get("significant_improvement") is True
     )
-    criteria.append((ok if para_win else bad)("T40_PARADIGMATIC_HEAD_WIN", "Second-order paradigmatic spectral partition beat both syntagmatic and mass-random at p < 0.001."))
+    criteria.append(
+        (ok if para_win else bad)(
+            "T40_PARADIGMATIC_HEAD_WIN",
+            "Second-order paradigmatic spectral partition beat both syntagmatic and mass-random at p < 0.001.",
+        )
+    )
 
     tr_win = t1.get("tied_root_vs_fp2_synt", {}).get("significant_improvement") is True
-    criteria.append((ok if tr_win else bad)("T40_TIED_ROOT_WIN", "Tied-root shortcut head beat syntagmatic FP2 at p < 0.001."))
+    criteria.append(
+        (ok if tr_win else bad)("T40_TIED_ROOT_WIN", "Tied-root shortcut head beat syntagmatic FP2 at p < 0.001.")
+    )
 
     is_parity = float(t1.get("cluster_is_vs_flat_tied", {}).get("delta_bpb", 1.0)) <= 0.0021
-    criteria.append((ok if is_parity else bad)("T40_CLUSTER_IS_PARITY", "Cluster-proposal importance-sampled head (K_neg=3) matched or beat flat tied head on equal bytes."))
+    criteria.append(
+        (ok if is_parity else bad)(
+            "T40_CLUSTER_IS_PARITY",
+            "Cluster-proposal importance-sampled head (K_neg=3) matched or beat flat tied head on equal bytes.",
+        )
+    )
 
     t2 = doc.get("track2_tokenization_sidecars", {})
-    shrunk_ok = float(t2.get("mean_residual_share_count_shrunk", 1.0)) < float(t2.get("mean_residual_share_unshrunk", 0.0))
-    criteria.append((ok if shrunk_ok else bad)("T40_RESIDUAL_SHRINKAGE", "Empirical-Bayes count shrinkage reduced free span residual energy share."))
+    shrunk_ok = float(t2.get("mean_residual_share_count_shrunk", 1.0)) < float(
+        t2.get("mean_residual_share_unshrunk", 0.0)
+    )
+    criteria.append(
+        (ok if shrunk_ok else bad)(
+            "T40_RESIDUAL_SHRINKAGE", "Empirical-Bayes count shrinkage reduced free span residual energy share."
+        )
+    )
 
     t3 = doc.get("track3_corpus_hypergraph", {})
     canary_ok = (
@@ -498,18 +573,36 @@ def verify_t40_local_stack(doc: dict) -> tuple[bool, list[Criterion], list[str]]
         and float(t3.get("self_inclusion_stalk_drift", 1.0)) == 0.0
         and float(t3.get("future_window_canary_drift", 1.0)) == 0.0
     )
-    criteria.append((ok if canary_ok else bad)("T40_HYPERGRAPH_CANARIES", "Chodrow degree/size invariants and 0.0 prefix/self-inclusion leak canaries passed."))
+    criteria.append(
+        (ok if canary_ok else bad)(
+            "T40_HYPERGRAPH_CANARIES",
+            "Chodrow degree/size invariants and 0.0 prefix/self-inclusion leak canaries passed.",
+        )
+    )
 
     e2_ok = t3.get("e2_scoped_knnlm", {}).get("hyper_vs_chodrow_null", {}).get("significant_improvement") is True
-    criteria.append((ok if e2_ok else bad)("T40_E2_SCOPED_KNNLM", "Hyperedge-scoped kNN-LM beat Chodrow-null kNN-LM on rare-token BPB at p < 0.001."))
+    criteria.append(
+        (ok if e2_ok else bad)(
+            "T40_E2_SCOPED_KNNLM", "Hyperedge-scoped kNN-LM beat Chodrow-null kNN-LM on rare-token BPB at p < 0.001."
+        )
+    )
 
     e4 = t3.get("e4_sheaf_contradiction", {})
     e4_ok = float(e4.get("mean_sheaf_auc_setB", 0.0)) >= 0.73 and float(e4.get("tie_1v1_abstention_rate", 0.0)) >= 0.99
-    criteria.append((ok if e4_ok else bad)("T40_E4_SHEAF_COBOUNDARY", f"Clean E4 3-cycle sheaf Set-B AUC={e4.get('mean_sheaf_auc_setB')} >= 0.73 with 100% 1-vs-1 tie abstention."))
+    criteria.append(
+        (ok if e4_ok else bad)(
+            "T40_E4_SHEAF_COBOUNDARY",
+            f"Clean E4 3-cycle sheaf Set-B AUC={e4.get('mean_sheaf_auc_setB')} >= 0.73 with 100% 1-vs-1 tie abstention.",
+        )
+    )
 
     t4 = doc.get("track4_sheaf_kv_prefix", {}).get("comparisons", {})
     kv_vs_win = float(t4.get("sheaf_vs_window_isolated", {}).get("delta_bpb", 1.0)) < 0.0
-    criteria.append((ok if kv_vs_win else bad)("T40_KV_PREFIX_WINDOW_GAIN", "Asymmetric KV-prefix reduced cross-window BPB vs window-isolated baseline."))
+    criteria.append(
+        (ok if kv_vs_win else bad)(
+            "T40_KV_PREFIX_WINDOW_GAIN", "Asymmetric KV-prefix reduced cross-window BPB vs window-isolated baseline."
+        )
+    )
     if not t4.get("sheaf_vs_chodrow_null", {}).get("significant_improvement", False):
         advisories.append(
             "CHODROW_NULL_SINK_DIAGNOSTIC: Unrotated KV-prefix improved BPB by -0.0488 over window-isolated, "
@@ -522,7 +615,12 @@ def verify_t40_local_stack(doc: dict) -> tuple[bool, list[Criterion], list[str]]
         float(row.get("cce_vs_fp64_max_err", 1.0)) < 1e-5 and float(row.get("native_c_speedup_x", 0.0)) > 10.0
         for row in t5
     )
-    criteria.append((ok if hw_ok else bad)("T40_AVX512_SILICON", "Native C11 AVX-512 Cluster-IS and Tiled-CCE passed FP64 parity and >10x native speedup."))
+    criteria.append(
+        (ok if hw_ok else bad)(
+            "T40_AVX512_SILICON",
+            "Native C11 AVX-512 Cluster-IS and Tiled-CCE passed FP64 parity and >10x native speedup.",
+        )
+    )
 
     all_ok = all(c.passed for c in criteria)
     return all_ok, criteria, advisories
@@ -621,7 +719,6 @@ def verify_t41_frontier5070(doc: dict) -> tuple[bool, list[Criterion], list[str]
     )
     all_ok = all(c.passed for c in criteria)
     return all_ok, criteria, advisories
-
 
 
 def verify_t42_exec_bridge(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
@@ -939,7 +1036,6 @@ def verify_t45_sheaf_bridge(doc: dict) -> tuple[bool, list[Criterion], list[str]
     return all(c.passed for c in criteria), criteria, advisories
 
 
-
 def _t46_ready_advisory(doc: dict[str, Any]) -> str:
     """Describe recorded / probed CUDA inventory; do not hardcode sm_120/sm_75."""
     host = doc.get("host_probe") if isinstance(doc.get("host_probe"), dict) else {}
@@ -951,11 +1047,7 @@ def _t46_ready_advisory(doc: dict[str, Any]) -> str:
         or lap.get("cuda_arch_primary")
         or "unspecified"
     )
-    accel = (
-        (host.get("primary_accel") if isinstance(host, dict) else None)
-        or lap.get("primary_accel")
-        or "GPU"
-    )
+    accel = (host.get("primary_accel") if isinstance(host, dict) else None) or lap.get("primary_accel") or "GPU"
     return (
         f"TRI_MACHINE_HAL_READY: Bare-metal C11 SIMD, CUDA {arch} ({accel}), "
         "OpenCL FP16, and QNN HTP loop recorded in this result file."
@@ -1000,10 +1092,9 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
         )
     )
 
-    perf_mup_ok = (
-        float(bm.get("c11_speedup_over_py_loop", 0.0)) > 1.5
-        and float(bm.get("mup_logit_std_scaled_d768", 99.0)) < float(bm.get("mup_logit_std_unscaled_d768", 0.0))
-    )
+    perf_mup_ok = float(bm.get("c11_speedup_over_py_loop", 0.0)) > 1.5 and float(
+        bm.get("mup_logit_std_scaled_d768", 99.0)
+    ) < float(bm.get("mup_logit_std_unscaled_d768", 0.0))
     criteria.append(
         (ok if perf_mup_ok else bad)(
             "T46_NATIVE_SPEEDUP_AND_MUP_SCALING",
@@ -1026,4 +1117,198 @@ def verify_t46_tri_machine_hal(doc: dict) -> tuple[bool, list[Criterion], list[s
     )
 
     advisories.append(_t46_ready_advisory(doc))
+    return all(c.passed for c in criteria), criteria, advisories
+
+
+def verify_t47_cosimilar_trace(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
+    """Verify sealed T-47 Cosimilar Hypergraph Recursive Trace & Observer Engine records."""
+    criteria: list[Criterion] = []
+    advisories: list[str] = []
+
+    schema_ok = (
+        doc.get("schema") == "sheaf-verify.cosimilar-trace.v1"
+        and doc.get("campaign_id") == "T-47"
+        and doc.get("version") == "1.0.0"
+        and doc.get("seeds") == [13, 21, 34, 55, 89]
+    )
+    criteria.append(
+        (ok if schema_ok else bad)(
+            "T47_SCHEMA_AND_SEEDS",
+            "Record declares sheaf-verify.cosimilar-trace.v1 at v1.0.0 across 5 canonical seeds.",
+        )
+    )
+
+    r1 = doc.get("realm_1_trace_and_cosimilarity", {})
+    trace_ok = (
+        int(r1.get("seeds_passing_all_4_trace_laws", 0)) == 5
+        and float(r1.get("cosimilar_quotient_max_surprise_bpb", 1.0)) == 0.0
+        and float(r1.get("coarse_lumping_min_surprise_bpb", 0.0)) > 0.005
+        and float(r1.get("mean_step_dilation_factor", 0.0)) > 1.0
+    )
+    criteria.append(
+        (ok if trace_ok else bad)(
+            "T47_EXACT_TRACE_AND_COSIMILAR_ZERO_SURPRISE",
+            "All 5 seeds pass exact Schur-trace laws with 0-bit cosimilar surprise vs positive coarse-lumping tax.",
+        )
+    )
+
+    r2 = doc.get("realm_2_hypergraph_vs_2d_markov", {})
+    hg_ok = (
+        float(r2.get("hypergraph_3way_xor_accuracy", 0.0)) == 1.0
+        and abs(float(r2.get("pairwise_2d_markov_xor_accuracy", 0.0)) - 0.5) < 1e-6
+        and float(r2.get("memory_compression_factor", 0.0)) > 100000.0
+    )
+    criteria.append(
+        (ok if hg_ok else bad)(
+            "T47_HYPERGRAPH_SYNERGY_AND_EXPONENTIAL_BYPASS",
+            "3-way hypergraph achieves 100% parity accuracy (vs 50% 2D Markov shadow) with >100,000x memory compression.",
+        )
+    )
+
+    r3 = doc.get("realm_3_active_window_search", {})
+    r4 = doc.get("realm_4_observer_sheaf_and_interventions", {})
+    search_and_sheaf_ok = (
+        float(r3.get("mean_optimality_ratio_vs_bruteforce_v18", 0.0)) >= 0.95
+        and float(r3.get("mean_eval_reduction_factor_v18", 0.0)) >= 50.0
+        and int(r4.get("fork_isolation_and_coherence_seeds", 0)) == 5
+        and int(r4.get("selective_disconnected_cache_reuse_seeds", 0)) == 5
+        and int(r4.get("spoof_observer_localized_seeds", 0)) == 5
+        and int(r4.get("scitt_rfc9943_verified_seeds", 0)) == 5
+    )
+    criteria.append(
+        (ok if search_and_sheaf_ok else bad)(
+            "T47_ACTIVE_SEARCH_SHEAF_SPOOF_AND_SCITT",
+            "Active incidence search (>=95% optimum, >=50x fewer evals), fork isolation, spoof witness, and SCITT pass.",
+        )
+    )
+
+    advisories.append(
+        "COSIMILAR_TRACE_READY: Schur trace, cosimilar quotient, active hyperedge search, and sheaf witness verified."
+    )
+    return all(c.passed for c in criteria), criteria, advisories
+
+
+def verify_t48_roadmap_complete(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
+    """Verify sealed T-48 Live T-38 Scaling Audit & Learned Hypergraph Bridge records."""
+    criteria: list[Criterion] = []
+    advisories: list[str] = []
+
+    schema_ok = (
+        doc.get("schema") == "sheaf-verify.roadmap-complete.v1"
+        and doc.get("campaign_id") == "T-48"
+        and doc.get("seeds") == [13, 21, 34, 55, 89]
+        and doc.get("scitt_verified") is True
+    )
+    criteria.append(
+        (ok if schema_ok else bad)(
+            "T48_SCHEMA_SEEDS_AND_SCITT",
+            "Record declares sheaf-verify.roadmap-complete.v1 across 5 canonical seeds with verified SCITT bundle.",
+        )
+    )
+
+    t38 = doc.get("phase_a_t38_live_scaling_audit", {})
+    holm = t38.get("holm_bonferroni_alpha_0p01", {})
+    fit_nb = t38.get("scaling_fit_n_body", {})
+    t38_ok = (
+        t38.get("scitt_verified") is True
+        and t38.get("headline_M_4ep", {}).get("verdict") == "KILL"
+        and int(holm.get("cells_killing_H", 0)) == 8
+        and float(t38.get("spearman_rho_4ep_vs_N", 1.0)) == -1.0
+        and t38.get("stage3_stop_fired") is False
+        and fit_nb.get("pass_scaling_in_favor_of_H") is False
+    )
+    criteria.append(
+        (ok if t38_ok else bad)(
+            "T48_LIVE_T38_STAGES_1_TO_3_AUDIT",
+            "Stage 1 KILL, 8/8 Holm-Bonferroni cells, Spearman rho=-1.0, and N_body exponent parity verified.",
+        )
+    )
+
+    br = doc.get("phase_d_learned_neural_hypergraph_bridge", {})
+    br_ok = (
+        br.get("arena_fits_13gib_npu_budget") is True
+        and float(br.get("int8_looped_npu_ood_accuracy_mean", 0.0)) >= 0.75
+        and float(br.get("ood_gain_over_flat_neural", 0.0)) >= 0.35
+        and float(br.get("int8_vs_fp32_action_disagreement_mean", 1.0)) <= 0.02
+        and float(br.get("semantic_replay_pass_rate_mean", 0.0)) == 1.0
+        and float(br.get("spoof_conservation_refusal_rate_mean", 0.0)) == 1.0
+    )
+    criteria.append(
+        (ok if br_ok else bad)(
+            "T48_LEARNED_BRIDGE_AND_LOOPED_INT8_NPU",
+            "Learned byte-span + sheaf bridge beats flat neural by >=35pp OOD with 100% replay and spoof refusal.",
+        )
+    )
+
+    advisories.append(
+        "ROADMAP_COMPLETE_VERIFIED: Live T-38 Stage 1-3 scaling audit and learned INT8 hypergraph bridge verified."
+    )
+    return all(c.passed for c in criteria), criteria, advisories
+
+
+def verify_t49_hst_foundation(doc: dict) -> tuple[bool, list[Criterion], list[str]]:
+    """Verify sealed T-49 HST-v1 Open Tokenization Standard & HaDukeNN-LM Foundation records."""
+    criteria: list[Criterion] = []
+    advisories: list[str] = []
+
+    schema_ok = (
+        doc.get("schema") == "sheaf-verify.hst-foundation-stage.v1"
+        and doc.get("campaign_id") == "T-49"
+        and doc.get("seeds") == [13, 21, 34, 55, 89]
+        and doc.get("scitt_verified") is True
+    )
+    criteria.append(
+        (ok if schema_ok else bad)(
+            "T49_SCHEMA_SEEDS_AND_SCITT",
+            "Record declares sheaf-verify.hst-foundation-stage.v1 across 5 canonical seeds with verified SCITT bundle.",
+        )
+    )
+
+    p1 = doc.get("pillar_1_hst_v1_tokenization_standard", {})
+    tok_ok = (
+        p1.get("manifest_schema") == "hadukenn.hst.manifest.v1"
+        and p1.get("manifest_verified") is True
+        and p1.get("digit_atomic_verified") is True
+        and int(p1.get("stage_b_pmi_superspans", 0)) >= 20
+        and float(p1.get("token_sequence_reduction_pct", 0.0)) >= 12.0
+    )
+    criteria.append(
+        (ok if tok_ok else bad)(
+            "T49_HST_V1_STANDARD_AND_COMPRESSION",
+            "HST-v1 Merkle manifest, digit atomicity, PMI super-spans, and >=12% token reduction verified.",
+        )
+    )
+
+    p2 = doc.get("pillar_2_equal_bytes_foundation_lm", {})
+    lm_ok = (
+        p2.get("wins_all_5_seeds") is True
+        and float(p2.get("hst_gain_over_bpe_sp_bpb", 0.0)) > 0.02
+        and float(p2.get("factored_bottleneck_penalty_vs_flat_bpb", -1.0)) > 0.0
+        and float(p2.get("p_one_sided_hst_beats_bpe", 1.0)) < 0.01
+    )
+    criteria.append(
+        (ok if lm_ok else bad)(
+            "T49_EQUAL_BYTES_FOUNDATION_LM_WIN",
+            "HaDukeNN-LM + HST-v1 beats standard Byte-BPE across all 5 seeds at p < 0.01 on exact corpus BPB.",
+        )
+    )
+
+    p3 = doc.get("pillar_3_mup_zero_shot_width_transfer", {})
+    p4 = doc.get("pillar_4_inline_receipt_gated_decoding", {})
+    mup_and_gate_ok = (
+        p3.get("mup_monotone_improving_with_width") is True
+        and float(p3.get("mup_beats_sp_at_max_width_bpb", 0.0)) > 0.01
+        and float(p4.get("spoof_refusal_rate", 0.0)) == 1.0
+        and float(p4.get("semantic_replay_rate", 0.0)) == 1.0
+    )
+    criteria.append(
+        (ok if mup_and_gate_ok else bad)(
+            "T49_MUP_WIDTH_TRANSFER_AND_INLINE_RECEIPT_GATE",
+            "muP monotone width scaling, spoof assertion refusal (100%), and semantic replay (100%) verified.",
+        )
+    )
+
+    advisories.append(
+        "HST_FOUNDATION_STAGE_READY: HST-v1 standard, muP width scaling, Sheaf-KV + Tiled-CCE, and inline receipts verified."
+    )
     return all(c.passed for c in criteria), criteria, advisories

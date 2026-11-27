@@ -21,17 +21,7 @@ from sheaf_verify.attestation import (
 )
 from sheaf_verify.campaign import (
     audit_cluster_geometry,
-    audit_t38_prereg,
     head_flop_scaling_table,
-    verify_hg_v3_gate,
-    verify_t37_grid,
-    verify_t40_local_stack,
-    verify_t41_frontier5070,
-    verify_t42_exec_bridge,
-    verify_t43_all_realms,
-    verify_t44_glassbox,
-    verify_t45_sheaf_bridge,
-    verify_t46_tri_machine_hal,
 )
 from sheaf_verify.hashing import SheafError, canonical_bytes, is_sha256, reject_symlink
 from sheaf_verify.ledger import Ledger
@@ -87,13 +77,13 @@ def main(argv: list[str] | None = None) -> int:
     env.set_defaults(func=_register_env)
 
     run_cmd = sub.add_parser("run", parents=[common], help="evaluate every gate and write a result")
-    _add_key(run_cmd)
     run_cmd.add_argument(
         "--profile",
         choices=("training", "hal"),
         default="training",
         help="Study kind. training (default) evaluates G/H/P and cannot skip those gates. hal evaluates only HAL0-HAL6.",
     )
+    _add_key(run_cmd)
     run_cmd.set_defaults(func=_run)
 
     verify_cmd = sub.add_parser("verify", parents=[common], help="recompute hashes, the ledger, and gate replay")
@@ -126,12 +116,16 @@ def main(argv: list[str] | None = None) -> int:
     attest.add_argument("--out", type=Path, help="write the DSSE envelope outside the store")
     attest.set_defaults(func=_attest)
 
-    verify_att = sub.add_parser("verify-attestation", parents=[common], help="verify an in-toto v1 + DSSE v1.0 envelope")
+    verify_att = sub.add_parser(
+        "verify-attestation", parents=[common], help="verify an in-toto v1 + DSSE v1.0 envelope"
+    )
     _add_key(verify_att)
     verify_att.add_argument("--envelope", required=True, type=Path)
     verify_att.set_defaults(func=_verify_attestation)
 
-    receipt = sub.add_parser("receipt", parents=[common], help="emit an RFC 9162 Merkle inclusion receipt for a ledger line")
+    receipt = sub.add_parser(
+        "receipt", parents=[common], help="emit an RFC 9162 Merkle inclusion receipt for a ledger line"
+    )
     _add_key(receipt)
     receipt.add_argument("--allow-unsigned", action="store_true")
     receipt.add_argument("--seq", required=True, type=int, help="0-based ledger record sequence")
@@ -149,7 +143,9 @@ def main(argv: list[str] | None = None) -> int:
     audit_kern.add_argument("--require-triton", action="store_true")
     audit_kern.set_defaults(func=_audit_kernel)
 
-    sheaf_cmd = sub.add_parser("sheaf-check", parents=[common], help="compute cellular sheaf cohomology and cone diagnostics")
+    sheaf_cmd = sub.add_parser(
+        "sheaf-check", parents=[common], help="compute cellular sheaf cohomology and cone diagnostics"
+    )
     sheaf_cmd.add_argument("--path", required=True, type=Path)
     sheaf_cmd.set_defaults(func=_sheaf_check)
 
@@ -160,9 +156,21 @@ def main(argv: list[str] | None = None) -> int:
         "--mode",
         required=True,
         choices=(
-            "t37-grid", "t38-prereg", "cluster-geometry", "hg-v3",
-            "flop-scaling", "t40-stack", "t41-frontier5070", "t42-exec-bridge",
-            "t43-all-realms", "t44-glassbox", "t45-sheaf-bridge", "t46-tri-machine-hal",
+            "t37-grid",
+            "t38-prereg",
+            "cluster-geometry",
+            "hg-v3",
+            "flop-scaling",
+            "t40-stack",
+            "t41-frontier5070",
+            "t42-exec-bridge",
+            "t43-all-realms",
+            "t44-glassbox",
+            "t45-sheaf-bridge",
+            "t46-tri-machine-hal",
+            "t47-cosimilar-trace",
+            "t48-roadmap-complete",
+            "t49-hst-foundation",
         ),
     )
     campaign_cmd.add_argument("--path", type=Path, help="input JSON file for the selected campaign mode")
@@ -173,9 +181,31 @@ def main(argv: list[str] | None = None) -> int:
     campaign_cmd.add_argument("--d-model", type=int, default=576)
     campaign_cmd.add_argument("--k-neg", type=int, default=3)
     campaign_cmd.add_argument("--struct-rank", type=int, default=0)
+    campaign_cmd.add_argument(
+        "--live",
+        action="store_true",
+        help="Re-run the measurement suite in-process (t46 HAL, t49 HST toy campaign). Never overwrites the sealed result JSON.",
+    )
+    campaign_cmd.add_argument(
+        "--replay",
+        action="store_true",
+        help="Force JSON-only replay even if hardware is present.",
+    )
+    campaign_cmd.add_argument(
+        "--live-out",
+        type=Path,
+        help="Where to write a live result JSON (must not be the sealed path).",
+    )
+    campaign_cmd.add_argument(
+        "--register-store",
+        type=Path,
+        help="Optional sheaf-verify store to register a HAL-profile live t46 run.",
+    )
     campaign_cmd.set_defaults(func=_campaign)
 
-    mut_cmd = sub.add_parser("mutation-score", parents=[common], help="run scientific and cryptographic mutation adequacy suite")
+    mut_cmd = sub.add_parser(
+        "mutation-score", parents=[common], help="run scientific and cryptographic mutation adequacy suite"
+    )
     mut_cmd.set_defaults(func=_mutation_score)
 
     self_cmd = sub.add_parser("selftest", parents=[common], help="run full 8-gate Antigravity repository verification")
@@ -274,7 +304,10 @@ def _register_env(args) -> int:
 def _run(args) -> int:
     records = run(_store(args), key=_key(args), clock=UtcClock(), profile=args.profile)
     failed = [record["gate_id"] for record in records if record["status"] != "pass"]
-    payload = {"failed": failed, "gates": [{"gate_id": record["gate_id"], "status": record["status"]} for record in records]}
+    payload = {
+        "failed": failed,
+        "gates": [{"gate_id": record["gate_id"], "status": record["status"]} for record in records],
+    }
     _emit(args, payload)
     return 1 if failed else 0
 
@@ -437,9 +470,13 @@ def _sheaf_check(args) -> int:
 
 
 def _campaign(args) -> int:
+    from sheaf_verify.campaign_live import evaluate_campaign
+
     mode = args.mode
     if mode == "flop-scaling":
-        return _emit(args, {"rows": head_flop_scaling_table()})
+        return _emit(
+            args, {"evaluation": "computed", "evaluation_label": "computed table", "rows": head_flop_scaling_table()}
+        )
     if mode == "cluster-geometry":
         res = audit_cluster_geometry(
             vocab_size=args.vocab,
@@ -450,6 +487,8 @@ def _campaign(args) -> int:
             struct_rank=args.struct_rank,
         )
         payload = {
+            "evaluation": "computed",
+            "evaluation_label": "computed geometry audit",
             "cluster_size": res.cluster_size,
             "criteria": [c.as_dict() for c in res.criteria],
             "dead_pad_slots": res.dead_pad_slots,
@@ -466,51 +505,21 @@ def _campaign(args) -> int:
         _emit(args, payload)
         return 0 if res.recommended else 1
 
-    if args.path is None or not args.path.is_file():
-        raise SheafError(f"--path is required for campaign mode {mode!r}")
-    doc = validate_strict_json_bytes(reject_symlink(args.path, "campaign JSON").read_bytes())
-    if mode == "t37-grid":
-        ok_flag, criteria, summary = verify_t37_grid(doc)
-        _emit(args, {"criteria": [c.as_dict() for c in criteria], "ok": ok_flag, "summary": summary})
-        return 0 if ok_flag else 1
-    if mode == "t38-prereg":
-        add_doc = None
-        if args.addendum is not None:
-            add_doc = validate_strict_json_bytes(reject_symlink(args.addendum, "addendum JSON").read_bytes())
-        ok_flag, criteria, advisories = audit_t38_prereg(doc, add_doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t40-stack":
-        ok_flag, criteria, advisories = verify_t40_local_stack(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t41-frontier5070":
-        ok_flag, criteria, advisories = verify_t41_frontier5070(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t42-exec-bridge":
-        ok_flag, criteria, advisories = verify_t42_exec_bridge(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t43-all-realms":
-        ok_flag, criteria, advisories = verify_t43_all_realms(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t44-glassbox":
-        ok_flag, criteria, advisories = verify_t44_glassbox(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t45-sheaf-bridge":
-        ok_flag, criteria, advisories = verify_t45_sheaf_bridge(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    if mode == "t46-tri-machine-hal":
-        ok_flag, criteria, advisories = verify_t46_tri_machine_hal(doc)
-        _emit(args, {"advisories": advisories, "criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-        return 0 if ok_flag else 1
-    ok_flag, criteria = verify_hg_v3_gate(doc)
-    _emit(args, {"criteria": [c.as_dict() for c in criteria], "ok": ok_flag})
-    return 0 if ok_flag else 1
+    live = bool(getattr(args, "live", False))
+    replay = bool(getattr(args, "replay", False))
+    if live and replay:
+        raise SheafError("--live and --replay cannot be combined")
+    payload = evaluate_campaign(
+        mode=mode,
+        path=getattr(args, "path", None),
+        addendum=getattr(args, "addendum", None),
+        live=live,
+        replay=replay,
+        live_out=getattr(args, "live_out", None),
+        register_store=getattr(args, "register_store", None),
+    )
+    _emit(args, payload)
+    return 0 if payload.get("ok") else 1
 
 
 def _selftest(args) -> int:
@@ -562,7 +571,3 @@ def _emit_report(args, report) -> None:
         sys.stdout.write(canonical_bytes(payload).decode("utf-8") + "\n")
     else:
         sys.stdout.write(render(report))
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

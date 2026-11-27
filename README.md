@@ -131,6 +131,20 @@ Read `ARCHITECTURE.md` for the hash and ledger rules, `GATES.md` for the pass co
 ./scripts/run_jovin_cpu_checks.sh --no-live
 ```
 
+
+## Live campaign evaluation
+
+`sheaf-verify campaign` JSON-only invocations are labeled **replay**: they score a registered document and do not re-measure. For T-46, `--live` re-runs the in-process suite, records raw timing repeats, recomputes CCE against the stdlib float64 reference, samples thermal/power, and writes `iterations/t46-tri-machine-hal/T46_TRI_MACHINE_RESULTS.lapbeast-live.json` without touching the sealed `T46_TRI_MACHINE_RESULTS.json`. `--replay` forces JSON-only. `--live` is also implemented for the T-49 HST *toy* campaign (48,000 training bytes, typically about a minute); it is opt-in, not the default. Other campaign modes stay replay-only.
+
+```bash
+sheaf-verify campaign --mode t46-tri-machine-hal \
+  --path iterations/t46-tri-machine-hal/T46_TRI_MACHINE_RESULTS.json --replay --json
+sheaf-verify campaign --mode t46-tri-machine-hal \
+  --path iterations/t46-tri-machine-hal/T46_TRI_MACHINE_RESULTS.json --live --json
+```
+
+The v1.2.0 drop ships `src/sheaf_verify/hst_standard.py` and a T-49 briefing. The package version in `pyproject.toml` is `1.0.0`. Sealed confirmation hashes and the sealed T-46 JSON are unchanged.
+
 ## Iterations
 
 `main` holds the harness and `iterations/INDEX.md`. An experiment does not land on `main`. Cut a branch named `iter/<id>` from `main` and add:
