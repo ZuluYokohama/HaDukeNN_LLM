@@ -602,6 +602,14 @@ def append_jsonl(path: Path, row: dict) -> None:
         handle.write(json.dumps(row) + "\n")
 
 
+_STOP_REQUESTED = {"signal": None}
+
+
+def _request_stop(signum, _frame) -> None:
+    """SIGTERM/SIGINT: finish the current optimizer step, checkpoint, then exit (checked at step boundaries)."""
+    _STOP_REQUESTED["signal"] = signum
+
+
 def enforce_guard(work: Path, log, *, is_running: bool, on_stop=None) -> None:
     paused = False
     last_logged = 0.0
@@ -618,6 +626,12 @@ def enforce_guard(work: Path, log, *, is_running: bool, on_stop=None) -> None:
             if on_stop is not None:
                 on_stop()
                 log("checkpoint written before watchdog stop")
+            raise SystemExit(143)
+        if _STOP_REQUESTED["signal"] is not None:
+            log(f"signal {_STOP_REQUESTED['signal']} while paused")
+            if on_stop is not None:
+                on_stop()
+                log("checkpoint written before exit")
             raise SystemExit(143)
         if not paused or time.time() - last_logged >= 300:
             log(f"WATCHDOG PAUSE: {reason} (resume at <= {RESUME_C:.0f}C, AC on, battery >= {AC_LOW_BATTERY_RESUME}%)")
@@ -744,6 +758,10 @@ def run_arm(
     log(f"start arm={arm} seed={seed} params={n_params} budget={byte_budget} probe={probe}")
     try:
         while stream.bytes_charged < byte_budget and not stream.eof:
+            if _STOP_REQUESTED["signal"] is not None:
+                save_ckpt()
+                log(f"signal {_STOP_REQUESTED['signal']}: checkpointed at step={step}, exiting for resume")
+                raise SystemExit(143)
             if wall_deadline is not None and time.time() >= wall_deadline:
                 save_ckpt()
                 log(f"HARD WALL reached at step={step}; checkpointed, stopping (seed {seed} {arm} incomplete)")
@@ -900,6 +918,10 @@ def main(argv: list[str] | None = None) -> int:
     work.mkdir(parents=True, exist_ok=True)
     if args.phase == "status":
         return cmd_status(work)
+    import signal
+
+    signal.signal(signal.SIGTERM, _request_stop)
+    signal.signal(signal.SIGINT, _request_stop)
 
     def log(msg: str) -> None:
         log_line(work, msg)
