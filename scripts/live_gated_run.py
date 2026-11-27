@@ -3,16 +3,14 @@
 
 Follows the README trainer flow via the sheaf-verify CLI. Does not overwrite
 the sealed T46_TRI_MACHINE_RESULTS.json. Does not print the seal key.
-Gates that need training corpus, checkpoints, or G0-style metrics are left
-unregistered and are expected to fail or block honestly.
+Registers a HAL study and evaluates it with `sheaf-verify run --profile hal`.
+Training G/H/P gates are not walked and are not bypassed.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import platform
-import shutil
 import stat
 import subprocess
 import sys
@@ -63,40 +61,10 @@ def ensure_seal_key(path: Path) -> Path:
 
 
 def probe_environment() -> dict[str, str]:
-    py = platform.python_version()
-    plat = platform.platform()
-    cuda = "unavailable"
-    driver = "unavailable"
-    gpu = "unavailable"
-    nvsmi = shutil.which("nvidia-smi")
-    if nvsmi:
-        proc = subprocess.run(
-            [
-                nvsmi,
-                "--query-gpu=name,driver_version,compute_cap",
-                "--format=csv,noheader",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode == 0 and proc.stdout.strip():
-            parts = [p.strip() for p in proc.stdout.strip().splitlines()[0].split(",")]
-            if len(parts) >= 3:
-                gpu, driver, cap = parts[0], parts[1], parts[2]
-                cuda = cap
-            elif len(parts) == 2:
-                gpu, driver = parts
-        # nvcc version if present
-        nvcc = shutil.which("nvcc")
-        if nvcc:
-            nv = subprocess.run([nvcc, "--version"], check=False, capture_output=True, text=True)
-            for line in nv.stdout.splitlines():
-                if "release" in line.lower():
-                    # e.g. Cuda compilation tools, release 12.4, V12.4.131
-                    cuda = line.strip()
-                    break
-    return {"python": py, "cuda": cuda, "driver": driver, "gpu": gpu, "platform": plat}
+    from sheaf_verify.hal import probe_environment as _probe
+
+    live = _probe()
+    return {field: live[field] for field in ("python", "cuda", "driver", "gpu", "platform")}
 
 
 def write_live_json(stdout_text: str, dest: Path) -> Path:
@@ -155,18 +123,24 @@ def write_sidecar_payloads(work: Path, live_json: Path) -> dict[str, Path]:
         "note": "Seed used by run_tri_machine_verification_suite. Not a paper-plan seed ladder.",
     }
     claim = {
-        "format": "sheaf-verify.claim.v1",
-        "hypothesis_id": "lapbeast-c11-cce-vs-python-row",
+        "format": "sheaf-verify.hal-claim.v1",
+        "study_profile": "hal",
+        "hypothesis_id": "lapbeast-c11-cce-vs-serial-python-loop",
         "description": (
-            "On this LapBeast host, the compiled C11 tiled CCE kernel is faster than the "
-            "serial Python row loop at the suite shape, under isolated OpenBLAS/OpenMP pools. "
-            "This is not a WikiText / G0–G6 training claim."
+            "On this LapBeast host, the compiled C11 tiled CCE kernel is faster than a "
+            "serial Python row loop at the recorded shapes, with OpenBLAS isolated. "
+            "Packed NumPy is reported as a fair baseline and is not the claim baseline."
         ),
-        "primary_metric": "c11_speedup_over_py_loop",
-        "primary_contrast": "c11_vs_python_row",
-        "direction": "greater",
-        "alpha": 0.05,
-        "claimed": False,
+        "performance": {
+            "metric": "speedup",
+            "direction": "greater",
+            "baseline": "serial_python_loop",
+            "baselines_reported": ["serial_python_loop", "packed_numpy"],
+            "min_speedup": 1.5,
+            "subject": "c11_tiled_cce",
+        },
+        "parity": {"max_abs": 0.0001, "ops": ["cce_mup_fwd"]},
+        "guards": {"thermal_stop_celsius": 85},
     }
     paths = {
         "config": work / "config.json",
@@ -180,15 +154,183 @@ def write_sidecar_payloads(work: Path, live_json: Path) -> dict[str, Path]:
     return paths
 
 
+
+def _nvidia_sample() -> dict:
+    proc = subprocess.run(
+        [
+            "nvidia-smi",
+            "--query-gpu=temperature.gpu,power.draw",
+            "--format=csv,noheader,nounits",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=8,
+    )
+    sample = {"t": utc_now(), "raw": (proc.stdout or "").strip(), "rc": proc.returncode}
+    if proc.returncode == 0 and proc.stdout.strip():
+        parts = [item.strip() for item in proc.stdout.strip().splitlines()[0].split(",")]
+        if parts:
+            try:
+                sample["celsius"] = float(parts[0])
+            except ValueError:
+                pass
+        if len(parts) > 1:
+            try:
+                sample["watts"] = float(parts[1])
+            except ValueError:
+                pass
+    else:
+        sample["error"] = (proc.stderr or proc.stdout or "nvidia-smi failed").strip()
+    return sample
+
+
+def _time_repeats(fn, repeats: int = 5, warmup: int = 2) -> list[float]:
+    for _ in range(warmup):
+        fn()
+    times = []
+    for _ in range(repeats):
+        start = __import__("time").perf_counter()
+        fn()
+        times.append((__import__("time").perf_counter() - start) * 1000.0)
+    return times
+
+
+def collect_hal_evidence(work: Path) -> dict[str, Path]:
+    """Run a small parity case and raw-repeat timings. Recompute happens in the gates."""
+    import math
+
+    import numpy as np
+
+    from hadukenn_core.tri_machine import _set_openblas_threads, hal_tiled_cce_mup, probe_host_hardware
+
+    work.mkdir(parents=True, exist_ok=True)
+    samples = [_nvidia_sample()]
+    rng = np.random.default_rng(20261126)
+    hidden = rng.standard_normal((8, 16)).astype(np.float32)
+    embedding = (rng.standard_normal((32, 16)) / math.sqrt(16)).astype(np.float32)
+    targets = rng.integers(0, 32, size=8, dtype=np.int32)
+    loss, _, _ = hal_tiled_cce_mup(
+        hidden, embedding, targets, tile_V=32, mup_base_d=16, compute_grad=False, num_threads=1
+    )
+    parity = {
+        "format": "sheaf-verify.hal-parity.v1",
+        "cases": [
+            {
+                "name": "cce_mup_small",
+                "op": "cce_mup_fwd",
+                "inputs": {
+                    "H": hidden.astype(float).tolist(),
+                    "E": embedding.astype(float).tolist(),
+                    "y": [int(v) for v in targets],
+                    "mup_base_d": 16.0,
+                },
+                "kernel_outputs": {"loss": [float(v) for v in loss]},
+            }
+        ],
+    }
+    threads = len(probe_host_hardware().get("p_cores") or []) or 8
+    cases = []
+    for n, d, v in ((32, 256, 1024), (64, 384, 2048)):
+        h = rng.standard_normal((n, d)).astype(np.float32)
+        e = (rng.standard_normal((v, d)) / math.sqrt(d)).astype(np.float32)
+        y = rng.integers(0, v, size=n, dtype=np.int32)
+        scale = 384.0 / float(d)
+
+        def py_row(h=h, e=e, y=y, scale=scale) -> None:
+            for idx in range(h.shape[0]):
+                row = (h[idx] @ e.T) * scale
+                peak = float(np.max(row))
+                _ = peak + math.log(float(np.sum(np.exp(row - peak)))) - float(row[y[idx]])
+
+        def np_gemm(h=h, e=e, y=y, scale=scale) -> None:
+            logits = (h @ e.T) * scale
+            peak = np.max(logits, axis=1, keepdims=True)
+            _ = (peak.squeeze(-1) + np.log(np.sum(np.exp(logits - peak), axis=1))) - logits[np.arange(h.shape[0]), y]
+
+        def c11(h=h, e=e, y=y) -> None:
+            hal_tiled_cce_mup(h, e, y, tile_V=512, mup_base_d=384, compute_grad=False, num_threads=threads)
+
+        _set_openblas_threads(1)
+        serial = _time_repeats(py_row)
+        _set_openblas_threads(threads)
+        packed = _time_repeats(np_gemm)
+        _set_openblas_threads(1)
+        subject = _time_repeats(c11)
+        samples.append(_nvidia_sample())
+        cases.append({
+            "name": f"cce_{n}x{d}x{v}",
+            "subject_ms": subject,
+            "baselines_ms": {"serial_python_loop": serial, "packed_numpy": packed},
+        })
+    samples.append(_nvidia_sample())
+    timings = {"format": "sheaf-verify.hal-timings.v1", "cases": cases}
+    watts = [item["watts"] for item in samples if "watts" in item]
+    temps = [{"t": item["t"], "celsius": item["celsius"]} for item in samples if "celsius" in item]
+    if watts:
+        power = {"observed": True, "draw_watts": watts[-1], "samples": watts}
+    else:
+        reason = next((item.get("error") or "power.draw was not numeric") for item in samples)
+        power = {
+            "observed": False,
+            "probe": "nvidia-smi --query-gpu=temperature.gpu,power.draw --format=csv,noheader,nounits",
+            "reason": reason,
+        }
+    guards = {
+        "format": "sheaf-verify.hal-guards.v1",
+        "thermal": {"stop_celsius": 85, "unit": "C", "samples": temps},
+        "power": power,
+    }
+    paths = {
+        "parity": work / "parity.json",
+        "timings": work / "timings.json",
+        "guards": work / "guards.json",
+    }
+    for key, payload in (("parity", parity), ("timings", timings), ("guards", guards)):
+        paths[key].write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return paths
+
+
+def classify_gates(store: Path) -> list[dict]:
+    from sheaf_verify.gate_trace import trace_outcome
+    from sheaf_verify.ledger import Ledger
+    from sheaf_verify.store import Store
+
+    rows = []
+    latest = {}
+    for record in Ledger(Store(store).root).records():
+        latest[record["gate_id"]] = record
+    for record in latest.values():
+        own = [item for item in record["criteria"] if not str(item.get("id", "")).startswith("upstream.")]
+        upstream = {
+            str(item["id"]).removeprefix("upstream."): bool(item.get("passed"))
+            for item in record["criteria"]
+            if str(item.get("id", "")).startswith("upstream.")
+        }
+        own_failed = any(not item.get("passed") for item in own)
+        failed = [item["id"] + ": " + item["detail"] for item in own if not item.get("passed")]
+        rows.append({
+            "gate_id": record["gate_id"],
+            "ledger_status": record["status"],
+            "outcome": trace_outcome(record["status"], bool(own), own_failed, upstream),
+            "profile": record.get("profile"),
+            "reasons": failed,
+        })
+    order = ["HAL0", "HAL1", "HAL2", "HAL3", "HAL4", "HAL5", "HAL6"]
+    rows.sort(key=lambda row: order.index(row["gate_id"]) if row["gate_id"] in order else 99)
+    return rows
+
+
 def register_all(
     store: Path,
     *,
     env: dict[str, str],
     payloads: dict[str, Path],
     log_paths: list[Path],
+    claim_sha: str,
 ) -> dict[str, str]:
     st = ["--store", str(store)]
-    shas: dict[str, str] = {}
+    shas: dict[str, str] = {"claim": claim_sha}
 
     def reg(*args: str) -> str:
         out = _sv(*args)
@@ -273,7 +415,7 @@ def register_all(
     )
     shas["config"] = reg("register", *st, "--kind", "config", "--role", "config", "--path", str(payloads["config"]))
     shas["seeds"] = reg("register", *st, "--kind", "seeds", "--role", "seeds", "--path", str(payloads["seeds"]))
-    shas["claim"] = reg("register", *st, "--kind", "claim", "--role", "claim", "--path", str(payloads["claim"]))
+    # Claim is registered by main() before evidence is collected.
     metric_inputs = ["--input", shas["seeds"], "--input", shas["code"], "--input", shas["kernel"]]
     shas["metrics"] = reg(
         "register",
@@ -287,8 +429,16 @@ def register_all(
         *metric_inputs,
     )
     for log in log_paths:
-        role = "log." + log.stem.replace("-", "_").replace(".", "_").lower()
-        # role must match ROLE_RE: log.bench_cce_cpu etc.
+        stem = log.stem.lower()
+        if stem == "parity":
+            role = "log.parity"
+        elif stem == "timings":
+            role = "log.timings"
+        elif stem == "guards":
+            role = "log.guards"
+        else:
+            role = "log." + stem.replace("-", "_").replace(".", "_")
+        extra = ["--input", shas["claim"]] if role in {"log.parity", "log.timings"} else ["--input", shas["metrics"]]
         shas[role] = reg(
             "register",
             *st,
@@ -298,8 +448,7 @@ def register_all(
             role,
             "--path",
             str(log),
-            "--input",
-            shas["metrics"],
+            *extra,
         )
     return shas
 
@@ -343,16 +492,34 @@ def main(argv: list[str] | None = None) -> int:
     # Sidecar payloads must sit outside the store: sheaf-verify refuses in-store paths.
     work = (args.logdir / "live-gated-sidecars").resolve()
     payloads = write_sidecar_payloads(work, args.live_json)
-    logs: list[Path] = []
+    # Freeze the claim before metrics and evidence exist.
+    claim_when = utc_now()
+    claim_sha = _sv(
+        "register",
+        "--store",
+        str(store),
+        "--kind",
+        "claim",
+        "--role",
+        "claim",
+        "--path",
+        str(payloads["claim"]),
+        "--registered-at",
+        claim_when,
+    )["manifest_sha256"]
+    print("registered claim at", claim_when, claim_sha, flush=True)
+
+    evidence = collect_hal_evidence(work)
+    logs: list[Path] = [evidence["parity"], evidence["timings"], evidence["guards"]]
     for name in ("bench-cce-cpu.json", "bench-cuda-sm89.json"):
         candidate = args.logdir / name
         if candidate.is_file():
             logs.append(candidate)
 
-    shas = register_all(store, env=env, payloads=payloads, log_paths=logs)
+    shas = register_all(store, env=env, payloads=payloads, log_paths=logs, claim_sha=claim_sha)
     print("registered:", json.dumps(shas, indent=2), flush=True)
 
-    run_out = _sv("run", "--store", str(store), key=seal)
+    run_out = _sv("run", "--store", str(store), "--profile", "hal", key=seal)
     print("run rc=", run_out["_returncode"], "failed=", run_out.get("failed"), flush=True)
     for row in gate_table(run_out):
         print(f"  {row.get('gate_id')}: {row.get('status')}", flush=True)
@@ -384,22 +551,30 @@ def main(argv: list[str] | None = None) -> int:
         print(anc.stderr, file=sys.stderr)
         return anc.returncode
 
+    table = classify_gates(store)
+    print("HAL gate outcomes:", flush=True)
+    for row in table:
+        detail = "; ".join(row["reasons"]) if row["reasons"] else "ok"
+        print(f"  {row['gate_id']}: {row['outcome']} ({detail})", flush=True)
     report = {
         "store": str(store),
         "live_json": str(args.live_json),
+        "profile": "hal",
         "environment": env,
         "manifests": shas,
         "run": {"returncode": run_out["_returncode"], "failed": run_out.get("failed"), "gates": gate_table(run_out)},
+        "gate_table": table,
         "verify": {"ok": ver.get("ok"), "head": ver.get("head"), "problems": ver.get("problems")},
         "anchor": anc.stdout.strip(),
         "generated_at": utc_now(),
         "note": (
-            "Corpus, vocabulary, hypergraph, checkpoints, causality trace, and figure "
-            "were not registered: this is a HAL microbench, not a training run. "
-            "Those gates should fail or block honestly."
+            "This run used --profile hal. Training G/H/P gates were not evaluated and were not bypassed. "
+            "Parity and performance were recomputed from registered payloads, not from T46 JSON summaries."
         ),
     }
-    (store / "live_gated_run_report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    report_path = args.logdir / "live_gated_run_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print("wrote", report_path, flush=True)
     # run may exit 1 when gates fail; that is expected and not a script failure
     return 0 if ver.get("ok") and anc.returncode == 0 else 1
 
