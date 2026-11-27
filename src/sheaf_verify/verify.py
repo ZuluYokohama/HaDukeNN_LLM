@@ -171,6 +171,8 @@ def _check_payloads(store: Store, manifests: dict[str, dict], report: VerifyRepo
     if not payloads.is_dir():
         return
     for path in sorted(payloads.iterdir()):
+        if path.name.endswith(".partial"):
+            continue
         if not path.is_file() or not is_sha256(path.name):
             report.problems.append(f"manifest: unexpected payload file {path.name}")
             continue

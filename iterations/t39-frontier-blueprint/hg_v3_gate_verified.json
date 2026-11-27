@@ -1,0 +1,23 @@
+{
+  "version": "hg-v3-train-only",
+  "pool_docs": 27902,
+  "dropped_exact_duplicate_docs": 1,
+  "total_edges": 125572,
+  "span_edges": 2730,
+  "entity_edges": 114960,
+  "title_edges": 7138,
+  "topic_class_edges": 744,
+  "incidences_nnz": 1340544,
+  "edge_size_min": 3,
+  "edge_size_max": 128,
+  "heldout_nnz": 0,
+  "train_eval_exact_duplicates": 0,
+  "train_eval_jaccard_gt_080": 0,
+  "chodrow_null_preserves_degree_and_size": true,
+  "canary_causal_leak": 0.0,
+  "canary_oracle_leak": 0.2799,
+  "l2_working_set_mib": 43.48,
+  "on_disk_v3_plus_null_mb": 76.57,
+  "record_class": "recorded_metadata",
+  "not_data": true
+}

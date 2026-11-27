@@ -1,0 +1,1784 @@
+[
+  {
+    "arm": "reference",
+    "case": "literal-transfer",
+    "checked": 13,
+    "correct": 13,
+    "depth": 4,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "cached_dag",
+    "case": "literal-transfer",
+    "checked": 13,
+    "correct": 13,
+    "depth": 4,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "literal-transfer",
+    "checked": 13,
+    "correct": 13,
+    "depth": 4,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "reference",
+    "case": "literal-rational-units",
+    "checked": 27,
+    "correct": 27,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "cached_dag",
+    "case": "literal-rational-units",
+    "checked": 27,
+    "correct": 27,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "literal-rational-units",
+    "checked": 27,
+    "correct": 27,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "reference",
+    "case": "literal-revision-scope",
+    "checked": 16,
+    "correct": 16,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "cached_dag",
+    "case": "literal-revision-scope",
+    "checked": 16,
+    "correct": 16,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "literal-revision-scope",
+    "checked": 16,
+    "correct": 16,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "reference",
+    "case": "literal-forward-cycle",
+    "checked": 8,
+    "correct": 8,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "cached_dag",
+    "case": "literal-forward-cycle",
+    "checked": 8,
+    "correct": 8,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "literal-forward-cycle",
+    "checked": 8,
+    "correct": 8,
+    "depth": 2,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "reference",
+    "case": "literal-source-conflict",
+    "checked": 11,
+    "correct": 11,
+    "depth": 1,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "cached_dag",
+    "case": "literal-source-conflict",
+    "checked": 11,
+    "correct": 11,
+    "depth": 1,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "literal-source-conflict",
+    "checked": 11,
+    "correct": 11,
+    "depth": 1,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "reference",
+    "case": "literal-invalid-atomicity",
+    "checked": 17,
+    "correct": 17,
+    "depth": 1,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "cached_dag",
+    "case": "literal-invalid-atomicity",
+    "checked": 17,
+    "correct": 17,
+    "depth": 1,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "literal-invalid-atomicity",
+    "checked": 17,
+    "correct": 17,
+    "depth": 1,
+    "family": "literal",
+    "seed": 0
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s11-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s11-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s11-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s11-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s11-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s11-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s11-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s11-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s11-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s11-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s11-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s11-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s11-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s11-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s11-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s11-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s11-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s11-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s11-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s11-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s11-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s11-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s11-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s11-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s11-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s11-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s11-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s11-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s11-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s11-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s11-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s11-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s11-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s11-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s11-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s11-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 11
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s29-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s29-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s29-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s29-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s29-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s29-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s29-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s29-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s29-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s29-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s29-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s29-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s29-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s29-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s29-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s29-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s29-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s29-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s29-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s29-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s29-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s29-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s29-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s29-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s29-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s29-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s29-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s29-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s29-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s29-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s29-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s29-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s29-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s29-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s29-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s29-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 29
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s47-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s47-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s47-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s47-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s47-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s47-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s47-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s47-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s47-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s47-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s47-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s47-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s47-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s47-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s47-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s47-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s47-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s47-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s47-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s47-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s47-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s47-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s47-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s47-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s47-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s47-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s47-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s47-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s47-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s47-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s47-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s47-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s47-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s47-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s47-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s47-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 47
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s71-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s71-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s71-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s71-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s71-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s71-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s71-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s71-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s71-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s71-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s71-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s71-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s71-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s71-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s71-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s71-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s71-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s71-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s71-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s71-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s71-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s71-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s71-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s71-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s71-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s71-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s71-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s71-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s71-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s71-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s71-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s71-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s71-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s71-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s71-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s71-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 71
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s101-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s101-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s101-d4",
+    "checked": 17,
+    "correct": 17,
+    "depth": 4,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s101-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s101-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s101-d4",
+    "checked": 22,
+    "correct": 22,
+    "depth": 4,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s101-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s101-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s101-d4",
+    "checked": 11,
+    "correct": 11,
+    "depth": 4,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s101-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s101-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s101-d16",
+    "checked": 41,
+    "correct": 41,
+    "depth": 16,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s101-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s101-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s101-d16",
+    "checked": 46,
+    "correct": 46,
+    "depth": 16,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s101-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s101-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s101-d16",
+    "checked": 23,
+    "correct": 23,
+    "depth": 16,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s101-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s101-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s101-d64",
+    "checked": 137,
+    "correct": 137,
+    "depth": 64,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s101-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s101-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s101-d64",
+    "checked": 142,
+    "correct": 142,
+    "depth": 64,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s101-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s101-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s101-d64",
+    "checked": 71,
+    "correct": 71,
+    "depth": 64,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "composition-s101-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "composition-s101-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "composition-s101-d128",
+    "checked": 265,
+    "correct": 265,
+    "depth": 128,
+    "family": "composition",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "snapshot-s101-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "snapshot-s101-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "snapshot-s101-d128",
+    "checked": 270,
+    "correct": 270,
+    "depth": 128,
+    "family": "snapshot",
+    "seed": 101
+  },
+  {
+    "arm": "reference",
+    "case": "shared-dag-s101-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "cached_dag",
+    "case": "shared-dag-s101-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 101
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "shared-dag-s101-d128",
+    "checked": 135,
+    "correct": 135,
+    "depth": 128,
+    "family": "shared_dag",
+    "seed": 101
+  }
+]

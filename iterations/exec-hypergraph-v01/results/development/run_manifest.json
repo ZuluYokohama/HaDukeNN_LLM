@@ -1,0 +1,38 @@
+{
+  "capability_claim": null,
+  "case_manifest_sha256": "947588a4486fd8ea0899632bf9550d7d53b8bee3c456209ec4b4074e6f0f6d08",
+  "code_sha256": {
+    "hadukenn_exec/__main__.py": "47298b41bfeaf1d7b52b16e2127c0030fdfb2d51782f691e62f989ad7da3b48a",
+    "hadukenn_exec/baselines.py": "6a4e2c4879996f479e4587eecf20e8b3bd4c2f67dcb5602f780b936477f02fd0",
+    "hadukenn_exec/cases.py": "30f1d3663cc3f43f8d1b842cb235c1caf809ee019f320e405ecaf9be8b7bcd14",
+    "hadukenn_exec/core.py": "ae369c9773a4b46d49b77e686db10d00ee5a1ea16cce53f6fbb4a469a92ea38d",
+    "hadukenn_exec/runner.py": "6b0e31679033407151b78cb56e91836f1aee3e955c496445a901d1028557dc25",
+    "tests/test_core.py": "ed1247bba4b7cd21f8f706162e2d03b74f27d69573f3abff52ca4131a4809772"
+  },
+  "depths": [
+    4,
+    16,
+    64,
+    128
+  ],
+  "environment": {
+    "machine": "x86_64",
+    "python": "3.12.14",
+    "system": "Linux"
+  },
+  "execution_location": "session_cpu_container",
+  "format": "hadukenn.exec.pilot-manifest.v1",
+  "gpu_used": false,
+  "intervention_manifest_sha256": "d6ed237dbf9b64cf45ba823acbc429492c53b94b936527d885df106a77f64cf6",
+  "neural_model_trained": false,
+  "preregistration_sha256": "47626de7927c8fd929b30642235cee2ef2a1ad003dec25563bb4e028010b7d37",
+  "seeds": [
+    11,
+    29,
+    47,
+    71,
+    101
+  ],
+  "started_utc": "2026-11-25T22:54:46.814409+00:00",
+  "timing_repeats": 3
+}

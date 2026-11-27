@@ -1,0 +1,261 @@
+{
+  "by_arm": {
+    "cached_dag": {
+      "cases": 66,
+      "checked": 5992,
+      "commands": 5992,
+      "correct": 5992,
+      "queries": 318
+    },
+    "hypergraph_kernel": {
+      "cases": 66,
+      "checked": 5992,
+      "commands": 5992,
+      "correct": 5992,
+      "queries": 318
+    },
+    "reference": {
+      "cases": 66,
+      "checked": 5992,
+      "commands": 5992,
+      "correct": 5992,
+      "queries": 318
+    }
+  },
+  "case_count": 66,
+  "failures": [],
+  "format": "hadukenn.exec.pilot-summary.v1",
+  "interventions": {
+    "arm_evaluations": 24,
+    "paired_cases": 8,
+    "passed": 24
+  },
+  "learned_stage_evidence_ready": false,
+  "limitations": [
+    "No neural model, learned tokenizer, learned policy, or natural-language extraction is present.",
+    "Synthetic programs use supplied exact operations; success does not establish learned generalization.",
+    "The kernel maintains revision/provenance and full deterministic receipts; ordinary baselines do not supply equivalent audit records. Timing is diagnostic, not a matched-audit superiority comparison.",
+    "Timing repetitions and synthetic seeds are not independent training runs; no capability p-value is reported.",
+    "Python allocator peaks exclude native allocations and do not measure process RSS or VRAM.",
+    "Trace hashes are integrity checks, not signatures or independent execution attestations.",
+    "A graph runtime does not establish hypergraph tokenizer gains or elimination of neural opacity."
+  ],
+  "manifest_sha256": "b74ae2c03556b50d058d619651682051005ecf05865ef161729cee433056029a",
+  "memory_profiles": [
+    {
+      "arm": "reference",
+      "case": "benchmark-cold-s11-d4",
+      "depth": 4,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 1450,
+      "traced_peak_bytes": 2758
+    },
+    {
+      "arm": "cached_dag",
+      "case": "benchmark-cold-s11-d4",
+      "depth": 4,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 3882,
+      "traced_peak_bytes": 4358
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "case": "benchmark-cold-s11-d4",
+      "depth": 4,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 29174,
+      "traced_peak_bytes": 33687
+    },
+    {
+      "arm": "reference",
+      "case": "benchmark-cold-s11-d16",
+      "depth": 16,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 4986,
+      "traced_peak_bytes": 7528
+    },
+    {
+      "arm": "cached_dag",
+      "case": "benchmark-cold-s11-d16",
+      "depth": 16,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 14298,
+      "traced_peak_bytes": 15304
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "case": "benchmark-cold-s11-d16",
+      "depth": 16,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 130902,
+      "traced_peak_bytes": 144340
+    },
+    {
+      "arm": "reference",
+      "case": "benchmark-cold-s11-d64",
+      "depth": 64,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 53100,
+      "traced_peak_bytes": 62648
+    },
+    {
+      "arm": "cached_dag",
+      "case": "benchmark-cold-s11-d64",
+      "depth": 64,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 91036,
+      "traced_peak_bytes": 93960
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "case": "benchmark-cold-s11-d64",
+      "depth": 64,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 533081,
+      "traced_peak_bytes": 584498
+    },
+    {
+      "arm": "reference",
+      "case": "benchmark-cold-s11-d128",
+      "depth": 128,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 119260,
+      "traced_peak_bytes": 143512
+    },
+    {
+      "arm": "cached_dag",
+      "case": "benchmark-cold-s11-d128",
+      "depth": 128,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 196108,
+      "traced_peak_bytes": 205720
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "case": "benchmark-cold-s11-d128",
+      "depth": 128,
+      "metric": "Python allocator, not process RSS",
+      "traced_current_bytes": 1070725,
+      "traced_peak_bytes": 1187671
+    }
+  ],
+  "replay": {
+    "failed": [],
+    "passed": 66
+  },
+  "scope": "engineering correctness and descriptive CPU cost only",
+  "status": "pass",
+  "tenfold_capability_established": false,
+  "timing_aggregates": [
+    {
+      "arm": "reference",
+      "depth": 4,
+      "mean_ms": 0.30872442222222224,
+      "median_ms": 0.3357486666666667,
+      "se_ms": 0.05300481673505622,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "reference",
+      "depth": 16,
+      "mean_ms": 0.9607837333333333,
+      "median_ms": 1.1724853333333334,
+      "se_ms": 0.1558172470026263,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "reference",
+      "depth": 64,
+      "mean_ms": 3.5389308666666666,
+      "median_ms": 4.654308333333334,
+      "se_ms": 0.5695797187715119,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "reference",
+      "depth": 128,
+      "mean_ms": 7.047087422222222,
+      "median_ms": 9.095609,
+      "se_ms": 1.070243647656268,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "cached_dag",
+      "depth": 4,
+      "mean_ms": 0.19603148888888888,
+      "median_ms": 0.097845,
+      "se_ms": 0.043440596026729776,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "cached_dag",
+      "depth": 16,
+      "mean_ms": 0.44424524444444446,
+      "median_ms": 0.22691733333333333,
+      "se_ms": 0.09158683897029565,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "cached_dag",
+      "depth": 64,
+      "mean_ms": 1.5674531555555555,
+      "median_ms": 0.8718586666666667,
+      "se_ms": 0.30567558045118026,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "cached_dag",
+      "depth": 128,
+      "mean_ms": 3.3181397777777777,
+      "median_ms": 1.887898,
+      "se_ms": 0.6110462144345251,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "depth": 4,
+      "mean_ms": 3.090382088888889,
+      "median_ms": 2.594802666666667,
+      "se_ms": 0.5939765671818439,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "depth": 16,
+      "mean_ms": 9.266221333333332,
+      "median_ms": 7.721495333333333,
+      "se_ms": 1.5577844818440767,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "depth": 64,
+      "mean_ms": 52.161402844444446,
+      "median_ms": 46.361434333333335,
+      "se_ms": 5.207567501055019,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    },
+    {
+      "arm": "hypergraph_kernel",
+      "depth": 128,
+      "mean_ms": 151.49048191111112,
+      "median_ms": 139.69073133333333,
+      "se_ms": 9.900621773515644,
+      "unit": "complete workload including state construction and all commands",
+      "workload_blocks": 15
+    }
+  ],
+  "timing_failures": [],
+  "timing_rows": 540
+}

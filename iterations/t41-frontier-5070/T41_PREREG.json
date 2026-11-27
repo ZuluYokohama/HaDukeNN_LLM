@@ -1,0 +1,19 @@
+{
+  "campaign_id": "T-41",
+  "hardware_target": "NVIDIA GeForce RTX 5070 (Blackwell sm_120, 12.0 GiB GDDR7, 48.0 MiB L2)",
+  "parts": [
+    "Part 1: Exact 6-tier RTX 5070 12.0 GiB VRAM & 48.0 MiB L2 envelope planner (51M..8B, V=32k..262k) with 256-token head micro-slicing",
+    "Part 2: Blockwise 8-Bit Dynamic AdamW (3.86x) + NF4 (4.13 bits/param) + Exact-Normalized Pretrained SVD lm_head Surgery",
+    "Part 3: Frontier head_dim=64 RoPE-Decoupled Biorthogonal Sheaf KV-Prefix + Non-Hapax Consensus Stalks + Symmetric LP-FT vs Chodrow Null",
+    "Part 4: Gemma-Class V=262,144 (2048x128) Native C11 AVX-512 Cluster-IS vs Tiled Cut-Cross-Entropy Silicon Benchmark"
+  ],
+  "primary_test": "Empirical-Bayes paired-seed t-test (alpha_one_sided = 0.01) + SAVI Kelly e-process",
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "title": "Frontier-Scale (1.1B From-Scratch & 3B/8B 262k-Vocab Surgery) on a Single 12 GB RTX 5070"
+}

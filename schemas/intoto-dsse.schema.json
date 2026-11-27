@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sheaf-verify.intoto-dsse.v1",
+  "type": "object",
+  "required": ["payloadType", "payload", "signatures"],
+  "properties": {
+    "payloadType": {"const": "application/vnd.in-toto+json"},
+    "payload": {"type": "string"},
+    "signatures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["alg", "keyid", "sig"],
+        "properties": {
+          "alg": {"type": "string"},
+          "keyid": {"type": "string"},
+          "sig": {"type": "string"}
+        }
+      }
+    }
+  }
+}

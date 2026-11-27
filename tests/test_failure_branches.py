@@ -246,7 +246,7 @@ def test_verify_reports_a_tampered_store(tmp_path: Path):
     digest = sha256_hex(pretty)
     assert pretty != canonical_bytes(document)
     (store.root / "manifests" / f"{digest}.json").write_bytes(pretty)
-    payload = next((store.root / "payloads").iterdir())
+    payload = next(p for p in sorted((store.root / "payloads").iterdir()) if not p.name.endswith(".partial"))
     if payload.is_file():
         payload.unlink()
     (store.root / "payloads" / "orphan").symlink_to(store.root / "notes.txt")

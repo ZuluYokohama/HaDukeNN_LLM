@@ -1,0 +1,48 @@
+{
+  "capability_claim": null,
+  "case_manifest_sha256": "947588a4486fd8ea0899632bf9550d7d53b8bee3c456209ec4b4074e6f0f6d08",
+  "code_sha256": {
+    "hadukenn_exec/__main__.py": "d1f2d3786d07c395dfedaba43d20fe55085ed7b9ba934ec487966708b566ccca",
+    "hadukenn_exec/baselines.py": "6a4e2c4879996f479e4587eecf20e8b3bd4c2f67dcb5602f780b936477f02fd0",
+    "hadukenn_exec/cases.py": "30f1d3663cc3f43f8d1b842cb235c1caf809ee019f320e405ecaf9be8b7bcd14",
+    "hadukenn_exec/core.py": "90de0fcd0c3bf5d206cd333c4e740cfd1f73f64518f50df079f36ac5ee0f9768",
+    "hadukenn_exec/runner.py": "6ba021d803238e328a83868a1a178b483053f3c2c8e4cfb2ff30b4b1e972a3d5",
+    "hadukenn_exec/spans.py": "6336c9c4ff81d1d4de75ba7a8c981f96705bbcd89d2892485b6b55e5c262e895",
+    "tests/test_cli.py": "f61abd25fb228cdad12467c55f7d61090c1bb41c2be28ec010e8c208494988e2",
+    "tests/test_core.py": "ba14e8200e383500cc337f86f16ef06ce2f210a1837e26af8f55d6cf86f0e121",
+    "tests/test_runner.py": "06aa17b20421546f69fd5764297c0a2d25ed77ffc31e77a140d6dcb7ab1716e2",
+    "tests/test_spans.py": "835f8ca36f359dfaa315654ffb4b884f77cea0b86b9708e27bacd323e3fd6b4b"
+  },
+  "depths": [
+    4,
+    16,
+    64,
+    128
+  ],
+  "environment": {
+    "machine": "x86_64",
+    "python": "3.12.14",
+    "system": "Linux"
+  },
+  "execution_location": "session_cpu_container",
+  "format": "hadukenn.exec.pilot-manifest.v1",
+  "gpu_used": false,
+  "intervention_manifest_sha256": "d6ed237dbf9b64cf45ba823acbc429492c53b94b936527d885df106a77f64cf6",
+  "neural_model_trained": false,
+  "preregistration_sha256": "47626de7927c8fd929b30642235cee2ef2a1ad003dec25563bb4e028010b7d37",
+  "seeds": [
+    11,
+    29,
+    47,
+    71,
+    101
+  ],
+  "spec_sha256": {
+    "spec/AMENDMENTS.md": "c3e77fc7667b16f81dbe9d1d786f68e07d70001d3f37302c38e781aefc4644e9",
+    "spec/IMPLEMENTATION.md": "67af51be4473fde9b67dd04631d28241204064ebca8db5587527c94a34b529bc",
+    "spec/PREREGISTRATION.json": "47626de7927c8fd929b30642235cee2ef2a1ad003dec25563bb4e028010b7d37",
+    "spec/REVIEW.md": "4b1c9b1a49fa7025513240e78210e68c3fe908cb35133838b1e4413aef4b89dd"
+  },
+  "started_utc": "2026-11-25T23:11:25.767911+00:00",
+  "timing_repeats": 3
+}

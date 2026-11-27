@@ -1,0 +1,99 @@
+{
+  "bundle_schema": "sheaf-verify.regulatory-bundle.v1",
+  "created_at": "2026-11-26T18:30:00Z",
+  "dsse_statement_envelope": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMjZUMTg6MzA6MDBaIiwiZXVfYWlfYWN0X2FydGljbGVfMTIiOnsiYXV0b21hdGljX2xpZmV0aW1lX2xvZ2dpbmciOnRydWUsImVzY2FsYXRlZF9ldmVudF9pbmRpY2VzIjpbXSwiaHVtYW5fb3ZlcnNpZ2h0X2FydGljbGVfMTRfcmVhZHkiOnRydWUsIm1pbmltdW1fcmV0ZW50aW9uX21vbnRocyI6NzIsInJlZnVzZWRfZXZlbnRfaW5kaWNlcyI6W10sInRvdGFsX2V2ZW50c19sb2dnZWQiOjV9LCJmaW5yYV9ydWxlXzMxMTBfd29ybSI6eyJib29rc19hbmRfcmVjb3Jkc19yZWNvbnN0cnVjdGlibGUiOnRydWUsInBvbGljeV9zbmFwc2hvdF9zaGEyNTYiOiJhMzliOGEzYzk0ZGMzMzhhN2Q1NWRiOGJjNGQ1YWMzNmJhNThmNTRlYWM0NGE2YmY2MjBiMTBkZmQxMjY4ZWZhIiwicmV0ZW50aW9uX3llYXJzX2Zsb29yIjo2LCJzdXBlcnZpc29yeV9lc2NhbGF0aW9uX2NvdW50IjowLCJ3b3JtX2ludGVncml0eV9zaGEyNTYiOiI1MDVlYWU1NmVhMGY1YTgzNTJjODlkNGM0MmM4ZjIwMWNiMGJkY2I5MmMwZjA2MGJmODVkYTljNDU0NDE1Mjg4In0sImlldGZfc2NpdHRfcmZjOTk0MyI6eyJtZXJrbGVfdHJlZV9hbGciOiJSRkM5MTYyLVNIQTI1NiIsInJlY2VpcHRfdHJlZV9zaXplIjo1LCJzaWduZWRfc3RhdGVtZW50X2FsZyI6IkRTU0UtdjEtSE1BQy1TSEEyNTYifSwic3lzdGVtX2lkIjoiaGFkdWtlbm4tb3JhY2xlLXNoZWFmLWJyaWRnZS12MC44LjAifSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vaGFkdWtlbm4ub3JnL2NvbXBsaWFuY2Uvc2NpdHQtZXVhaTEyLWZpbnJhMzExMC92MSIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiI1MDVlYWU1NmVhMGY1YTgzNTJjODlkNGM0MmM4ZjIwMWNiMGJkY2I5MmMwZjA2MGJmODVkYTljNDU0NDE1Mjg4In0sIm5hbWUiOiJoYWR1a2Vubi1vcmFjbGUtc2hlYWYtYnJpZGdlLXYwLjguMC9ldmVudHMuanNvbiJ9LHsiZGlnZXN0Ijp7InNoYTI1NiI6ImYzMDlkZDUyM2YyODU5MzFmMmYxMzg5MTY0YjA5M2JkOTRjMWJjNGM0MmI5NTQwNDk5YWNiZWRkODQ5YmIyZjcifSwibmFtZSI6ImhhZHVrZW5uLW9yYWNsZS1zaGVhZi1icmlkZ2UtdjAuOC4wL3RyYWNlX2hlYWQifSx7ImRpZ2VzdCI6eyJzaGEyNTYiOiJmMzA5ZGQ1MjNmMjg1OTMxZjJmMTM4OTE2NGIwOTNiZDk0YzFiYzRjNDJiOTU0MDQ5OWFjYmVkZDg0OWJiMmY3In0sIm5hbWUiOiJoYWR1a2Vubi1vcmFjbGUtc2hlYWYtYnJpZGdlLXYwLjguMC9zdGF0ZV9kaWdlc3QifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "alg": "hmac-sha256",
+        "keyid": "1065096384d729f4165d4820ceb44adce6ea5b2b9e168c79d2bec7b215c15ddf",
+        "sig": "s9oZ/IS3QdyMyBuEchgCRW1pJqNEiOkLcKmu1Y1GNgY="
+      }
+    ]
+  },
+  "events": [
+    {
+      "approved": true,
+      "human_escalation_required": false,
+      "seed": 13,
+      "sheaf_bridge_stalk_bpb": 1.249204,
+      "sheaf_int8_drift_bpb": 0.000115,
+      "step_index": 0,
+      "verdict": "VALID"
+    },
+    {
+      "approved": true,
+      "human_escalation_required": false,
+      "seed": 21,
+      "sheaf_bridge_stalk_bpb": 1.335585,
+      "sheaf_int8_drift_bpb": 6.4e-05,
+      "step_index": 1,
+      "verdict": "VALID"
+    },
+    {
+      "approved": true,
+      "human_escalation_required": false,
+      "seed": 34,
+      "sheaf_bridge_stalk_bpb": 1.284072,
+      "sheaf_int8_drift_bpb": 8.5e-05,
+      "step_index": 2,
+      "verdict": "VALID"
+    },
+    {
+      "approved": true,
+      "human_escalation_required": false,
+      "seed": 55,
+      "sheaf_bridge_stalk_bpb": 1.287423,
+      "sheaf_int8_drift_bpb": 0.000204,
+      "step_index": 3,
+      "verdict": "VALID"
+    },
+    {
+      "approved": true,
+      "human_escalation_required": false,
+      "seed": 89,
+      "sheaf_bridge_stalk_bpb": 1.250515,
+      "sheaf_int8_drift_bpb": 6.1e-05,
+      "step_index": 4,
+      "verdict": "VALID"
+    }
+  ],
+  "events_sha256": "505eae56ea0f5a8352c89d4c42c8f201cb0bdcb92c0f060bf85da9c454415288",
+  "policy_sha256": "a39b8a3c94dc338a7d55db8bc4d5ac36ba58f54eac44a6bf620b10dfd1268efa",
+  "scitt_merkle_receipt": {
+    "audit_path": [
+      "0ce11e3694ae703d477d0242395ec36ca79268f5ab6aa1e3283dfe2156540460"
+    ],
+    "dsse": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiZ2F0ZV9pZCI6IkVWRU5UXzQiLCJtZXJrbGVfcm9vdF9zaGEyNTYiOiJhZjMyMWQzMTU5NDc5MThmOGI3ODI3MzVkMzhjOWM1YTE5MGIzZTAyYTc5MjUwMDlmMDkzZGMwYzNlOGQ5ZTRmIiwic3RhdHVzIjoiUEFTU0VEIiwidHJlZV9zaXplIjo1fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vaGFkdWtlbm4ub3JnL3NoZWFmLXZlcmlmeS9nYXRlLXZlcmRpY3QvdjIiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiZjdlZjcwMjI5Y2I3MTYyYWU4NDFlNGM4ZWY4ZjAyNDU0NDExMDRkM2U3MmYwNGUyNmRjY2ViNjE0ZmM0MzdmNCJ9LCJuYW1lIjoibGVkZ2VyL3NlcS80In1dfQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "alg": "hmac-sha256",
+          "keyid": "1065096384d729f4165d4820ceb44adce6ea5b2b9e168c79d2bec7b215c15ddf",
+          "sig": "arPiHncrMaV/sd8w3ywy1C8XBKJpRa/1luOgSADiFXU="
+        }
+      ]
+    },
+    "format": "sheaf-verify.scitt-merkle-receipt.v1",
+    "gate_id": "EVENT_4",
+    "leaf_index": 4,
+    "merkle_root_sha256": "af321d315947918f8b782735d38c9c5a190b3e02a7925009f093dc0c3e8d9e4f",
+    "record": {
+      "created_at": "2026-11-26T18:30:00Z",
+      "event_sha256": "cd23b17a0c7e70ca2aa30520a9a8a164cfb34eefaed6ae9e97d342c5614b18c3",
+      "format": "sheaf-verify.ledger.v1",
+      "gate_id": "EVENT_4",
+      "prev_sha256": "1e925fb744d845980bb1419816bba2cb685b71c21fbda49eb109e5c2a7ef9615",
+      "record_sha256": "f7ef70229cb7162ae841e4c8ef8f0245441104d3e72f04e26dcceb614fc437f4",
+      "seq": 4,
+      "status": "PASSED"
+    },
+    "record_sha256": "f7ef70229cb7162ae841e4c8ef8f0245441104d3e72f04e26dcceb614fc437f4",
+    "tree_size": 5
+  },
+  "state_digest_sha256": "f309dd523f285931f2f1389164b093bd94c1bc4c42b9540499acbedd849bb2f7",
+  "system_id": "hadukenn-oracle-sheaf-bridge-v0.8.0",
+  "trace_head_sha256": "f309dd523f285931f2f1389164b093bd94c1bc4c42b9540499acbedd849bb2f7"
+}

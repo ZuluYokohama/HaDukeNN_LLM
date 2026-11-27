@@ -1,0 +1,11 @@
+{
+  "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiY2FtcGFpZ24iOiJULTQxIiwic2VlZHMiOlsxMywyMSwzNCw1NSw4OV0sInZlcnNpb24iOiIwLjQuMCJ9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9oYWR1a2Vubi5vcmcvc2hlYWYtdmVyaWZ5L2dhdGUtdmVyZGljdC92MiIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiJkN2IxMzA5ZDI1Zjg3NWQ5MDg2YzY3ZWFjYjc1ZWMyZjY5ZWU5MGY0Y2RkN2Y1ZGFlZDM5NTBmNTlhMGU3MGU0In0sIm5hbWUiOiJpdGVyYXRpb25zL3Q0MS1mcm9udGllci01MDcwL1Q0MV9GUk9OVElFUjUwNzBfUkVTVUxUUy5qc29uIn0seyJkaWdlc3QiOnsic2hhMjU2IjoiYzBhZjU4NTk2MmViOGZmNmY4OTk4NDdjZTYwOTE5OGYxMjU4ODU4NDcxMjA4NmY4MDg4ZTczNGU4YzdkYWIyNiJ9LCJuYW1lIjoiaXRlcmF0aW9ucy90NDEtZnJvbnRpZXItNTA3MC9UNDFfUFJFUkVHLmpzb24ifV19",
+  "payloadType": "application/vnd.in-toto+json",
+  "signatures": [
+    {
+      "alg": "hmac-sha256",
+      "keyid": "1065096384d729f4165d4820ceb44adce6ea5b2b9e168c79d2bec7b215c15ddf",
+      "sig": "S4TSlSIx4ZbbHH9FpUUPe2MGdXc9d8Q7jrD4SXq9ulE="
+    }
+  ]
+}

@@ -1,0 +1,458 @@
+[
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "-5"
+    },
+    "gold_ok": true,
+    "id": "role_swap",
+    "kind": "role_swap",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "-5"
+    },
+    "gold_ok": true,
+    "id": "role_swap",
+    "kind": "role_swap",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "-5"
+    },
+    "gold_ok": true,
+    "id": "role_swap",
+    "kind": "role_swap",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "9"
+    },
+    "gold_ok": true,
+    "id": "relevant_value",
+    "kind": "relevant_value",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "9"
+    },
+    "gold_ok": true,
+    "id": "relevant_value",
+    "kind": "relevant_value",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "9"
+    },
+    "gold_ok": true,
+    "id": "relevant_value",
+    "kind": "relevant_value",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "irrelevant_value",
+    "kind": "irrelevant_value",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "irrelevant_value",
+    "kind": "irrelevant_value",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "irrelevant_value",
+    "kind": "irrelevant_value",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "entity_rename",
+    "kind": "entity_rename",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "entity_rename",
+    "kind": "entity_rename",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "entity_rename",
+    "kind": "entity_rename",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "scope_isolation",
+    "kind": "scope_isolation",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "scope_isolation",
+    "kind": "scope_isolation",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "scope_isolation",
+    "kind": "scope_isolation",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "9"
+    },
+    "gold_ok": true,
+    "id": "revision",
+    "kind": "revision",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "9"
+    },
+    "gold_ok": true,
+    "id": "revision",
+    "kind": "revision",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "9"
+    },
+    "gold_ok": true,
+    "id": "revision",
+    "kind": "revision",
+    "passed": true,
+    "relation": "different",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "source_conflict",
+    "kind": "source_conflict",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "source_conflict",
+    "kind": "source_conflict",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "source_conflict",
+    "kind": "source_conflict",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "reference",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "assertion_conflict",
+    "kind": "assertion_conflict",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "cached_dag",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "assertion_conflict",
+    "kind": "assertion_conflict",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "base": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "changed": {
+      "status": "ok",
+      "unit": "1",
+      "value": "5"
+    },
+    "gold_ok": true,
+    "id": "assertion_conflict",
+    "kind": "assertion_conflict",
+    "passed": true,
+    "relation": "equal",
+    "relationship_ok": true
+  }
+]

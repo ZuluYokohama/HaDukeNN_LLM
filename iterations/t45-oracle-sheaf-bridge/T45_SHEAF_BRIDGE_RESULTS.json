@@ -1,0 +1,110 @@
+{
+  "dense_flat_head_preserved": true,
+  "elapsed_ms": 3118.32,
+  "per_seed": [
+    {
+      "chodrow_null_stalk_bpb": 1.356363,
+      "isotropy_ratio": 0.885117,
+      "rigid_coord_bpb": 1.457789,
+      "rigid_int8_drift_bpb": 8e-06,
+      "seed": 13,
+      "sheaf_bridge_bpb": 1.356142,
+      "sheaf_bridge_stalk_bpb": 1.249204,
+      "sheaf_bridge_stalk_int8_bpb": 1.249318,
+      "sheaf_int8_drift_bpb": 0.000115,
+      "sheaf_rare_bpb": 1.522706,
+      "untethered_bpb": 1.407943,
+      "untethered_rare_bpb": 1.819247
+    },
+    {
+      "chodrow_null_stalk_bpb": 1.440055,
+      "isotropy_ratio": 0.882349,
+      "rigid_coord_bpb": 1.498415,
+      "rigid_int8_drift_bpb": 9.9e-05,
+      "seed": 21,
+      "sheaf_bridge_bpb": 1.43975,
+      "sheaf_bridge_stalk_bpb": 1.335585,
+      "sheaf_bridge_stalk_int8_bpb": 1.335521,
+      "sheaf_int8_drift_bpb": 6.4e-05,
+      "sheaf_rare_bpb": 1.546358,
+      "untethered_bpb": 1.538675,
+      "untethered_rare_bpb": 1.879705
+    },
+    {
+      "chodrow_null_stalk_bpb": 1.38801,
+      "isotropy_ratio": 0.884316,
+      "rigid_coord_bpb": 1.478062,
+      "rigid_int8_drift_bpb": 6.8e-05,
+      "seed": 34,
+      "sheaf_bridge_bpb": 1.386197,
+      "sheaf_bridge_stalk_bpb": 1.284072,
+      "sheaf_bridge_stalk_int8_bpb": 1.283987,
+      "sheaf_int8_drift_bpb": 8.5e-05,
+      "sheaf_rare_bpb": 1.513387,
+      "untethered_bpb": 1.467454,
+      "untethered_rare_bpb": 1.88076
+    },
+    {
+      "chodrow_null_stalk_bpb": 1.386472,
+      "isotropy_ratio": 0.885007,
+      "rigid_coord_bpb": 1.428036,
+      "rigid_int8_drift_bpb": 2.4e-05,
+      "seed": 55,
+      "sheaf_bridge_bpb": 1.386431,
+      "sheaf_bridge_stalk_bpb": 1.287423,
+      "sheaf_bridge_stalk_int8_bpb": 1.287627,
+      "sheaf_int8_drift_bpb": 0.000204,
+      "sheaf_rare_bpb": 1.577477,
+      "untethered_bpb": 1.461956,
+      "untethered_rare_bpb": 1.894585
+    },
+    {
+      "chodrow_null_stalk_bpb": 1.355858,
+      "isotropy_ratio": 0.882577,
+      "rigid_coord_bpb": 1.479552,
+      "rigid_int8_drift_bpb": 0.000114,
+      "seed": 89,
+      "sheaf_bridge_bpb": 1.35645,
+      "sheaf_bridge_stalk_bpb": 1.250515,
+      "sheaf_bridge_stalk_int8_bpb": 1.250454,
+      "sheaf_int8_drift_bpb": 6.1e-05,
+      "sheaf_rare_bpb": 1.553506,
+      "untethered_bpb": 1.438385,
+      "untethered_rare_bpb": 1.917847
+    }
+  ],
+  "regulatory_compliance": {
+    "errors": [],
+    "scitt_rfc9943_verified": true
+  },
+  "schema": "sheaf-verify.oracle-sheaf-bridge.v1",
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "summary": {
+    "chodrow_null_stalk_mean_bpb": 1.385352,
+    "delta_full_vs_untethered_bpb": -0.181523,
+    "delta_sheaf_vs_rigid_coord_bpb": -0.083377,
+    "delta_sheaf_vs_untethered_bpb": -0.077889,
+    "delta_stalk_vs_chodrow_null_bpb": -0.103992,
+    "max_int8_quant_drift_bpb": 0.000204,
+    "mean_isotropy_ratio": 0.883873,
+    "mean_rare_tail_delta_bpb": -0.335742,
+    "rigid_coord_mean_bpb": 1.468371,
+    "sheaf_bridge_full_mean_bpb": 1.28136,
+    "sheaf_bridge_mean_bpb": 1.384994,
+    "sheaf_sd_bpb": 0.035249,
+    "sheaf_vs_rigid_one_sided_p": 0.002401007879502793,
+    "sheaf_vs_rigid_savi_e": 6.2507,
+    "sheaf_vs_untethered_one_sided_p": 0.00025602269761628376,
+    "stalk_vs_chodrow_null_one_sided_p": 8.543414860934277e-08,
+    "stalk_vs_chodrow_null_savi_e": 9.773,
+    "untethered_mean_bpb": 1.462883
+  },
+  "version": "0.8.0",
+  "zero_extra_vocab_head_flops": true
+}

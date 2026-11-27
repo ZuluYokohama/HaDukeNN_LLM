@@ -1,0 +1,178 @@
+{
+  "elapsed_seconds": 83.56,
+  "ontology_policy_sha256": "8827d50c74a3fad3138dc41d55ad8681c04c2c2d0d543b18d8b46fe1efff9454",
+  "realm_a_noisy_nl_compiler": {
+    "eval_episodes": 100,
+    "hadukenn_vs_posthoc_smt_error": {
+      "delta_bpb": -0.6,
+      "eb_p_one_sided": 0.0,
+      "eb_t_stat": -424.2641,
+      "kelly_max_e": 6.3281,
+      "mean_baseline_bpb": 0.6,
+      "mean_gain_bpb": 0.6,
+      "mean_treatment_bpb": 0.0,
+      "paired_se": 0.0,
+      "pearson_r": 0.0,
+      "significant_improvement": true,
+      "welch_p_one_sided": 0.0
+    },
+    "hadukenn_vs_unverified_dict_error": {
+      "delta_bpb": -1.0,
+      "eb_p_one_sided": 0.0,
+      "eb_t_stat": -707.1068,
+      "kelly_max_e": 6.3281,
+      "mean_baseline_bpb": 1.0,
+      "mean_gain_bpb": 1.0,
+      "mean_treatment_bpb": 0.0,
+      "paired_se": 0.0,
+      "pearson_r": 0.0,
+      "significant_improvement": true,
+      "welch_p_one_sided": 0.0
+    },
+    "mean_exact_accuracy_hadukenn": 1.0,
+    "mean_exact_accuracy_posthoc_smt": 0.4,
+    "mean_exact_accuracy_unverified_dict": 0.0,
+    "per_seed_accuracy_hadukenn": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "per_seed_accuracy_posthoc_smt": [
+      0.4,
+      0.4,
+      0.4,
+      0.4,
+      0.4
+    ],
+    "per_seed_accuracy_unverified_dict": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "silent_conflict_corruption_rate_hadukenn": 0.0,
+    "silent_conflict_corruption_rate_unverified_dict": 1.0,
+    "verticals": [
+      "finance_finra",
+      "clinical_euai12",
+      "energy_microgrid",
+      "supply_scitt"
+    ]
+  },
+  "realm_b_verifiable_checkpointer": {
+    "adversarial_attacks_caught": 4,
+    "adversarial_attacks_total": 4,
+    "integrity_replay_ok": true,
+    "per_superstep_latency_us": 79.41,
+    "raw_dict_attacks_caught": 0,
+    "regulatory_bundle_verified": true,
+    "standards_covered": [
+      "IETF-SCITT-RFC9943",
+      "RFC9162-Merkle",
+      "DSSE-v1.0",
+      "EU-AI-Act-Art12-14",
+      "FINRA-3110-WORM"
+    ],
+    "supersteps_executed": 200,
+    "total_200_step_latency_ms": 15.881
+  },
+  "realm_c_heterogeneous_npu_5070": {
+    "hardware_envelopes": [
+      {
+        "available_budget_gib": 13.0,
+        "device": "Snapdragon X Plus X1P-42-100 (13.0 GiB freed LPDDR5x + 45 TOPS INT8 NPU)",
+        "estimated_sustained_watts": 14.5,
+        "fits_device": true,
+        "headroom_gib": 9.26,
+        "mode": "Split Frozen-INT8-NPU 3.2B Backbone + Oryon NEON Cluster-IS LP Head",
+        "peak_ram_gib": 3.74
+      },
+      {
+        "available_budget_gib": 12.0,
+        "device": "NVIDIA RTX 5070 Blackwell (12.0 GiB GDDR7 + 48.0 MiB L2)",
+        "estimated_sustained_watts": 185.0,
+        "fits_device": true,
+        "headroom_gib": 3.22,
+        "mode": "8.9B NF4 Backbone + 256-Token Micro-Sliced 2048x128 Cluster-IS + 8-Bit AdamW",
+        "peak_ram_gib": 8.78
+      }
+    ],
+    "int8_npu_vs_fp32_abs_drift_bpb": 0.000588,
+    "mean_fp32_head_bpb": 4.296746,
+    "mean_looped_npu_mezo_bpb": 4.852642,
+    "mean_split_int8_npu_lp_bpb": 4.296158,
+    "mean_untrained_bpb": 5.086956,
+    "mezo_vs_untrained": {
+      "delta_bpb": -0.234315,
+      "eb_p_one_sided": 0.0,
+      "eb_t_stat": -98.6369,
+      "kelly_max_e": 6.0917,
+      "mean_baseline_bpb": 5.086956,
+      "mean_gain_bpb": 0.234315,
+      "mean_treatment_bpb": 4.852642,
+      "paired_se": 0.002699,
+      "pearson_r": 0.9457,
+      "significant_improvement": true,
+      "welch_p_one_sided": 0.0
+    },
+    "split_npu_lp_vs_untrained": {
+      "delta_bpb": -0.790799,
+      "eb_p_one_sided": 0.0,
+      "eb_t_stat": -29.2412,
+      "kelly_max_e": 5.4146,
+      "mean_baseline_bpb": 5.086956,
+      "mean_gain_bpb": 0.790799,
+      "mean_treatment_bpb": 4.296158,
+      "paired_se": 0.038194,
+      "pearson_r": 0.2084,
+      "significant_improvement": true,
+      "welch_p_one_sided": 1.2e-05
+    }
+  },
+  "realm_d_same_tokenizer_t38_bridge": {
+    "cluster_geometry": "32x16",
+    "mean_oe_span_equal_bytes_bpb": 4.368853,
+    "mean_plain_equal_bytes_bpb": 4.36134,
+    "mean_struct_cis_equal_flops_bpb": 4.333231,
+    "oe_span_vs_plain_equal_bytes": {
+      "delta_bpb": 0.007513,
+      "eb_p_one_sided": 0.891401,
+      "eb_t_stat": 1.3395,
+      "kelly_max_e": 1.0,
+      "mean_baseline_bpb": 4.36134,
+      "mean_gain_bpb": -0.007513,
+      "mean_treatment_bpb": 4.368853,
+      "paired_se": 0.007676,
+      "pearson_r": 0.7809,
+      "significant_improvement": false,
+      "welch_p_one_sided": 0.685483
+    },
+    "shared_vocab_size": 512,
+    "struct_cis_vs_plain_equal_flops": {
+      "delta_bpb": -0.028109,
+      "eb_p_one_sided": 0.005083,
+      "eb_t_stat": -3.3443,
+      "kelly_max_e": 2.2142,
+      "mean_baseline_bpb": 4.36134,
+      "mean_gain_bpb": 0.028109,
+      "mean_treatment_bpb": 4.333231,
+      "paired_se": 0.011717,
+      "pearson_r": 0.3564,
+      "significant_improvement": true,
+      "welch_p_one_sided": 0.045073
+    },
+    "tokenizer_identical": true
+  },
+  "schema": "sheaf-verify.all-realms-suite.v1",
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "version": "0.6.0"
+}

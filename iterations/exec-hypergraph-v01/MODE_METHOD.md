@@ -1,30 +1,38 @@
-# Mode and method — exec-digest-v01
-
-Code only. This file describes the implementation and its tests. It is not a result.
+# Mode and method — exec-hypergraph-v01
 
 ## Mode
 
-Symbolic executable-relation kernel with exact fractions. No text units, no vocabulary and no split are involved.
+CPU-only engineering pilot for exact scoped relational operations and reversible byte-span incidence representation. No language-model vocabulary size, train split, or BPB result applies. Inputs are supplied formal commands and explicitly synthetic source examples.
 
 ## Method
 
-- Inputs: the same JSON commands as `core.Kernel` (`source`, `set`, `derive`, `retract`, `fork`, `query`, `assert`).
-- Leaf encoding: a source leaf is `["source", id, sha256]`; a binding leaf is `["literal", scope, name, revision, source, value, unit]` or `["derived", scope, name, revision, source, op, [[role, ref], ...]]`. Each leaf is canonical JSON with a domain-separation prefix, hashed with BLAKE2b-256 and split into four 64-bit lanes.
-- Update: replacing or retracting a binding subtracts its old leaf; writing one adds its new leaf; a fork adds one leaf per copied binding.
-- Output: `state_digest()` is SHA-256 over a domain prefix, the scope count, the revision clock, the live node count and the four lanes. It is an integrity checksum against accidental drift, not a cryptographic commitment.
+1. Record the original engineering specification and hash before the relational pilot results.
+2. Implement exact typed operations, snapshot scopes, revision invalidation, provenance, finite capacities, and actual execution receipts.
+3. Implement two independent conventional evaluators and literal/seeded expected answers without importing kernel calculations.
+4. Run direct semantic, negative, intervention, replay, and corrupted-trace controls.
+5. Construct bounded overlapping byte spans and check exact reconstruction and prefix causality separately.
+6. Run the fixed 5-seed by 4-depth relational grid and record code/input hashes, all failures, and exact matches.
+7. Measure construction-inclusive workload timing in rotated arm orders, three repeats per workload. Average repeats within workload/seed before descriptive summaries. Measure Python allocation separately.
+8. Profile one revision workload as an instrumented diagnostic. Do not merge its times into benchmark samples.
 
 ## Controls
 
-`core.Kernel` is the only comparison: identical results for every command on random command streams.
+- Independent fresh evaluator with per-query memoization.
+- Conventional cached DAG with reverse-dependency invalidation and snapshot caches.
+- Hand-derived expected outcomes and seeded generator arithmetic independent of either engine.
+- Relevant and irrelevant input changes, named-role swaps, renaming, scope changes, revisions, retractions, and assertion conflicts.
+- Rehashed forged answers, changed commands, reordered receipts, and truncation against a retained head.
+- Arbitrary bytes, malformed UTF-8, every prefix boundary of Unicode examples, unseen suffix changes, span/byte limits, and ordered incidence corruption.
+- Evaluator negative controls: a false expected answer, false intervention relation, or incorrect timed workload must produce a failing verdict.
 
 ## Gates
 
-None. This iteration does not change the status of any gate in `GATES.md`.
+No existing gate in `GATES.md` changes status. This iteration's acceptance conditions are engineering checks defined in its own pre-run specification. They cannot be interpreted as passing H4 causal-model behavior, G4 language-model superiority, G5 scaling, or any tenfold capability threshold.
+
+The original parent repository checks remain required. The added root pytest wrapper executes the iteration-local unittest suite and its no-timing relational pilot, so normal repository CI cannot silently omit the new experiment.
 
 ## Out of scope
 
-Speed claims, learned policies, source-contradiction gating and any language-model result. Adversarial collision resistance is explicitly not claimed.
+Training, natural-language extraction, learned segmentation, spectral/sheaf advantage, general reasoning benchmarks, a capability comparison with frontier models, an audit-matched speed comparison, user-hardware throughput, cryptographic authorship, external truth, and any change to T-38 or packing status.
 
-## Checks
-
-`tests/test_exec_incremental.py`: the former `\x1f` collision pair and other field-boundary cases now differ; adding then retracting bindings restores the leaf sum; the running sum equals a from-scratch recomputation on random streams; replay reproduces the head and digest; tampered traces and wrong anchors are rejected; every command returns the same result as `core.Kernel`.
+The original specification remains unchanged. Development amendments and repairs are explicit. The same public deterministic fixtures are reusable regression cases; calling the stabilized run `confirmation` is an engineering reproducibility check, not an untouched model-generalization holdout.

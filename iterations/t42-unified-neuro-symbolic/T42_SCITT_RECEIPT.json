@@ -1,0 +1,37 @@
+{
+  "audit_path": [
+    "32283aa51364210cb155583064c6ffeca2be4e4ef85f1515a114c2e617a4100c"
+  ],
+  "dsse": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiZ2F0ZV9pZCI6IlQ0MiIsIm1lcmtsZV9yb290X3NoYTI1NiI6IjNiNWI2MzAxMDRjZTFhY2VjYmMzYzc0NjgyY2Y3OWVlN2VhYmQxNDEzYzBiZmQxNWM5MDNjYzBhOTg5ZDQ1MDciLCJzdGF0dXMiOiJQQVNTRUQiLCJ0cmVlX3NpemUiOjN9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9oYWR1a2Vubi5vcmcvc2hlYWYtdmVyaWZ5L2dhdGUtdmVyZGljdC92MiIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiI2ZjZkMTNhZDY3ZGE4NDM3ZDM3Yjg1MWI4Yzg2Yjg3MjNjOTY4NTMyZjczZjIwYWYwNjBhOGUxOWRlM2Y2Yzk2In0sIm5hbWUiOiJsZWRnZXIvc2VxLzIifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "alg": "hmac-sha256",
+        "keyid": "3fafd805b2cf5f3c720f7ad67963ae93576d90e84257cdf84d0c592727b82565",
+        "sig": "xtHQyba3o8Z2iWI+COeEvYF+YpQrzpQS6CE+4Gu/cgU="
+      }
+    ]
+  },
+  "format": "sheaf-verify.scitt-merkle-receipt.v1",
+  "gate_id": "T42",
+  "leaf_index": 2,
+  "merkle_root_sha256": "3b5b630104ce1acecbc3c74682cf79ee7eabd1413c0bfd15c903cc0a989d4507",
+  "record": {
+    "created_at": "2026-11-25T23:56:00Z",
+    "format": "sheaf-verify.ledger.v1",
+    "gate_id": "T42",
+    "prev_sha256": "e620723ac9a542b325175b80b1cd06b363e71279a45e396d65794c2a9336010e",
+    "record_sha256": "6f6d13ad67da8437d37b851b8c86b8723c968532f73f20af060a8e19de3f6c96",
+    "seq": 2,
+    "sha256": "45ddb40dfd05cdb056c5c597e670abd13bfe03f4e57ae2aa1a01f80aa8377f54",
+    "signature": {
+      "algorithm": "hmac-sha256",
+      "key_id": "3fafd805b2cf5f3c720f7ad67963ae93576d90e84257cdf84d0c592727b82565",
+      "value": "3e825439aa97ef8751366b0f2a61e053548683573ac25ac457ef50f0a881d546"
+    },
+    "status": "PASSED"
+  },
+  "record_sha256": "6f6d13ad67da8437d37b851b8c86b8723c968532f73f20af060a8e19de3f6c96",
+  "tree_size": 3
+}

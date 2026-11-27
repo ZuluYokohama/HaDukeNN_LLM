@@ -1,0 +1,21 @@
+{
+  "campaign_id": "T-42",
+  "created_at": "2026-11-25T23:55:00Z",
+  "hypotheses": [
+    {
+      "gate": "T42_O1_MULTISET_COMMITMENT_PARITY_SPEEDUP",
+      "prediction": "4x64-bit homomorphic multiset state accumulator preserves 66/66 scenario outcomes (5,992 checks, 66 replays, 8/8 intervention pairs) while beating both v0.1 full-hash hypergraph and equally-audited AuditedCachedDAG at depth >= 64."
+    },
+    {
+      "gate": "T42_UNIFIED_SPAN_SHEAF_PREGATE",
+      "prediction": "Zero-lookahead byte-span <-> OESpan alignment maintains 0.0 suffix drift while E4 cellular sheaf cohomology abstains on 1-vs-1 ties (ABSTAIN_TIE) and isolates corrupt sources under 2-vs-1 consensus (RECOVERABLE_FAULT)."
+    },
+    {
+      "gate": "T42_LEARNED_OOD_COMPOSITION_WIN",
+      "prediction": "Across 5 headline seeds (13, 21, 34, 55, 89) at matched beam K=4, hypergraph stalk-lineage bilinear policy trained on depth 2..3 outperforms positional sequence-slot controller and black-box regressor on held-out depth 4..6 OOD compositions."
+    }
+  ],
+  "results_sha256": "45ddb40dfd05cdb056c5c597e670abd13bfe03f4e57ae2aa1a01f80aa8377f54",
+  "schema": "sheaf-verify.t42-prereg.v1",
+  "version": "0.5.0"
+}

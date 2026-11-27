@@ -1,0 +1,421 @@
+{
+  "active_nodes": 18,
+  "hyperedges": [
+    {
+      "id": "revision-10",
+      "output": "d25d31458752d0b41c62cba3c3bcea65cd2b3d7c9d39b44c4c96453b4a377666",
+      "ports": {
+        "left": {
+          "name": "a_initial",
+          "node": "766ce037a773d919138681de9f81bf3280e759c57987616026082f5ff82d86b3",
+          "resolved": true
+        },
+        "right": {
+          "name": "outbound",
+          "node": "e82701179773686b79cb700b653bbba333062bf4eb0dd5e03ccedb32214e4369",
+          "resolved": true
+        }
+      },
+      "relation": "sub",
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "revision-11",
+      "output": "b08c136dc7a81eb8628f1e2711331f589f8bc5306f3b52761d51d85f178b642c",
+      "ports": {
+        "left": {
+          "name": "a_after_transfer",
+          "node": "d25d31458752d0b41c62cba3c3bcea65cd2b3d7c9d39b44c4c96453b4a377666",
+          "resolved": true
+        },
+        "right": {
+          "name": "returned",
+          "node": "8d7669f17faa22ece8a4c6c91a96611bd1713b210219a9bfd41e5c5b195db4a2",
+          "resolved": true
+        }
+      },
+      "relation": "add",
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "revision-13",
+      "output": "9181c272f34bff480596f5e0f2e16b42549cf2b0e6703c70eaae97a668f1a76f",
+      "ports": {
+        "left": {
+          "name": "b_initial",
+          "node": "80f8066a5d2c7b01b50f20ffa9e2cefee7b9cd410856e26272d3b9b335f62e52",
+          "resolved": true
+        },
+        "right": {
+          "name": "outbound",
+          "node": "e82701179773686b79cb700b653bbba333062bf4eb0dd5e03ccedb32214e4369",
+          "resolved": true
+        }
+      },
+      "relation": "add",
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "revision-14",
+      "output": "74e7d3112e732863956aedb1aa8c2ccddef4754fb3355fca4ec734bd5d1de13a",
+      "ports": {
+        "left": {
+          "name": "b_after_transfer",
+          "node": "9181c272f34bff480596f5e0f2e16b42549cf2b0e6703c70eaae97a668f1a76f",
+          "resolved": true
+        },
+        "right": {
+          "name": "returned",
+          "node": "8d7669f17faa22ece8a4c6c91a96611bd1713b210219a9bfd41e5c5b195db4a2",
+          "resolved": true
+        }
+      },
+      "relation": "sub",
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "revision-18",
+      "output": "d726c59a83d3a52b1fc8a07ad305d35df3bdc26afab6b884d990ad93b1d50157",
+      "ports": {
+        "left": {
+          "name": "a_final",
+          "node": "b08c136dc7a81eb8628f1e2711331f589f8bc5306f3b52761d51d85f178b642c",
+          "resolved": true
+        },
+        "right": {
+          "name": "b_final",
+          "node": "74e7d3112e732863956aedb1aa8c2ccddef4754fb3355fca4ec734bd5d1de13a",
+          "resolved": true
+        }
+      },
+      "relation": "add",
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "revision-5",
+      "output": "f6f9a3410b9141930abc801d5c3b750a93432cc1318e68674022a741be361afe",
+      "ports": {
+        "left": {
+          "name": "a_initial",
+          "node": "5e78dff15d2d7d2e0b1031378f8567e393e196b916ece290587c00f7862805b3",
+          "resolved": true
+        },
+        "right": {
+          "name": "outbound",
+          "node": "46d3260cba0d96a01407bb5577347cd391ba463db0625b1f8c89f93261a9fad1",
+          "resolved": false
+        }
+      },
+      "relation": "sub",
+      "scope": "main",
+      "source": null
+    },
+    {
+      "id": "revision-7",
+      "output": "eabe404684cdab418a7a10150daf44359b59a6eff2a51589f8065a43162ad00a",
+      "ports": {
+        "left": {
+          "name": "a_after_transfer",
+          "node": "f6f9a3410b9141930abc801d5c3b750a93432cc1318e68674022a741be361afe",
+          "resolved": true
+        },
+        "right": {
+          "name": "returned",
+          "node": "be4908ddc0fee16531f1cb0a4cad21c62db9ff9bebd5779ce569afb290c70373",
+          "resolved": true
+        }
+      },
+      "relation": "add",
+      "scope": "main",
+      "source": null
+    },
+    {
+      "id": "revision-6",
+      "output": "93be6370e2f573f5641d545985b6afd7b8f8ef222d99577604b8840e19e1cb39",
+      "ports": {
+        "left": {
+          "name": "b_initial",
+          "node": "f38165e477678bce24bd14114b2ea8872b8208eada9039087c99b92a78fcd43d",
+          "resolved": true
+        },
+        "right": {
+          "name": "outbound",
+          "node": "46d3260cba0d96a01407bb5577347cd391ba463db0625b1f8c89f93261a9fad1",
+          "resolved": false
+        }
+      },
+      "relation": "add",
+      "scope": "main",
+      "source": null
+    },
+    {
+      "id": "revision-8",
+      "output": "ec16abb9502c580d7cc34daf1437009f77e0f44c265649c9346554cca7595c6f",
+      "ports": {
+        "left": {
+          "name": "b_after_transfer",
+          "node": "93be6370e2f573f5641d545985b6afd7b8f8ef222d99577604b8840e19e1cb39",
+          "resolved": true
+        },
+        "right": {
+          "name": "returned",
+          "node": "be4908ddc0fee16531f1cb0a4cad21c62db9ff9bebd5779ce569afb290c70373",
+          "resolved": true
+        }
+      },
+      "relation": "sub",
+      "scope": "main",
+      "source": null
+    },
+    {
+      "id": "revision-9",
+      "output": "4d6166975c9f56e4a6fe6475e9e63f780e3943235b7eef3f1ae090c12f884e9b",
+      "ports": {
+        "left": {
+          "name": "a_final",
+          "node": "eabe404684cdab418a7a10150daf44359b59a6eff2a51589f8065a43162ad00a",
+          "resolved": true
+        },
+        "right": {
+          "name": "b_final",
+          "node": "ec16abb9502c580d7cc34daf1437009f77e0f44c265649c9346554cca7595c6f",
+          "resolved": true
+        }
+      },
+      "relation": "add",
+      "scope": "main",
+      "source": null
+    }
+  ],
+  "limits": {
+    "max_command_bytes": 1100000,
+    "max_nodes": 10000,
+    "max_receipts": 100000,
+    "max_revisions": 100000,
+    "max_scopes": 256,
+    "max_source_bytes": 16777216,
+    "max_steps": 10000
+  },
+  "nodes": [
+    {
+      "args": {
+        "left": "a_initial",
+        "right": "outbound"
+      },
+      "id": "d25d31458752d0b41c62cba3c3bcea65cd2b3d7c9d39b44c4c96453b4a377666",
+      "kind": "derived",
+      "name": "a_after_transfer",
+      "op": "sub",
+      "revision": 10,
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "args": {
+        "left": "a_after_transfer",
+        "right": "returned"
+      },
+      "id": "b08c136dc7a81eb8628f1e2711331f589f8bc5306f3b52761d51d85f178b642c",
+      "kind": "derived",
+      "name": "a_final",
+      "op": "add",
+      "revision": 11,
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "766ce037a773d919138681de9f81bf3280e759c57987616026082f5ff82d86b3",
+      "kind": "literal",
+      "name": "a_initial",
+      "revision": 12,
+      "scope": "hypothetical",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": "20"
+    },
+    {
+      "args": {
+        "left": "b_initial",
+        "right": "outbound"
+      },
+      "id": "9181c272f34bff480596f5e0f2e16b42549cf2b0e6703c70eaae97a668f1a76f",
+      "kind": "derived",
+      "name": "b_after_transfer",
+      "op": "add",
+      "revision": 13,
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "args": {
+        "left": "b_after_transfer",
+        "right": "returned"
+      },
+      "id": "74e7d3112e732863956aedb1aa8c2ccddef4754fb3355fca4ec734bd5d1de13a",
+      "kind": "derived",
+      "name": "b_final",
+      "op": "sub",
+      "revision": 14,
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "id": "80f8066a5d2c7b01b50f20ffa9e2cefee7b9cd410856e26272d3b9b335f62e52",
+      "kind": "literal",
+      "name": "b_initial",
+      "revision": 15,
+      "scope": "hypothetical",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": "5"
+    },
+    {
+      "id": "e82701179773686b79cb700b653bbba333062bf4eb0dd5e03ccedb32214e4369",
+      "kind": "literal",
+      "name": "outbound",
+      "revision": 19,
+      "scope": "hypothetical",
+      "source": null,
+      "unit": "L",
+      "value": "8"
+    },
+    {
+      "id": "8d7669f17faa22ece8a4c6c91a96611bd1713b210219a9bfd41e5c5b195db4a2",
+      "kind": "literal",
+      "name": "returned",
+      "revision": 17,
+      "scope": "hypothetical",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": "3"
+    },
+    {
+      "args": {
+        "left": "a_final",
+        "right": "b_final"
+      },
+      "id": "d726c59a83d3a52b1fc8a07ad305d35df3bdc26afab6b884d990ad93b1d50157",
+      "kind": "derived",
+      "name": "total",
+      "op": "add",
+      "revision": 18,
+      "scope": "hypothetical",
+      "source": null
+    },
+    {
+      "args": {
+        "left": "a_initial",
+        "right": "outbound"
+      },
+      "id": "f6f9a3410b9141930abc801d5c3b750a93432cc1318e68674022a741be361afe",
+      "kind": "derived",
+      "name": "a_after_transfer",
+      "op": "sub",
+      "revision": 5,
+      "scope": "main",
+      "source": null
+    },
+    {
+      "args": {
+        "left": "a_after_transfer",
+        "right": "returned"
+      },
+      "id": "eabe404684cdab418a7a10150daf44359b59a6eff2a51589f8065a43162ad00a",
+      "kind": "derived",
+      "name": "a_final",
+      "op": "add",
+      "revision": 7,
+      "scope": "main",
+      "source": null
+    },
+    {
+      "id": "5e78dff15d2d7d2e0b1031378f8567e393e196b916ece290587c00f7862805b3",
+      "kind": "literal",
+      "name": "a_initial",
+      "revision": 1,
+      "scope": "main",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": "20"
+    },
+    {
+      "args": {
+        "left": "b_initial",
+        "right": "outbound"
+      },
+      "id": "93be6370e2f573f5641d545985b6afd7b8f8ef222d99577604b8840e19e1cb39",
+      "kind": "derived",
+      "name": "b_after_transfer",
+      "op": "add",
+      "revision": 6,
+      "scope": "main",
+      "source": null
+    },
+    {
+      "args": {
+        "left": "b_after_transfer",
+        "right": "returned"
+      },
+      "id": "ec16abb9502c580d7cc34daf1437009f77e0f44c265649c9346554cca7595c6f",
+      "kind": "derived",
+      "name": "b_final",
+      "op": "sub",
+      "revision": 8,
+      "scope": "main",
+      "source": null
+    },
+    {
+      "id": "f38165e477678bce24bd14114b2ea8872b8208eada9039087c99b92a78fcd43d",
+      "kind": "literal",
+      "name": "b_initial",
+      "revision": 2,
+      "scope": "main",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": "5"
+    },
+    {
+      "id": "be4908ddc0fee16531f1cb0a4cad21c62db9ff9bebd5779ce569afb290c70373",
+      "kind": "literal",
+      "name": "returned",
+      "revision": 20,
+      "scope": "main",
+      "source": null,
+      "unit": "L",
+      "value": "4"
+    },
+    {
+      "args": {
+        "left": "a_final",
+        "right": "b_final"
+      },
+      "id": "4d6166975c9f56e4a6fe6475e9e63f780e3943235b7eef3f1ae090c12f884e9b",
+      "kind": "derived",
+      "name": "total",
+      "op": "add",
+      "revision": 9,
+      "scope": "main",
+      "source": null
+    }
+  ],
+  "schema": "hadukenn.exec.graph.v1",
+  "scopes": [
+    "hypothetical",
+    "main"
+  ],
+  "sources": [
+    {
+      "byte_length": 77,
+      "id": "transfer-record",
+      "sha256": "6138f5d3f6d86d61cae0314df3a0b83f135db2cbe1091a541c77be8366bcbf6e",
+      "text": "A starts with 20 L and B with 5 L. A transfers 12 L to B. B returns 3 L to A."
+    }
+  ],
+  "state_digest": "f135cd70d735e64122b74d88651755c65cd53027c2694c1bbadca4623d49d1eb",
+  "trace_head": "da277ebcc02255257b3d36f74859a048bf2759b1d2134991857f299cad5efc8b"
+}

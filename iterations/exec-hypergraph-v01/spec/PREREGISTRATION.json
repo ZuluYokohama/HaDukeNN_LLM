@@ -1,0 +1,58 @@
+{
+  "schema_version": "hadukenn.exec.engineering-prereg.v0.1",
+  "recorded_date": "2026-11-25",
+  "study_id": "executable-hypergraph-v01",
+  "stage": "engineering_pilot",
+  "status_at_creation": "recorded_before_implementation_results",
+  "timestamp_claim": "Local pre-run specification only. This is not an independent timestamp or externally sealed preregistration.",
+  "purpose": "Establish an executable reference for typed, role-bound, scoped, versioned relational state and actual execution receipts before introducing learned interfaces.",
+  "treatment": "Exact rational executable hypergraph kernel with immutable source records, named argument roles, scope snapshots, explicit revisions, bounded evaluation, dependency tracking, and deterministic replay receipts.",
+  "comparators": [
+    "Independent exact reference evaluator with the same command semantics",
+    "Conventional cached dependency DAG with correct invalidation and the same permitted inputs"
+  ],
+  "input_contract": {
+    "form": "Synthetic structured commands; correct parsing is supplied by the fixture generator",
+    "actions": ["source", "set", "derive", "retract", "fork", "query", "assert"],
+    "operators": ["add", "sub", "mul", "div", "neg", "copy"],
+    "numbers": "Integers or strings accepted by the specified exact rational parser; floats and bools are refused",
+    "scope": "References resolve within one scope; fork snapshots definitions; later parent changes do not alter the fork",
+    "revision": "set and derive explicitly replace the current definition in that scope; retraction makes dependent queries unresolved until a valid definition is supplied",
+    "provenance": "A named source must already exist and source records cannot silently change"
+  },
+  "planned_evaluation": {
+    "seeds": [11, 29, 47, 71, 101],
+    "depths": [4, 16, 64, 128],
+    "families": ["exact_composition", "role_intervention", "relevant_value_intervention", "irrelevant_information", "consistent_renaming", "scope_snapshot", "revision_and_retraction", "conflict_detection"],
+    "semantic_outcome_projection": "Query/assert outcomes compare status, normalized rational value and unit, or normalized error code. Receipts and timing are evaluated separately.",
+    "literal_controls": "Hand-computed results independently test arithmetic, units, noncommutative roles, snapshots, invalidation, and explicit conflicts",
+    "execution_replay": "Replaying the actual receipt sequence must reproduce outputs and final state; altered or fabricated receipts must be rejected",
+    "invalid_inputs": "Malformed values, roles, operators, references, sources, cycles, and resource boundaries must return declared errors or validation refusal without partial state mutation",
+    "budget": "CPU-only bounded pilot in the current session environment; no model downloads, training, production traffic, or workstation benchmark claim"
+  },
+  "acceptance": {
+    "semantic_correctness": "Every declared literal semantic test passes; all generated comparable query/assert outcomes agree with the independent reference",
+    "control_integrity": "Required role, scope, revision, irrelevant-information, source, replay, tamper, and resource-boundary controls pass",
+    "determinism": "Repeated commands reproduce semantic state and receipts in the same deterministic implementation; timing is excluded",
+    "performance": "No superiority threshold is set for this engineering pilot; measure actual construction, update, query, and trace overhead descriptively",
+    "failure_reporting": "Record failing tests and repairs. Revisions to this specification must retain the original record and receive a dated amendment before the affected rerun. Do not relabel a post-result criterion as preregistered."
+  },
+  "allowed_conclusions": [
+    "The implemented structured command semantics passed or failed the recorded controls",
+    "Actual accepted/rejected computations are replayable under the tested implementation and input contract",
+    "Observed CPU time and memory are properties of this implementation on this session host",
+    "The selected baseline does or does not match the kernel's semantic outputs"
+  ],
+  "excluded_conclusions": [
+    "Tenfold model capability or general intelligence improvement",
+    "Training or evaluation of a neural language model",
+    "Natural-language understanding or reliable semantic extraction",
+    "Complete mechanistic interpretability of learned components",
+    "World causality or truth established by computational dependency traces",
+    "Cryptographic authenticity or independent timestamping from an unkeyed hash chain",
+    "Spectral, sheaf, tokenizer, or hypergraph superiority over equivalent ordinary data structures",
+    "Performance on the user's local GPU or production trainer",
+    "Modification of frozen T-38 or reopening the killed packing experiment"
+  ],
+  "advancement": "Only consider a learned-interface follow-up after semantic and trace integrity pass and a useful task-specific representation hypothesis survives comparison with competent conventional storage and tools. Equal correctness with greater overhead is valid negative evidence for an efficiency claim."
+}

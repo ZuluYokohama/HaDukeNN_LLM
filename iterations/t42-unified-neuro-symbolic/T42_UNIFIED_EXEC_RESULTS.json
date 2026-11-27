@@ -1,0 +1,170 @@
+{
+  "elapsed_seconds": 63.15,
+  "part1_incremental_commitments": {
+    "checked_outcomes": 5992,
+    "interventions_passed": 8,
+    "interventions_total": 8,
+    "matched_outcomes": 5992,
+    "replayed_histories": 66,
+    "scenarios_passed": 66,
+    "timing_by_depth": [
+      {
+        "audited_cached_dag_full_hash_mean_ms": 2.0596,
+        "audited_cached_dag_full_hash_se_ms": 0.392,
+        "cached_dag_unaudited_mean_ms": 0.2098,
+        "cached_dag_unaudited_se_ms": 0.0489,
+        "depth": 4,
+        "speedup_vs_audited_dag_x": 1.26,
+        "speedup_vs_v01_full_hash_x": 2.31,
+        "v01_hypergraph_full_hash_mean_ms": 3.77,
+        "v01_hypergraph_full_hash_se_ms": 0.7426,
+        "v050_hypergraph_incremental_lt_mean_ms": 1.6344,
+        "v050_hypergraph_incremental_lt_se_ms": 0.3519
+      },
+      {
+        "audited_cached_dag_full_hash_mean_ms": 6.2863,
+        "audited_cached_dag_full_hash_se_ms": 0.91,
+        "cached_dag_unaudited_mean_ms": 0.4915,
+        "cached_dag_unaudited_se_ms": 0.1056,
+        "depth": 16,
+        "speedup_vs_audited_dag_x": 1.94,
+        "speedup_vs_v01_full_hash_x": 3.37,
+        "v01_hypergraph_full_hash_mean_ms": 10.9587,
+        "v01_hypergraph_full_hash_se_ms": 1.9494,
+        "v050_hypergraph_incremental_lt_mean_ms": 3.248,
+        "v050_hypergraph_incremental_lt_se_ms": 0.6126
+      },
+      {
+        "audited_cached_dag_full_hash_mean_ms": 34.449,
+        "audited_cached_dag_full_hash_se_ms": 2.8999,
+        "cached_dag_unaudited_mean_ms": 1.5275,
+        "cached_dag_unaudited_se_ms": 0.3327,
+        "depth": 64,
+        "speedup_vs_audited_dag_x": 3.42,
+        "speedup_vs_v01_full_hash_x": 5.23,
+        "v01_hypergraph_full_hash_mean_ms": 52.5689,
+        "v01_hypergraph_full_hash_se_ms": 5.1467,
+        "v050_hypergraph_incremental_lt_mean_ms": 10.0599,
+        "v050_hypergraph_incremental_lt_se_ms": 1.9066
+      },
+      {
+        "audited_cached_dag_full_hash_mean_ms": 101.2487,
+        "audited_cached_dag_full_hash_se_ms": 5.6583,
+        "cached_dag_unaudited_mean_ms": 2.8838,
+        "cached_dag_unaudited_se_ms": 0.583,
+        "depth": 128,
+        "speedup_vs_audited_dag_x": 5.17,
+        "speedup_vs_v01_full_hash_x": 7.74,
+        "v01_hypergraph_full_hash_mean_ms": 151.4926,
+        "v01_hypergraph_full_hash_se_ms": 10.3048,
+        "v050_hypergraph_incremental_lt_mean_ms": 19.5701,
+        "v050_hypergraph_incremental_lt_se_ms": 3.768
+      },
+      {
+        "audited_cached_dag_full_hash_mean_ms": 353.2807,
+        "audited_cached_dag_full_hash_se_ms": 11.5839,
+        "cached_dag_unaudited_mean_ms": 5.53,
+        "cached_dag_unaudited_se_ms": 1.1046,
+        "depth": 256,
+        "speedup_vs_audited_dag_x": 8.51,
+        "speedup_vs_v01_full_hash_x": 13.28,
+        "v01_hypergraph_full_hash_mean_ms": 551.6125,
+        "v01_hypergraph_full_hash_se_ms": 25.2335,
+        "v050_hypergraph_incremental_lt_mean_ms": 41.5257,
+        "v050_hypergraph_incremental_lt_se_ms": 8.1673
+      }
+    ]
+  },
+  "part2_span_sheaf_bridge": {
+    "derived_A_final": "11",
+    "derived_B_final": "14",
+    "derived_Total": "25",
+    "mapped_byte_anchor_tokens": 306,
+    "oespan_suffix_drift": 0.0,
+    "semantic_replay_verified": true,
+    "sheaf_1v1_tie_regime": "ABSTAIN_TIE",
+    "sheaf_2v1_fault_regime": "RECOVERABLE_FAULT",
+    "sheaf_2v1_isolated_fault": [
+      "src_corrupt"
+    ],
+    "span_graph_prefix_hash_invariant": true,
+    "total_visible_tokens": 306
+  },
+  "part3_learned_ood_policy": {
+    "hg_vs_blackbox_ood_error": {
+      "delta_bpb": -0.956,
+      "eb_p_one_sided": 0.0,
+      "eb_t_stat": -98.0835,
+      "kelly_max_e": 5.9,
+      "mean_baseline_bpb": 0.956,
+      "mean_gain_bpb": 0.956,
+      "mean_treatment_bpb": 0.0,
+      "paired_se": 0.013638,
+      "pearson_r": 0.0,
+      "significant_improvement": true,
+      "welch_p_one_sided": 0.0
+    },
+    "hg_vs_flat_dag_ood_error": {
+      "delta_bpb": -0.848,
+      "eb_p_one_sided": 0.0,
+      "eb_t_stat": -127.8408,
+      "kelly_max_e": 6.1029,
+      "mean_baseline_bpb": 0.848,
+      "mean_gain_bpb": 0.848,
+      "mean_treatment_bpb": 0.0,
+      "paired_se": 0.009165,
+      "pearson_r": 0.0,
+      "significant_improvement": true,
+      "welch_p_one_sided": 0.0
+    },
+    "k_beam_matched": 4,
+    "mean_id_accuracy_flat_dag": 0.6033,
+    "mean_id_accuracy_hypergraph_sheaf": 1.0,
+    "mean_ood_accuracy_blackbox": 0.044,
+    "mean_ood_accuracy_flat_dag": 0.152,
+    "mean_ood_accuracy_hypergraph_sheaf": 1.0,
+    "mean_ood_counterfactual_fork_accuracy": 1.0,
+    "ood_episodes_depth_4_6": 100,
+    "ood_sample_traces_replayed": 5,
+    "per_seed_ood_exact_accuracy": {
+      "direct_neural_blackbox": [
+        0.03,
+        0.08,
+        0.06,
+        0.0,
+        0.05
+      ],
+      "flat_seq_controller_dag": [
+        0.17,
+        0.17,
+        0.13,
+        0.13,
+        0.16
+      ],
+      "hypergraph_counterfactual_fork": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "hypergraph_sheaf_controller": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "seeds": [
+      13,
+      21,
+      34,
+      55,
+      89
+    ],
+    "train_episodes_depth_2_3": 160
+  },
+  "schema": "sheaf-verify.unified-exec-bridge.v1",
+  "version": "0.5.0"
+}

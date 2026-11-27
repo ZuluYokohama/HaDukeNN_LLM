@@ -1,0 +1,54 @@
+{
+  "by_arm": {
+    "cached_dag": {
+      "cases": 66,
+      "checked": 5992,
+      "commands": 5992,
+      "correct": 5992,
+      "queries": 318
+    },
+    "hypergraph_kernel": {
+      "cases": 66,
+      "checked": 5992,
+      "commands": 5992,
+      "correct": 5992,
+      "queries": 318
+    },
+    "reference": {
+      "cases": 66,
+      "checked": 5992,
+      "commands": 5992,
+      "correct": 5992,
+      "queries": 318
+    }
+  },
+  "case_count": 66,
+  "failures": [],
+  "format": "hadukenn.exec.pilot-summary.v1",
+  "interventions": {
+    "arm_evaluations": 24,
+    "paired_cases": 8,
+    "passed": 24
+  },
+  "learned_stage_authorized_by_result": false,
+  "limitations": [
+    "No neural model, learned tokenizer, learned policy, or natural-language extraction is present.",
+    "Synthetic programs use supplied exact operations; success does not establish learned generalization.",
+    "The kernel maintains revision/provenance and full deterministic receipts; ordinary baselines do not supply equivalent audit records. Timing is diagnostic, not a matched-audit superiority comparison.",
+    "Timing repetitions and synthetic seeds are not independent training runs; no capability p-value is reported.",
+    "Python allocator peaks exclude native allocations and do not measure process RSS or VRAM.",
+    "Trace hashes are integrity checks, not signatures or independent execution attestations.",
+    "A graph runtime does not establish hypergraph tokenizer gains or elimination of neural opacity."
+  ],
+  "manifest_sha256": "6e9f84486ee33854b39d9d73aa5498661af4c16bc05ac16ee353d5e88ab2c1ab",
+  "memory_profiles": [],
+  "replay": {
+    "failed": [],
+    "passed": 66
+  },
+  "scope": "engineering correctness and descriptive CPU cost only",
+  "status": "pass",
+  "tenfold_capability_established": false,
+  "timing_aggregates": [],
+  "timing_rows": 0
+}

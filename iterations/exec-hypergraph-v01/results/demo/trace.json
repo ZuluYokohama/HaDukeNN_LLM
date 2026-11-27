@@ -1,0 +1,1278 @@
+[
+  {
+    "command": {
+      "action": "source",
+      "id": "transfer-record",
+      "text": "A starts with 20 L and B with 5 L. A transfers 12 L to B. B returns 3 L to A."
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "byte_length": 77,
+        "event": "source",
+        "id": "transfer-record",
+        "sha256": "6138f5d3f6d86d61cae0314df3a0b83f135db2cbe1091a541c77be8366bcbf6e",
+        "text": "A starts with 20 L and B with 5 L. A transfers 12 L to B. B returns 3 L to A."
+      }
+    ],
+    "hash": "19c66b05e44c4c6b2297a988430d5824759a14ae7a7f116ca89ac3e29d6f3811",
+    "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 1,
+    "state_after": "1631dba4e67dfb2f22f57931ca5a2bc2636e892584b764b36dca4675d1d9e31d",
+    "state_before": "629e29bc8199be0fb0b3f489885daeb05e28fc39fa8f5c3e4fd29a9cd73537e7"
+  },
+  {
+    "command": {
+      "action": "set",
+      "name": "a_initial",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": 20
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "kind": "literal",
+          "revision": 1,
+          "source": "transfer-record",
+          "unit": "L",
+          "value": "20"
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "a_initial",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "f2a59d9a88beea23798d5e074071c8705c301ea0e16ea6bdbb16aafbc83171ff",
+    "previous_hash": "19c66b05e44c4c6b2297a988430d5824759a14ae7a7f116ca89ac3e29d6f3811",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 2,
+    "state_after": "16cd4fadcb10db0b8f69059fd22a8938d245e58d84a3fe0e26844461ad98de09",
+    "state_before": "1631dba4e67dfb2f22f57931ca5a2bc2636e892584b764b36dca4675d1d9e31d"
+  },
+  {
+    "command": {
+      "action": "set",
+      "name": "b_initial",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": 5
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "kind": "literal",
+          "revision": 2,
+          "source": "transfer-record",
+          "unit": "L",
+          "value": "5"
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "b_initial",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "3a63723b1607aa3155883b8e323b256133384771379346535d0c0b5ef9b10f6e",
+    "previous_hash": "f2a59d9a88beea23798d5e074071c8705c301ea0e16ea6bdbb16aafbc83171ff",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 3,
+    "state_after": "219eecd1d777d17fe68d3ac0901dca8d1f6165233711ed121dbf1a6a547b413f",
+    "state_before": "16cd4fadcb10db0b8f69059fd22a8938d245e58d84a3fe0e26844461ad98de09"
+  },
+  {
+    "command": {
+      "action": "set",
+      "name": "outbound",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": 12
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "kind": "literal",
+          "revision": 3,
+          "source": "transfer-record",
+          "unit": "L",
+          "value": "12"
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "outbound",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "37a2daf9832c518ae736792e223ff33ae0a044bb41313d23ddd32809df85bfdb",
+    "previous_hash": "3a63723b1607aa3155883b8e323b256133384771379346535d0c0b5ef9b10f6e",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 4,
+    "state_after": "0af7df6ea0a87d622886d851559e508f63711bd3c309cd1612f1424b09aa883a",
+    "state_before": "219eecd1d777d17fe68d3ac0901dca8d1f6165233711ed121dbf1a6a547b413f"
+  },
+  {
+    "command": {
+      "action": "set",
+      "name": "returned",
+      "source": "transfer-record",
+      "unit": "L",
+      "value": 3
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "kind": "literal",
+          "revision": 4,
+          "source": "transfer-record",
+          "unit": "L",
+          "value": "3"
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "returned",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "a78bde9c0bf48529773f29367bf6b48d3f13bd3809722d738d0930684c1a60a4",
+    "previous_hash": "37a2daf9832c518ae736792e223ff33ae0a044bb41313d23ddd32809df85bfdb",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 5,
+    "state_after": "2b336a1a1053e21258c35290c26d191a49957d2866f875a22c5e55f869fbc019",
+    "state_before": "0af7df6ea0a87d622886d851559e508f63711bd3c309cd1612f1424b09aa883a"
+  },
+  {
+    "command": {
+      "action": "derive",
+      "args": {
+        "left": "a_initial",
+        "right": "outbound"
+      },
+      "name": "a_after_transfer",
+      "op": "sub"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "args": {
+            "left": "a_initial",
+            "right": "outbound"
+          },
+          "kind": "derived",
+          "op": "sub",
+          "revision": 5,
+          "source": null
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "a_after_transfer",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "11aafe71d7cf14eebf2304dac09b697ad9e8b6d83c7bb3969077cfae7aed1579",
+    "previous_hash": "a78bde9c0bf48529773f29367bf6b48d3f13bd3809722d738d0930684c1a60a4",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 6,
+    "state_after": "becfc83143f371c64e8b21dbc64abc0ac595388eca3a5e74efa5b7b6a151c739",
+    "state_before": "2b336a1a1053e21258c35290c26d191a49957d2866f875a22c5e55f869fbc019"
+  },
+  {
+    "command": {
+      "action": "derive",
+      "args": {
+        "left": "b_initial",
+        "right": "outbound"
+      },
+      "name": "b_after_transfer",
+      "op": "add"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "args": {
+            "left": "b_initial",
+            "right": "outbound"
+          },
+          "kind": "derived",
+          "op": "add",
+          "revision": 6,
+          "source": null
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "b_after_transfer",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "9af159ac2788c41a3101500dc6bda5d2402de45e4efee1e59e9a103880f1b606",
+    "previous_hash": "11aafe71d7cf14eebf2304dac09b697ad9e8b6d83c7bb3969077cfae7aed1579",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 7,
+    "state_after": "22d4f9ba915c6e76eabc9f5391cafae4c33252078da75aa6a1e56b7c7ae27c97",
+    "state_before": "becfc83143f371c64e8b21dbc64abc0ac595388eca3a5e74efa5b7b6a151c739"
+  },
+  {
+    "command": {
+      "action": "derive",
+      "args": {
+        "left": "a_after_transfer",
+        "right": "returned"
+      },
+      "name": "a_final",
+      "op": "add"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "args": {
+            "left": "a_after_transfer",
+            "right": "returned"
+          },
+          "kind": "derived",
+          "op": "add",
+          "revision": 7,
+          "source": null
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "a_final",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "98ca2f74aad81256107e0d58aa5d2ae8c9ef83024151d9b4724738b9407d6599",
+    "previous_hash": "9af159ac2788c41a3101500dc6bda5d2402de45e4efee1e59e9a103880f1b606",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 8,
+    "state_after": "7dd93756da7df1e213c023770314c2a1c7e94685fa259ba952a0c4e2e47ca6d9",
+    "state_before": "22d4f9ba915c6e76eabc9f5391cafae4c33252078da75aa6a1e56b7c7ae27c97"
+  },
+  {
+    "command": {
+      "action": "derive",
+      "args": {
+        "left": "b_after_transfer",
+        "right": "returned"
+      },
+      "name": "b_final",
+      "op": "sub"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "args": {
+            "left": "b_after_transfer",
+            "right": "returned"
+          },
+          "kind": "derived",
+          "op": "sub",
+          "revision": 8,
+          "source": null
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "b_final",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "7c3152fa2bb3a12f9113acf96b2d19eeb74d7f9d8affbd40168614a4f2468539",
+    "previous_hash": "98ca2f74aad81256107e0d58aa5d2ae8c9ef83024151d9b4724738b9407d6599",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 9,
+    "state_after": "6a3bbb31a2f83f51ff11ce892611b9ddefc1eea3e79e94c246611bf9b36e70b7",
+    "state_before": "7dd93756da7df1e213c023770314c2a1c7e94685fa259ba952a0c4e2e47ca6d9"
+  },
+  {
+    "command": {
+      "action": "derive",
+      "args": {
+        "left": "a_final",
+        "right": "b_final"
+      },
+      "name": "total",
+      "op": "add"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "args": {
+            "left": "a_final",
+            "right": "b_final"
+          },
+          "kind": "derived",
+          "op": "add",
+          "revision": 9,
+          "source": null
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "total",
+        "previous_revision": null,
+        "scope": "main"
+      }
+    ],
+    "hash": "83b7b3959f62e4e73808b0fcada98819ea7b72ec10292d88755e54d364b79ace",
+    "previous_hash": "7c3152fa2bb3a12f9113acf96b2d19eeb74d7f9d8affbd40168614a4f2468539",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 10,
+    "state_after": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2",
+    "state_before": "6a3bbb31a2f83f51ff11ce892611b9ddefc1eea3e79e94c246611bf9b36e70b7"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "a_final"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "a_initial",
+        "operation": null,
+        "reads": {},
+        "revision": 1,
+        "scope": "main",
+        "source": "transfer-record",
+        "unit": "L",
+        "value": "20"
+      },
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "outbound",
+        "operation": null,
+        "reads": {},
+        "revision": 3,
+        "scope": "main",
+        "source": "transfer-record",
+        "unit": "L",
+        "value": "12"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "a_after_transfer",
+        "operation": "sub",
+        "reads": {
+          "left": {
+            "name": "a_initial",
+            "revision": 1
+          },
+          "right": {
+            "name": "outbound",
+            "revision": 3
+          }
+        },
+        "revision": 5,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "8"
+      },
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "returned",
+        "operation": null,
+        "reads": {},
+        "revision": 4,
+        "scope": "main",
+        "source": "transfer-record",
+        "unit": "L",
+        "value": "3"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "a_final",
+        "operation": "add",
+        "reads": {
+          "left": {
+            "name": "a_after_transfer",
+            "revision": 5
+          },
+          "right": {
+            "name": "returned",
+            "revision": 4
+          }
+        },
+        "revision": 7,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "11"
+      }
+    ],
+    "hash": "a5e541c24f70b98f2e503128dff80a09fc116c16458ff12eab4e7313f757ac36",
+    "previous_hash": "83b7b3959f62e4e73808b0fcada98819ea7b72ec10292d88755e54d364b79ace",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "11"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 11,
+    "state_after": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2",
+    "state_before": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "b_final"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "b_initial",
+        "operation": null,
+        "reads": {},
+        "revision": 2,
+        "scope": "main",
+        "source": "transfer-record",
+        "unit": "L",
+        "value": "5"
+      },
+      {
+        "computed_at": 11,
+        "event": "cache_reuse",
+        "name": "outbound",
+        "revision": 3,
+        "scope": "main",
+        "unit": "L",
+        "value": "12"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "b_after_transfer",
+        "operation": "add",
+        "reads": {
+          "left": {
+            "name": "b_initial",
+            "revision": 2
+          },
+          "right": {
+            "name": "outbound",
+            "revision": 3
+          }
+        },
+        "revision": 6,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "17"
+      },
+      {
+        "computed_at": 11,
+        "event": "cache_reuse",
+        "name": "returned",
+        "revision": 4,
+        "scope": "main",
+        "unit": "L",
+        "value": "3"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "b_final",
+        "operation": "sub",
+        "reads": {
+          "left": {
+            "name": "b_after_transfer",
+            "revision": 6
+          },
+          "right": {
+            "name": "returned",
+            "revision": 4
+          }
+        },
+        "revision": 8,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "14"
+      }
+    ],
+    "hash": "bccf1cbcbdedb269d17add314ff4dbb1d5dd6300dfb5e869836e9b4dbbff37f6",
+    "previous_hash": "a5e541c24f70b98f2e503128dff80a09fc116c16458ff12eab4e7313f757ac36",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "14"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 12,
+    "state_after": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2",
+    "state_before": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2"
+  },
+  {
+    "command": {
+      "action": "assert",
+      "name": "total",
+      "unit": "L",
+      "value": 25
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "computed_at": 11,
+        "event": "cache_reuse",
+        "name": "a_final",
+        "revision": 7,
+        "scope": "main",
+        "unit": "L",
+        "value": "11"
+      },
+      {
+        "computed_at": 12,
+        "event": "cache_reuse",
+        "name": "b_final",
+        "revision": 8,
+        "scope": "main",
+        "unit": "L",
+        "value": "14"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "total",
+        "operation": "add",
+        "reads": {
+          "left": {
+            "name": "a_final",
+            "revision": 7
+          },
+          "right": {
+            "name": "b_final",
+            "revision": 8
+          }
+        },
+        "revision": 9,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "25"
+      },
+      {
+        "actual": {
+          "unit": "L",
+          "value": "25"
+        },
+        "event": "assert",
+        "expected": {
+          "unit": "L",
+          "value": "25"
+        },
+        "name": "total",
+        "passed": true,
+        "scope": "main"
+      }
+    ],
+    "hash": "cc27f5d54ac7b44cdc84a267ef811789819a9674b18acf6da4935a8a948c6512",
+    "previous_hash": "bccf1cbcbdedb269d17add314ff4dbb1d5dd6300dfb5e869836e9b4dbbff37f6",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "25"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 13,
+    "state_after": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2",
+    "state_before": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2"
+  },
+  {
+    "command": {
+      "action": "fork",
+      "new_scope": "hypothetical"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "event": "fork",
+        "from": "main",
+        "revisions": {
+          "a_after_transfer": {
+            "from": 5,
+            "to": 10
+          },
+          "a_final": {
+            "from": 7,
+            "to": 11
+          },
+          "a_initial": {
+            "from": 1,
+            "to": 12
+          },
+          "b_after_transfer": {
+            "from": 6,
+            "to": 13
+          },
+          "b_final": {
+            "from": 8,
+            "to": 14
+          },
+          "b_initial": {
+            "from": 2,
+            "to": 15
+          },
+          "outbound": {
+            "from": 3,
+            "to": 16
+          },
+          "returned": {
+            "from": 4,
+            "to": 17
+          },
+          "total": {
+            "from": 9,
+            "to": 18
+          }
+        },
+        "to": "hypothetical"
+      }
+    ],
+    "hash": "bce57921654abced8c6f632a053cda868c209018f45d7afc486735b0922fd56c",
+    "previous_hash": "cc27f5d54ac7b44cdc84a267ef811789819a9674b18acf6da4935a8a948c6512",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 14,
+    "state_after": "84c9aa2523f47fb8efb4c84eb198e72407713e785648a6fa8ec218f87ae91d17",
+    "state_before": "a02f2e2dc4e93fb4f160b157bae5795cd215103cabcc27f4091c238cfc813ca2"
+  },
+  {
+    "command": {
+      "action": "set",
+      "name": "outbound",
+      "scope": "hypothetical",
+      "unit": "L",
+      "value": 8
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "kind": "literal",
+          "revision": 19,
+          "source": null,
+          "unit": "L",
+          "value": "8"
+        },
+        "event": "write",
+        "invalidated": [],
+        "name": "outbound",
+        "previous_revision": 16,
+        "scope": "hypothetical"
+      }
+    ],
+    "hash": "e3f9d772da1170b8bb3bf5adb4af8bd8cbe29d20688485671be2857519aa3bee",
+    "previous_hash": "bce57921654abced8c6f632a053cda868c209018f45d7afc486735b0922fd56c",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 15,
+    "state_after": "c140ae288fe235cf00125ff55b437c242849f09f1035520c1271a7b97e9ca191",
+    "state_before": "84c9aa2523f47fb8efb4c84eb198e72407713e785648a6fa8ec218f87ae91d17"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "a_final",
+      "scope": "hypothetical"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "a_initial",
+        "operation": null,
+        "reads": {},
+        "revision": 12,
+        "scope": "hypothetical",
+        "source": "transfer-record",
+        "unit": "L",
+        "value": "20"
+      },
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "outbound",
+        "operation": null,
+        "reads": {},
+        "revision": 19,
+        "scope": "hypothetical",
+        "source": null,
+        "unit": "L",
+        "value": "8"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "a_after_transfer",
+        "operation": "sub",
+        "reads": {
+          "left": {
+            "name": "a_initial",
+            "revision": 12
+          },
+          "right": {
+            "name": "outbound",
+            "revision": 19
+          }
+        },
+        "revision": 10,
+        "scope": "hypothetical",
+        "source": null,
+        "unit": "L",
+        "value": "12"
+      },
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "returned",
+        "operation": null,
+        "reads": {},
+        "revision": 17,
+        "scope": "hypothetical",
+        "source": "transfer-record",
+        "unit": "L",
+        "value": "3"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "a_final",
+        "operation": "add",
+        "reads": {
+          "left": {
+            "name": "a_after_transfer",
+            "revision": 10
+          },
+          "right": {
+            "name": "returned",
+            "revision": 17
+          }
+        },
+        "revision": 11,
+        "scope": "hypothetical",
+        "source": null,
+        "unit": "L",
+        "value": "15"
+      }
+    ],
+    "hash": "eb188cf8d74b6cc965318df1ab46e19e8be3eaf98f5e76053a6fa08098051191",
+    "previous_hash": "e3f9d772da1170b8bb3bf5adb4af8bd8cbe29d20688485671be2857519aa3bee",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "15"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 16,
+    "state_after": "c140ae288fe235cf00125ff55b437c242849f09f1035520c1271a7b97e9ca191",
+    "state_before": "c140ae288fe235cf00125ff55b437c242849f09f1035520c1271a7b97e9ca191"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "a_final"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "computed_at": 11,
+        "event": "cache_reuse",
+        "name": "a_final",
+        "revision": 7,
+        "scope": "main",
+        "unit": "L",
+        "value": "11"
+      }
+    ],
+    "hash": "e17627f06bd7e2ace0045884d7264c5ce5c3cc7057f901cee2ad10da8784e5d0",
+    "previous_hash": "eb188cf8d74b6cc965318df1ab46e19e8be3eaf98f5e76053a6fa08098051191",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "11"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 17,
+    "state_after": "c140ae288fe235cf00125ff55b437c242849f09f1035520c1271a7b97e9ca191",
+    "state_before": "c140ae288fe235cf00125ff55b437c242849f09f1035520c1271a7b97e9ca191"
+  },
+  {
+    "command": {
+      "action": "set",
+      "name": "returned",
+      "unit": "L",
+      "value": 4
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "binding": {
+          "kind": "literal",
+          "revision": 20,
+          "source": null,
+          "unit": "L",
+          "value": "4"
+        },
+        "event": "write",
+        "invalidated": [
+          "a_final",
+          "b_final",
+          "returned",
+          "total"
+        ],
+        "name": "returned",
+        "previous_revision": 4,
+        "scope": "main"
+      }
+    ],
+    "hash": "0d522823b1072e731b306f362e7e5cb67e713e01e2ff3e8ef0d187558a9c6cc1",
+    "previous_hash": "e17627f06bd7e2ace0045884d7264c5ce5c3cc7057f901cee2ad10da8784e5d0",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 18,
+    "state_after": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44",
+    "state_before": "c140ae288fe235cf00125ff55b437c242849f09f1035520c1271a7b97e9ca191"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "a_final"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "computed_at": 11,
+        "event": "cache_reuse",
+        "name": "a_after_transfer",
+        "revision": 5,
+        "scope": "main",
+        "unit": "L",
+        "value": "8"
+      },
+      {
+        "event": "evaluate",
+        "kind": "literal",
+        "name": "returned",
+        "operation": null,
+        "reads": {},
+        "revision": 20,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "4"
+      },
+      {
+        "event": "evaluate",
+        "kind": "derived",
+        "name": "a_final",
+        "operation": "add",
+        "reads": {
+          "left": {
+            "name": "a_after_transfer",
+            "revision": 5
+          },
+          "right": {
+            "name": "returned",
+            "revision": 20
+          }
+        },
+        "revision": 7,
+        "scope": "main",
+        "source": null,
+        "unit": "L",
+        "value": "12"
+      }
+    ],
+    "hash": "9e7240c97d276ddd5862442050b043d71b643fb316aa05a25de9f94e47322419",
+    "previous_hash": "0d522823b1072e731b306f362e7e5cb67e713e01e2ff3e8ef0d187558a9c6cc1",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "12"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 19,
+    "state_after": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44",
+    "state_before": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "a_final",
+      "scope": "hypothetical"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "computed_at": 16,
+        "event": "cache_reuse",
+        "name": "a_final",
+        "revision": 11,
+        "scope": "hypothetical",
+        "unit": "L",
+        "value": "15"
+      }
+    ],
+    "hash": "e6b769551dca434dd2bff8994375fe78336a44058e6b7cd1c9c6f9287e106b24",
+    "previous_hash": "9e7240c97d276ddd5862442050b043d71b643fb316aa05a25de9f94e47322419",
+    "result": {
+      "status": "ok",
+      "unit": "L",
+      "value": "15"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 20,
+    "state_after": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44",
+    "state_before": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44"
+  },
+  {
+    "command": {
+      "action": "assert",
+      "name": "a_final",
+      "unit": "L",
+      "value": 99
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "computed_at": 19,
+        "event": "cache_reuse",
+        "name": "a_final",
+        "revision": 7,
+        "scope": "main",
+        "unit": "L",
+        "value": "12"
+      },
+      {
+        "actual": {
+          "unit": "L",
+          "value": "12"
+        },
+        "event": "assert",
+        "expected": {
+          "unit": "L",
+          "value": "99"
+        },
+        "name": "a_final",
+        "passed": false,
+        "scope": "main"
+      }
+    ],
+    "hash": "d9ce0fe5439d55fa46cedd477789825fcb274a50b9173ffae515108e09c200f8",
+    "previous_hash": "e6b769551dca434dd2bff8994375fe78336a44058e6b7cd1c9c6f9287e106b24",
+    "result": {
+      "error": "conflict",
+      "message": "asserted quantity disagrees with the evaluated result",
+      "status": "error"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 21,
+    "state_after": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44",
+    "state_before": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44"
+  },
+  {
+    "command": {
+      "action": "retract",
+      "name": "outbound"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "event": "retract",
+        "invalidated": [
+          "a_after_transfer",
+          "a_final",
+          "b_after_transfer",
+          "outbound"
+        ],
+        "name": "outbound",
+        "previous_revision": 3,
+        "revision": 21,
+        "scope": "main",
+        "source": null
+      }
+    ],
+    "hash": "b874a4b12a68555b82c8c4d501e136ebafab92d1ea3fd1cc61c5b5774a9fc124",
+    "previous_hash": "d9ce0fe5439d55fa46cedd477789825fcb274a50b9173ffae515108e09c200f8",
+    "result": {
+      "status": "ok"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 22,
+    "state_after": "f135cd70d735e64122b74d88651755c65cd53027c2694c1bbadca4623d49d1eb",
+    "state_before": "d6323335093ffa5dcd5aa73e03bee48accbeaec2254f0c1361fa15648a270c44"
+  },
+  {
+    "command": {
+      "action": "query",
+      "name": "a_final"
+    },
+    "config": {
+      "max_command_bytes": 1100000,
+      "max_nodes": 10000,
+      "max_receipts": 100000,
+      "max_revisions": 100000,
+      "max_scopes": 256,
+      "max_source_bytes": 16777216,
+      "max_steps": 10000
+    },
+    "evidence": [
+      {
+        "computed_at": 11,
+        "event": "cache_reuse",
+        "name": "a_initial",
+        "revision": 1,
+        "scope": "main",
+        "unit": "L",
+        "value": "20"
+      }
+    ],
+    "hash": "da277ebcc02255257b3d36f74859a048bf2759b1d2134991857f299cad5efc8b",
+    "previous_hash": "b874a4b12a68555b82c8c4d501e136ebafab92d1ea3fd1cc61c5b5774a9fc124",
+    "result": {
+      "error": "missing_reference",
+      "message": "unresolved binding: main/outbound",
+      "status": "error"
+    },
+    "schema": "hadukenn.exec.receipt.v1",
+    "sequence": 23,
+    "state_after": "f135cd70d735e64122b74d88651755c65cd53027c2694c1bbadca4623d49d1eb",
+    "state_before": "f135cd70d735e64122b74d88651755c65cd53027c2694c1bbadca4623d49d1eb"
+  }
+]

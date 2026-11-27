@@ -30,10 +30,6 @@ The graph is declared in `src/sheaf_verify/gates.py` and drawn in `GATES.md`. `r
 
 After the gates, `run` registers a `result` manifest. Its payload names the outcome, the ledger head, and each gate's record hash. Its inputs are the current binding, excluding any previous result. `verify` checks that the latest result matches the latest records and that every result's ledger head is some record in the chain.
 
-## Action gate
-
-`src/sheaf_verify/action_gate.py` is a standalone library module; no gate or CLI command calls it yet. `ExactUnitLattice` converts `(value, unit)` pairs to one canonical unit per dimension in `Fraction` arithmetic and refuses to mix dimensions. `LocalActionOntology` checks a proposed transfer of a conserved quantity against a declared rule and returns one of six verdicts. Malformed input becomes a verdict rather than an exception. Source witnesses are compared exactly. One witness that disagrees with at least two agreeing witnesses is set aside; every other disagreement abstains. This is a majority rule and cannot detect a poisoned majority.
-
 ## What the checks do not do
 
 They do not execute the model, the CUDA or OpenCL kernel, or a second training run. H4 checks a submitted causality trace. G1 checks the raw-byte BPB identity. G2 and G4 recompute one-sided Welch tests. G4 also recomputes the two-tailed Welch or paired test, the bootstrap interval, and Hedges' g from the submitted per-seed numbers. A trace or a seed list can be invented. The harness makes that invention explicit and comparable. It does not make it true.
@@ -73,3 +69,11 @@ A kernel whose `backend` is `cuda`, `opencl`, or `c` must name `host_reference_s
 The branch's `Check` record (name, passed, detail) is the same shape as a criterion. Severity and category were left off. Every criterion in this harness is blocking. Their router fails closed when a caller forces the flat regime on a frustrated complex. The same posture is why a superiority flag cannot be set without both contrasts supporting it.
 
 Not used. The desktop and web GUI. Sensor-telemetry ingestion and quarantine. Involvement barcodes, hierarchy line graphs, and the gauge numerics in `network_engine/gauge/curved.py` and `flat.py`. The OpenCL and C kernel sources. The mainnet mempool experiments. Their `network_engine/meta/seal.py` reuses the mission-lab key-id label; this harness uses `sheaf-verify.key-id.v1` and does not call that function.
+
+## v0.2.0 Subsystems
+
+- `sheaf_cohomology.py`: Vector-stalk cellular sheaves over graphs and 2-complexes, exact `Fraction` coboundary rank, grounded mapping-cone diagnostics, partitioned O(1)-in-n dirty-cell updates, and tie-abstention versus fault-localization classification. When a `hypergraph` artifact includes an optional `cellular_sheaf` block, `H4` evaluates `cellular_sheaf_criteria` without altering stores that omit it.
+- `numerics.py`: `CertifiedBall` midpoint-radius rational enclosures with outward IEEE-754 float bounds, pairwise tree-reduction error envelopes, and GPU architecture roofline gates.
+- `savi.py`: Game-theoretic Kelly-betting e-processes, e-BH discovery control, Smyth Empirical-Bayes moderated paired-seed t-tests, and Learn-Then-Test Hoeffding-Bentkus threshold calibration.
+- `attestation.py` & `anticheat.py`: Strict RFC 7493/8785 JSON parsing, in-toto Statement v1 + DSSE v1.0 PAE envelopes, RFC 9162 Merkle inclusion/consistency proofs over `ledger.jsonl`, and static AST anti-reward-hacking kernel checks.
+- `campaign.py` & `mutation.py`: Domain of Calibration transition rules, `256 × 128` spectral cluster geometry and head-FLOP scaling verifiers, T-37 / T-38 / `hg-v3` protocol recomputation, and deterministic mutation adequacy scoring (`MS = K / (G - E)`).

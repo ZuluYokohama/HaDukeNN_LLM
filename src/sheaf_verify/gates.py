@@ -35,6 +35,7 @@ from sheaf_verify.checks import (
 from sheaf_verify.context import Context
 from sheaf_verify.hashing import SheafError, as_int, parse_json_bytes
 from sheaf_verify.policy import HEADLINE_SEEDS, REQUIRED_ARMS
+from sheaf_verify.sheaf_cohomology import cellular_sheaf_criteria
 from sheaf_verify.spec_gates import (
     g0_criteria,
     g1_criteria,
@@ -257,6 +258,8 @@ def evaluate_h4(ctx: Context) -> list:
         criteria.append(bad("causality.provenance", "the trace does not cite the study hypergraph"))
     sheaf = hypergraph.get("sheaf") if isinstance(hypergraph, dict) else None
     criteria.append(loop_criterion(sheaf))
+    if isinstance(hypergraph, dict) and "cellular_sheaf" in hypergraph:
+        criteria.extend(cellular_sheaf_criteria(hypergraph.get("cellular_sheaf")))
     return criteria
 
 

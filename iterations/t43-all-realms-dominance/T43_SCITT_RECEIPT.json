@@ -1,0 +1,38 @@
+{
+  "audit_path": [
+    "502438bbf27e67b16b722c8b1721a1a24007854736e143530b6bf3ae53127e30",
+    "983a13a967c6b9abccc34b87c1014472809da8239b73247f3a3105940a444a66"
+  ],
+  "dsse": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiZ2F0ZV9pZCI6IlQ0MyIsIm1lcmtsZV9yb290X3NoYTI1NiI6IjIyZDE5YWFhOTk2NDc3ZTgyYThkMzI4MTEzNjY3ZjliNDgzMWNlYWZkZTc3ZWQ3NjYwMGJkYWEyNDZmY2RjNGYiLCJzdGF0dXMiOiJQQVNTRUQiLCJ0cmVlX3NpemUiOjR9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9oYWR1a2Vubi5vcmcvc2hlYWYtdmVyaWZ5L2dhdGUtdmVyZGljdC92MiIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiI1YzAwOGUyMDM4MjkyOWI3ODEyNDJhYWZkNjM1MDkwNjdiMzg2Nzg4OWFjZGQ5ZTMzY2ZiZjk2Mzk5NmM2NzNjIn0sIm5hbWUiOiJsZWRnZXIvc2VxLzMifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "alg": "hmac-sha256",
+        "keyid": "ba0d82512956ed83275920efb1c0c57c2e4a8ea374e66fbc75702d18e3b405b5",
+        "sig": "eB0dqWTfdvx+9mEYBS837W23mz7950Pu7XO5k+hRpSA="
+      }
+    ]
+  },
+  "format": "sheaf-verify.scitt-merkle-receipt.v1",
+  "gate_id": "T43",
+  "leaf_index": 3,
+  "merkle_root_sha256": "22d19aaa996477e82a8d328113667f9b4831ceafde77ed76600bdaa246fcdc4f",
+  "record": {
+    "created_at": "2026-11-25T23:59:00Z",
+    "format": "sheaf-verify.ledger.v1",
+    "gate_id": "T43",
+    "prev_sha256": "010707e69233937a00e08e6dbab251c42a5bc9b795dd7b1705f5bec912761135",
+    "record_sha256": "5c008e20382929b781242aafd63509067b3867889acdd9e33cfbf963996c673c",
+    "seq": 3,
+    "sha256": "a2e20220f4d0a85ccbbbbda214f84b8481907681c7a19a79de9fd011444e32d5",
+    "signature": {
+      "algorithm": "hmac-sha256",
+      "key_id": "ba0d82512956ed83275920efb1c0c57c2e4a8ea374e66fbc75702d18e3b405b5",
+      "value": "e459e0b896b635ad9166ed1efdb02fa02cf61e61d255a5b6cabcd82c8b01e758"
+    },
+    "status": "PASSED"
+  },
+  "record_sha256": "5c008e20382929b781242aafd63509067b3867889acdd9e33cfbf963996c673c",
+  "tree_size": 4
+}
