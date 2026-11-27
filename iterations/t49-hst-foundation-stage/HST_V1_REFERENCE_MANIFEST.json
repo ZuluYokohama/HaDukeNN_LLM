@@ -1,0 +1,1543 @@
+{
+  "control_tokens": {
+    "<|hst:assert|>": 261,
+    "<|hst:bos|>": 256,
+    "<|hst:eos|>": 257,
+    "<|hst:fork|>": 260,
+    "<|hst:receipt|>": 263,
+    "<|hst:span_close|>": 259,
+    "<|hst:span_open|>": 258,
+    "<|hst:unit|>": 262
+  },
+  "digit_atomic_policy": true,
+  "max_span_bytes": 16,
+  "merges": [
+    {
+      "byte_len": 2,
+      "count": 460,
+      "left_id": 101,
+      "pmi_bits": 1.847688,
+      "right_id": 114,
+      "stage": "A_lexical",
+      "token_b64": "ZXI=",
+      "token_id": 264
+    },
+    {
+      "byte_len": 2,
+      "count": 409,
+      "left_id": 97,
+      "pmi_bits": 2.363608,
+      "right_id": 108,
+      "stage": "A_lexical",
+      "token_b64": "YWw=",
+      "token_id": 265
+    },
+    {
+      "byte_len": 2,
+      "count": 358,
+      "left_id": 114,
+      "pmi_bits": 2.361892,
+      "right_id": 101,
+      "stage": "A_lexical",
+      "token_b64": "cmU=",
+      "token_id": 266
+    },
+    {
+      "byte_len": 2,
+      "count": 324,
+      "left_id": 32,
+      "pmi_bits": 2.157708,
+      "right_id": 118,
+      "stage": "A_lexical",
+      "token_b64": "IHY=",
+      "token_id": 267
+    },
+    {
+      "byte_len": 2,
+      "count": 292,
+      "left_id": 97,
+      "pmi_bits": 2.213873,
+      "right_id": 116,
+      "stage": "A_lexical",
+      "token_b64": "YXQ=",
+      "token_id": 268
+    },
+    {
+      "byte_len": 2,
+      "count": 290,
+      "left_id": 97,
+      "pmi_bits": 2.744767,
+      "right_id": 110,
+      "stage": "A_lexical",
+      "token_b64": "YW4=",
+      "token_id": 269
+    },
+    {
+      "byte_len": 2,
+      "count": 280,
+      "left_id": 32,
+      "pmi_bits": 0.069508,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "IHM=",
+      "token_id": 270
+    },
+    {
+      "byte_len": 2,
+      "count": 276,
+      "left_id": 105,
+      "pmi_bits": 2.419229,
+      "right_id": 110,
+      "stage": "A_lexical",
+      "token_b64": "aW4=",
+      "token_id": 271
+    },
+    {
+      "byte_len": 2,
+      "count": 274,
+      "left_id": 115,
+      "pmi_bits": 1.038276,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "c3M=",
+      "token_id": 272
+    },
+    {
+      "byte_len": 2,
+      "count": 271,
+      "left_id": 111,
+      "pmi_bits": 3.185722,
+      "right_id": 110,
+      "stage": "A_lexical",
+      "token_b64": "b24=",
+      "token_id": 273
+    },
+    {
+      "byte_len": 2,
+      "count": 246,
+      "left_id": 111,
+      "pmi_bits": 2.783673,
+      "right_id": 108,
+      "stage": "A_lexical",
+      "token_b64": "b2w=",
+      "token_id": 274
+    },
+    {
+      "byte_len": 2,
+      "count": 227,
+      "left_id": 32,
+      "pmi_bits": 2.039057,
+      "right_id": 104,
+      "stage": "A_lexical",
+      "token_b64": "IGg=",
+      "token_id": 275
+    },
+    {
+      "byte_len": 2,
+      "count": 218,
+      "left_id": 100,
+      "pmi_bits": 2.304808,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "ZHM=",
+      "token_id": 276
+    },
+    {
+      "byte_len": 2,
+      "count": 217,
+      "left_id": 32,
+      "pmi_bits": 1.081704,
+      "right_id": 99,
+      "stage": "A_lexical",
+      "token_b64": "IGM=",
+      "token_id": 277
+    },
+    {
+      "byte_len": 4,
+      "count": 202,
+      "left_id": 274,
+      "pmi_bits": 6.277379,
+      "right_id": 276,
+      "stage": "A_lexical",
+      "token_b64": "b2xkcw==",
+      "token_id": 278
+    },
+    {
+      "byte_len": 2,
+      "count": 201,
+      "left_id": 32,
+      "pmi_bits": 1.31609,
+      "right_id": 109,
+      "stage": "A_lexical",
+      "token_b64": "IG0=",
+      "token_id": 279
+    },
+    {
+      "byte_len": 2,
+      "count": 200,
+      "left_id": 32,
+      "pmi_bits": 1.06492,
+      "right_id": 116,
+      "stage": "A_lexical",
+      "token_b64": "IHQ=",
+      "token_id": 280
+    },
+    {
+      "byte_len": 2,
+      "count": 195,
+      "left_id": 99,
+      "pmi_bits": 1.961648,
+      "right_id": 101,
+      "stage": "A_lexical",
+      "token_b64": "Y2U=",
+      "token_id": 281
+    },
+    {
+      "byte_len": 6,
+      "count": 185,
+      "left_id": 275,
+      "pmi_bits": 6.31947,
+      "right_id": 278,
+      "stage": "A_lexical",
+      "token_b64": "IGhvbGRz",
+      "token_id": 282
+    },
+    {
+      "byte_len": 3,
+      "count": 177,
+      "left_id": 105,
+      "pmi_bits": 3.451233,
+      "right_id": 273,
+      "stage": "A_lexical",
+      "token_b64": "aW9u",
+      "token_id": 283
+    },
+    {
+      "byte_len": 3,
+      "count": 169,
+      "left_id": 264,
+      "pmi_bits": 2.844508,
+      "right_id": 105,
+      "stage": "A_lexical",
+      "token_b64": "ZXJp",
+      "token_id": 284
+    },
+    {
+      "byte_len": 2,
+      "count": 168,
+      "left_id": 32,
+      "pmi_bits": 3.007752,
+      "right_id": 98,
+      "stage": "A_lexical",
+      "token_b64": "IGI=",
+      "token_id": 285
+    },
+    {
+      "byte_len": 2,
+      "count": 168,
+      "left_id": 101,
+      "pmi_bits": 2.091909,
+      "right_id": 108,
+      "stage": "A_lexical",
+      "token_b64": "ZWw=",
+      "token_id": 286
+    },
+    {
+      "byte_len": 3,
+      "count": 168,
+      "left_id": 101,
+      "pmi_bits": 3.246311,
+      "right_id": 272,
+      "stage": "A_lexical",
+      "token_b64": "ZXNz",
+      "token_id": 287
+    },
+    {
+      "byte_len": 5,
+      "count": 168,
+      "left_id": 267,
+      "pmi_bits": 5.855522,
+      "right_id": 287,
+      "stage": "A_lexical",
+      "token_b64": "IHZlc3M=",
+      "token_id": 288
+    },
+    {
+      "byte_len": 7,
+      "count": 168,
+      "left_id": 288,
+      "pmi_bits": 6.790077,
+      "right_id": 286,
+      "stage": "A_lexical",
+      "token_b64": "IHZlc3NlbA==",
+      "token_id": 289
+    },
+    {
+      "byte_len": 2,
+      "count": 161,
+      "left_id": 101,
+      "pmi_bits": 2.284761,
+      "right_id": 100,
+      "stage": "A_lexical",
+      "token_b64": "ZWQ=",
+      "token_id": 290
+    },
+    {
+      "byte_len": 2,
+      "count": 152,
+      "left_id": 111,
+      "pmi_bits": 2.884382,
+      "right_id": 109,
+      "stage": "A_lexical",
+      "token_b64": "b20=",
+      "token_id": 291
+    },
+    {
+      "byte_len": 2,
+      "count": 146,
+      "left_id": 105,
+      "pmi_bits": 2.877969,
+      "right_id": 99,
+      "stage": "A_lexical",
+      "token_b64": "aWM=",
+      "token_id": 292
+    },
+    {
+      "byte_len": 2,
+      "count": 141,
+      "left_id": 32,
+      "pmi_bits": 0.711765,
+      "right_id": 101,
+      "stage": "A_lexical",
+      "token_b64": "IGU=",
+      "token_id": 293
+    },
+    {
+      "byte_len": 2,
+      "count": 134,
+      "left_id": 105,
+      "pmi_bits": 2.288502,
+      "right_id": 116,
+      "stage": "A_lexical",
+      "token_b64": "aXQ=",
+      "token_id": 294
+    },
+    {
+      "byte_len": 3,
+      "count": 133,
+      "left_id": 32,
+      "pmi_bits": 2.04821,
+      "right_id": 266,
+      "stage": "A_lexical",
+      "token_b64": "IHJl",
+      "token_id": 295
+    },
+    {
+      "byte_len": 2,
+      "count": 128,
+      "left_id": 32,
+      "pmi_bits": 1.311193,
+      "right_id": 97,
+      "stage": "A_lexical",
+      "token_b64": "IGE=",
+      "token_id": 296
+    },
+    {
+      "byte_len": 5,
+      "count": 128,
+      "left_id": 268,
+      "pmi_bits": 5.431772,
+      "right_id": 283,
+      "stage": "A_lexical",
+      "token_b64": "YXRpb24=",
+      "token_id": 297
+    },
+    {
+      "byte_len": 5,
+      "count": 123,
+      "left_id": 267,
+      "pmi_bits": 6.334801,
+      "right_id": 284,
+      "stage": "A_lexical",
+      "token_b64": "IHZlcmk=",
+      "token_id": 298
+    },
+    {
+      "byte_len": 6,
+      "count": 123,
+      "left_id": 298,
+      "pmi_bits": 5.654647,
+      "right_id": 102,
+      "stage": "A_lexical",
+      "token_b64": "IHZlcmlm",
+      "token_id": 299
+    },
+    {
+      "byte_len": 2,
+      "count": 120,
+      "left_id": 32,
+      "pmi_bits": 1.889319,
+      "right_id": 112,
+      "stage": "A_lexical",
+      "token_b64": "IHA=",
+      "token_id": 300
+    },
+    {
+      "byte_len": 2,
+      "count": 116,
+      "left_id": 117,
+      "pmi_bits": 2.876355,
+      "right_id": 109,
+      "stage": "A_lexical",
+      "token_b64": "dW0=",
+      "token_id": 301
+    },
+    {
+      "byte_len": 3,
+      "count": 112,
+      "left_id": 117,
+      "pmi_bits": 3.752929,
+      "right_id": 266,
+      "stage": "A_lexical",
+      "token_b64": "dXJl",
+      "token_id": 302
+    },
+    {
+      "byte_len": 3,
+      "count": 111,
+      "left_id": 97,
+      "pmi_bits": 3.765689,
+      "right_id": 271,
+      "stage": "A_lexical",
+      "token_b64": "YWlu",
+      "token_id": 303
+    },
+    {
+      "byte_len": 2,
+      "count": 107,
+      "left_id": 32,
+      "pmi_bits": 3.780143,
+      "right_id": 77,
+      "stage": "A_lexical",
+      "token_b64": "IE0=",
+      "token_id": 304
+    },
+    {
+      "byte_len": 2,
+      "count": 103,
+      "left_id": 113,
+      "pmi_bits": 5.017694,
+      "right_id": 117,
+      "stage": "A_lexical",
+      "token_b64": "cXU=",
+      "token_id": 305
+    },
+    {
+      "byte_len": 2,
+      "count": 103,
+      "left_id": 114,
+      "pmi_bits": 2.554649,
+      "right_id": 111,
+      "stage": "A_lexical",
+      "token_b64": "cm8=",
+      "token_id": 306
+    },
+    {
+      "byte_len": 4,
+      "count": 103,
+      "left_id": 265,
+      "pmi_bits": 3.821713,
+      "right_id": 269,
+      "stage": "A_lexical",
+      "token_b64": "YWxhbg==",
+      "token_id": 307
+    },
+    {
+      "byte_len": 6,
+      "count": 103,
+      "left_id": 285,
+      "pmi_bits": 6.589607,
+      "right_id": 307,
+      "stage": "A_lexical",
+      "token_b64": "IGJhbGFu",
+      "token_id": 308
+    },
+    {
+      "byte_len": 8,
+      "count": 103,
+      "left_id": 308,
+      "pmi_bits": 6.36538,
+      "right_id": 281,
+      "stage": "A_lexical",
+      "token_b64": "IGJhbGFuY2U=",
+      "token_id": 309
+    },
+    {
+      "byte_len": 2,
+      "count": 100,
+      "left_id": 32,
+      "pmi_bits": 1.959664,
+      "right_id": 108,
+      "stage": "A_lexical",
+      "token_b64": "IGw=",
+      "token_id": 310
+    },
+    {
+      "byte_len": 2,
+      "count": 99,
+      "left_id": 101,
+      "pmi_bits": 2.446028,
+      "right_id": 97,
+      "stage": "A_lexical",
+      "token_b64": "ZWE=",
+      "token_id": 311
+    },
+    {
+      "byte_len": 3,
+      "count": 99,
+      "left_id": 265,
+      "pmi_bits": 2.427057,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "YWxz",
+      "token_id": 312
+    },
+    {
+      "byte_len": 4,
+      "count": 94,
+      "left_id": 277,
+      "pmi_bits": 6.174719,
+      "right_id": 273,
+      "stage": "A_lexical",
+      "token_b64": "IGNvbg==",
+      "token_id": 313
+    },
+    {
+      "byte_len": 2,
+      "count": 93,
+      "left_id": 32,
+      "pmi_bits": 2.731341,
+      "right_id": 102,
+      "stage": "A_lexical",
+      "token_b64": "IGY=",
+      "token_id": 314
+    },
+    {
+      "byte_len": 2,
+      "count": 85,
+      "left_id": 100,
+      "pmi_bits": 2.274761,
+      "right_id": 101,
+      "stage": "A_lexical",
+      "token_b64": "ZGU=",
+      "token_id": 315
+    },
+    {
+      "byte_len": 3,
+      "count": 84,
+      "left_id": 32,
+      "pmi_bits": 2.929892,
+      "right_id": 269,
+      "stage": "A_lexical",
+      "token_b64": "IGFu",
+      "token_id": 316
+    },
+    {
+      "byte_len": 3,
+      "count": 84,
+      "left_id": 68,
+      "pmi_bits": 6.375093,
+      "right_id": 291,
+      "stage": "A_lexical",
+      "token_b64": "RG9t",
+      "token_id": 317
+    },
+    {
+      "byte_len": 3,
+      "count": 84,
+      "left_id": 105,
+      "pmi_bits": 3.866485,
+      "right_id": 290,
+      "stage": "A_lexical",
+      "token_b64": "aWVk",
+      "token_id": 318
+    },
+    {
+      "byte_len": 2,
+      "count": 84,
+      "left_id": 115,
+      "pmi_bits": 1.353462,
+      "right_id": 116,
+      "stage": "A_lexical",
+      "token_b64": "c3Q=",
+      "token_id": 319
+    },
+    {
+      "byte_len": 4,
+      "count": 84,
+      "left_id": 115,
+      "pmi_bits": 3.882962,
+      "right_id": 302,
+      "stage": "A_lexical",
+      "token_b64": "c3VyZQ==",
+      "token_id": 320
+    },
+    {
+      "byte_len": 4,
+      "count": 84,
+      "left_id": 270,
+      "pmi_bits": 5.276189,
+      "right_id": 301,
+      "stage": "A_lexical",
+      "token_b64": "IHN1bQ==",
+      "token_id": 321
+    },
+    {
+      "byte_len": 3,
+      "count": 84,
+      "left_id": 280,
+      "pmi_bits": 3.719702,
+      "right_id": 111,
+      "stage": "A_lexical",
+      "token_b64": "IHRv",
+      "token_id": 322
+    },
+    {
+      "byte_len": 4,
+      "count": 84,
+      "left_id": 293,
+      "pmi_bits": 6.421134,
+      "right_id": 305,
+      "stage": "A_lexical",
+      "token_b64": "IGVxdQ==",
+      "token_id": 323
+    },
+    {
+      "byte_len": 9,
+      "count": 84,
+      "left_id": 299,
+      "pmi_bits": 6.904151,
+      "right_id": 318,
+      "stage": "A_lexical",
+      "token_b64": "IHZlcmlmaWVk",
+      "token_id": 324
+    },
+    {
+      "byte_len": 4,
+      "count": 84,
+      "left_id": 304,
+      "pmi_bits": 6.85991,
+      "right_id": 311,
+      "stage": "A_lexical",
+      "token_b64": "IE1lYQ==",
+      "token_id": 325
+    },
+    {
+      "byte_len": 4,
+      "count": 84,
+      "left_id": 316,
+      "pmi_bits": 5.459432,
+      "right_id": 100,
+      "stage": "A_lexical",
+      "token_b64": "IGFuZA==",
+      "token_id": 326
+    },
+    {
+      "byte_len": 6,
+      "count": 84,
+      "left_id": 317,
+      "pmi_bits": 7.027358,
+      "right_id": 303,
+      "stage": "A_lexical",
+      "token_b64": "RG9tYWlu",
+      "token_id": 327
+    },
+    {
+      "byte_len": 5,
+      "count": 84,
+      "left_id": 320,
+      "pmi_bits": 5.865013,
+      "right_id": 100,
+      "stage": "A_lexical",
+      "token_b64": "c3VyZWQ=",
+      "token_id": 328
+    },
+    {
+      "byte_len": 7,
+      "count": 84,
+      "left_id": 323,
+      "pmi_bits": 7.175581,
+      "right_id": 312,
+      "stage": "A_lexical",
+      "token_b64": "IGVxdWFscw==",
+      "token_id": 329
+    },
+    {
+      "byte_len": 9,
+      "count": 84,
+      "left_id": 325,
+      "pmi_bits": 7.404128,
+      "right_id": 328,
+      "stage": "A_lexical",
+      "token_b64": "IE1lYXN1cmVk",
+      "token_id": 330
+    },
+    {
+      "byte_len": 2,
+      "count": 80,
+      "left_id": 117,
+      "pmi_bits": 3.351738,
+      "right_id": 108,
+      "stage": "A_lexical",
+      "token_b64": "dWw=",
+      "token_id": 331
+    },
+    {
+      "byte_len": 2,
+      "count": 78,
+      "left_id": 111,
+      "pmi_bits": 3.105369,
+      "right_id": 117,
+      "stage": "A_lexical",
+      "token_b64": "b3U=",
+      "token_id": 332
+    },
+    {
+      "byte_len": 2,
+      "count": 77,
+      "left_id": 111,
+      "pmi_bits": 3.126412,
+      "right_id": 114,
+      "stage": "A_lexical",
+      "token_b64": "b3I=",
+      "token_id": 333
+    },
+    {
+      "byte_len": 3,
+      "count": 73,
+      "left_id": 115,
+      "pmi_bits": 2.355052,
+      "right_id": 264,
+      "stage": "A_lexical",
+      "token_b64": "c2Vy",
+      "token_id": 334
+    },
+    {
+      "byte_len": 4,
+      "count": 73,
+      "left_id": 334,
+      "pmi_bits": 6.21698,
+      "right_id": 118,
+      "stage": "A_lexical",
+      "token_b64": "c2Vydg==",
+      "token_id": 335
+    },
+    {
+      "byte_len": 4,
+      "count": 72,
+      "left_id": 306,
+      "pmi_bits": 6.504011,
+      "right_id": 272,
+      "stage": "A_lexical",
+      "token_b64": "cm9zcw==",
+      "token_id": 336
+    },
+    {
+      "byte_len": 2,
+      "count": 69,
+      "left_id": 116,
+      "pmi_bits": 1.627623,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "dHM=",
+      "token_id": 337
+    },
+    {
+      "byte_len": 3,
+      "count": 69,
+      "left_id": 271,
+      "pmi_bits": 4.617872,
+      "right_id": 103,
+      "stage": "A_lexical",
+      "token_b64": "aW5n",
+      "token_id": 338
+    },
+    {
+      "byte_len": 3,
+      "count": 68,
+      "left_id": 32,
+      "pmi_bits": 3.542324,
+      "right_id": 271,
+      "stage": "A_lexical",
+      "token_b64": "IGlu",
+      "token_id": 339
+    },
+    {
+      "byte_len": 2,
+      "count": 68,
+      "left_id": 101,
+      "pmi_bits": 2.474337,
+      "right_id": 99,
+      "stage": "A_lexical",
+      "token_b64": "ZWM=",
+      "token_id": 340
+    },
+    {
+      "byte_len": 2,
+      "count": 68,
+      "left_id": 101,
+      "pmi_bits": 2.882203,
+      "right_id": 109,
+      "stage": "A_lexical",
+      "token_b64": "ZW0=",
+      "token_id": 341
+    },
+    {
+      "byte_len": 3,
+      "count": 66,
+      "left_id": 268,
+      "pmi_bits": 3.633063,
+      "right_id": 101,
+      "stage": "A_lexical",
+      "token_b64": "YXRl",
+      "token_id": 342
+    },
+    {
+      "byte_len": 8,
+      "count": 64,
+      "left_id": 313,
+      "pmi_bits": 6.95288,
+      "right_id": 335,
+      "stage": "A_lexical",
+      "token_b64": "IGNvbnNlcnY=",
+      "token_id": 343
+    },
+    {
+      "byte_len": 3,
+      "count": 63,
+      "left_id": 270,
+      "pmi_bits": 3.294672,
+      "right_id": 116,
+      "stage": "A_lexical",
+      "token_b64": "IHN0",
+      "token_id": 344
+    },
+    {
+      "byte_len": 2,
+      "count": 62,
+      "left_id": 109,
+      "pmi_bits": 3.634178,
+      "right_id": 101,
+      "stage": "A_lexical",
+      "token_b64": "bWU=",
+      "token_id": 345
+    },
+    {
+      "byte_len": 3,
+      "count": 62,
+      "left_id": 280,
+      "pmi_bits": 4.464495,
+      "right_id": 114,
+      "stage": "A_lexical",
+      "token_b64": "IHRy",
+      "token_id": 346
+    },
+    {
+      "byte_len": 3,
+      "count": 58,
+      "left_id": 109,
+      "pmi_bits": 4.9639,
+      "right_id": 265,
+      "stage": "A_lexical",
+      "token_b64": "bWFs",
+      "token_id": 347
+    },
+    {
+      "byte_len": 3,
+      "count": 57,
+      "left_id": 264,
+      "pmi_bits": 2.651226,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "ZXJz",
+      "token_id": 348
+    },
+    {
+      "byte_len": 5,
+      "count": 56,
+      "left_id": 99,
+      "pmi_bits": 5.499997,
+      "right_id": 336,
+      "stage": "A_lexical",
+      "token_b64": "Y3Jvc3M=",
+      "token_id": 349
+    },
+    {
+      "byte_len": 7,
+      "count": 56,
+      "left_id": 296,
+      "pmi_bits": 6.650715,
+      "right_id": 349,
+      "stage": "A_lexical",
+      "token_b64": "IGFjcm9zcw==",
+      "token_id": 350
+    },
+    {
+      "byte_len": 2,
+      "count": 55,
+      "left_id": 32,
+      "pmi_bits": 3.135616,
+      "right_id": 119,
+      "stage": "A_lexical",
+      "token_b64": "IHc=",
+      "token_id": 351
+    },
+    {
+      "byte_len": 2,
+      "count": 55,
+      "left_id": 105,
+      "pmi_bits": 3.222218,
+      "right_id": 103,
+      "stage": "A_lexical",
+      "token_b64": "aWc=",
+      "token_id": 352
+    },
+    {
+      "byte_len": 2,
+      "count": 55,
+      "left_id": 112,
+      "pmi_bits": 3.611422,
+      "right_id": 108,
+      "stage": "A_lexical",
+      "token_b64": "cGw=",
+      "token_id": 353
+    },
+    {
+      "byte_len": 3,
+      "count": 55,
+      "left_id": 310,
+      "pmi_bits": 4.880569,
+      "right_id": 111,
+      "stage": "A_lexical",
+      "token_b64": "IGxv",
+      "token_id": 354
+    },
+    {
+      "byte_len": 3,
+      "count": 51,
+      "left_id": 279,
+      "pmi_bits": 2.724912,
+      "right_id": 115,
+      "stage": "A_lexical",
+      "token_b64": "IG1z",
+      "token_id": 355
+    },
+    {
+      "byte_len": 2,
+      "count": 50,
+      "left_id": 97,
+      "pmi_bits": 3.113315,
+      "right_id": 114,
+      "stage": "A_lexical",
+      "token_b64": "YXI=",
+      "token_id": 356
+    },
+    {
+      "byte_len": 2,
+      "count": 50,
+      "left_id": 99,
+      "pmi_bits": 4.225558,
+      "right_id": 104,
+      "stage": "A_lexical",
+      "token_b64": "Y2g=",
+      "token_id": 357
+    },
+    {
+      "byte_len": 8,
+      "count": 168,
+      "left_id": 289,
+      "pmi_bits": 6.209685,
+      "right_id": 95,
+      "stage": "B_superspan",
+      "token_b64": "IHZlc3NlbF8=",
+      "token_id": 358
+    },
+    {
+      "byte_len": 7,
+      "count": 185,
+      "left_id": 282,
+      "pmi_bits": 4.129107,
+      "right_id": 32,
+      "stage": "B_superspan",
+      "token_b64": "IGhvbGRzIA==",
+      "token_id": 359
+    },
+    {
+      "byte_len": 11,
+      "count": 84,
+      "left_id": 321,
+      "pmi_bits": 7.168135,
+      "right_id": 329,
+      "stage": "B_superspan",
+      "token_b64": "IHN1bSBlcXVhbHM=",
+      "token_id": 360
+    },
+    {
+      "byte_len": 10,
+      "count": 84,
+      "left_id": 46,
+      "pmi_bits": 6.158069,
+      "right_id": 330,
+      "stage": "B_superspan",
+      "token_b64": "LiBNZWFzdXJlZA==",
+      "token_id": 361
+    },
+    {
+      "byte_len": 9,
+      "count": 84,
+      "left_id": 358,
+      "pmi_bits": 6.147932,
+      "right_id": 65,
+      "stage": "B_superspan",
+      "token_b64": "IHZlc3NlbF9B",
+      "token_id": 362
+    },
+    {
+      "byte_len": 9,
+      "count": 84,
+      "left_id": 358,
+      "pmi_bits": 6.552761,
+      "right_id": 66,
+      "stage": "B_superspan",
+      "token_b64": "IHZlc3NlbF9C",
+      "token_id": 363
+    },
+    {
+      "byte_len": 10,
+      "count": 84,
+      "left_id": 58,
+      "pmi_bits": 6.127442,
+      "right_id": 362,
+      "stage": "B_superspan",
+      "token_b64": "OiB2ZXNzZWxfQQ==",
+      "token_id": 364
+    },
+    {
+      "byte_len": 16,
+      "count": 84,
+      "left_id": 363,
+      "pmi_bits": 5.978022,
+      "right_id": 359,
+      "stage": "B_superspan",
+      "token_b64": "IHZlc3NlbF9CIGhvbGRzIA==",
+      "token_id": 365
+    },
+    {
+      "byte_len": 10,
+      "count": 84,
+      "left_id": 44,
+      "pmi_bits": 5.521694,
+      "right_id": 324,
+      "stage": "B_superspan",
+      "token_b64": "LCB2ZXJpZmllZA==",
+      "token_id": 366
+    },
+    {
+      "byte_len": 5,
+      "count": 84,
+      "left_id": 44,
+      "pmi_bits": 6.09615,
+      "right_id": 326,
+      "stage": "B_superspan",
+      "token_b64": "LCBhbmQ=",
+      "token_id": 367
+    },
+    {
+      "byte_len": 12,
+      "count": 84,
+      "left_id": 360,
+      "pmi_bits": 4.466657,
+      "right_id": 32,
+      "stage": "B_superspan",
+      "token_b64": "IHN1bSBlcXVhbHMg",
+      "token_id": 368
+    },
+    {
+      "byte_len": 5,
+      "count": 48,
+      "left_id": 346,
+      "pmi_bits": 6.411489,
+      "right_id": 269,
+      "stage": "B_superspan",
+      "token_b64": "IHRyYW4=",
+      "token_id": 369
+    },
+    {
+      "byte_len": 13,
+      "count": 45,
+      "left_id": 343,
+      "pmi_bits": 5.952949,
+      "right_id": 297,
+      "stage": "B_superspan",
+      "token_b64": "IGNvbnNlcnZhdGlvbg==",
+      "token_id": 370
+    },
+    {
+      "byte_len": 6,
+      "count": 48,
+      "left_id": 369,
+      "pmi_bits": 4.70044,
+      "right_id": 115,
+      "stage": "B_superspan",
+      "token_b64": "IHRyYW5z",
+      "token_id": 371
+    },
+    {
+      "byte_len": 2,
+      "count": 46,
+      "left_id": 105,
+      "pmi_bits": 4.783813,
+      "right_id": 122,
+      "stage": "B_superspan",
+      "token_b64": "aXo=",
+      "token_id": 372
+    },
+    {
+      "byte_len": 3,
+      "count": 42,
+      "left_id": 296,
+      "pmi_bits": 4.986115,
+      "right_id": 114,
+      "stage": "B_superspan",
+      "token_b64": "IGFy",
+      "token_id": 373
+    },
+    {
+      "byte_len": 2,
+      "count": 30,
+      "left_id": 75,
+      "pmi_bits": 8.045435,
+      "right_id": 66,
+      "stage": "B_superspan",
+      "token_b64": "S0I=",
+      "token_id": 374
+    },
+    {
+      "byte_len": 7,
+      "count": 38,
+      "left_id": 292,
+      "pmi_bits": 5.11691,
+      "right_id": 297,
+      "stage": "B_superspan",
+      "token_b64": "aWNhdGlvbg==",
+      "token_id": 375
+    },
+    {
+      "byte_len": 7,
+      "count": 30,
+      "left_id": 372,
+      "pmi_bits": 7.320359,
+      "right_id": 297,
+      "stage": "B_superspan",
+      "token_b64": "aXphdGlvbg==",
+      "token_id": 376
+    },
+    {
+      "byte_len": 7,
+      "count": 34,
+      "left_id": 371,
+      "pmi_bits": 5.96167,
+      "right_id": 102,
+      "stage": "B_superspan",
+      "token_b64": "IHRyYW5zZg==",
+      "token_id": 377
+    },
+    {
+      "byte_len": 2,
+      "count": 36,
+      "left_id": 111,
+      "pmi_bits": 5.41814,
+      "right_id": 119,
+      "stage": "B_superspan",
+      "token_b64": "b3c=",
+      "token_id": 378
+    },
+    {
+      "byte_len": 3,
+      "count": 36,
+      "left_id": 108,
+      "pmi_bits": 6.307217,
+      "right_id": 378,
+      "stage": "B_superspan",
+      "token_b64": "bG93",
+      "token_id": 379
+    },
+    {
+      "byte_len": 5,
+      "count": 36,
+      "left_id": 314,
+      "pmi_bits": 6.871822,
+      "right_id": 379,
+      "stage": "B_superspan",
+      "token_b64": "IGZsb3c=",
+      "token_id": 380
+    },
+    {
+      "byte_len": 2,
+      "count": 49,
+      "left_id": 105,
+      "pmi_bits": 3.180334,
+      "right_id": 100,
+      "stage": "B_superspan",
+      "token_b64": "aWQ=",
+      "token_id": 381
+    },
+    {
+      "byte_len": 13,
+      "count": 28,
+      "left_id": 299,
+      "pmi_bits": 7.673704,
+      "right_id": 375,
+      "stage": "B_superspan",
+      "token_b64": "IHZlcmlmaWNhdGlvbg==",
+      "token_id": 382
+    },
+    {
+      "byte_len": 2,
+      "count": 39,
+      "left_id": 32,
+      "pmi_bits": 4.641048,
+      "right_id": 76,
+      "stage": "B_superspan",
+      "token_b64": "IEw=",
+      "token_id": 383
+    },
+    {
+      "byte_len": 16,
+      "count": 28,
+      "left_id": 347,
+      "pmi_bits": 7.532725,
+      "right_id": 382,
+      "stage": "B_superspan",
+      "token_b64": "bWFsIHZlcmlmaWNhdGlvbg==",
+      "token_id": 384
+    },
+    {
+      "byte_len": 3,
+      "count": 47,
+      "left_id": 116,
+      "pmi_bits": 3.190979,
+      "right_id": 265,
+      "stage": "B_superspan",
+      "token_b64": "dGFs",
+      "token_id": 385
+    },
+    {
+      "byte_len": 6,
+      "count": 36,
+      "left_id": 322,
+      "pmi_bits": 6.603615,
+      "right_id": 385,
+      "stage": "B_superspan",
+      "token_b64": "IHRvdGFs",
+      "token_id": 386
+    },
+    {
+      "byte_len": 3,
+      "count": 43,
+      "left_id": 279,
+      "pmi_bits": 3.7028,
+      "right_id": 97,
+      "stage": "B_superspan",
+      "token_b64": "IG1h",
+      "token_id": 387
+    },
+    {
+      "byte_len": 2,
+      "count": 44,
+      "left_id": 117,
+      "pmi_bits": 3.526377,
+      "right_id": 114,
+      "stage": "B_superspan",
+      "token_b64": "dXI=",
+      "token_id": 388
+    },
+    {
+      "byte_len": 3,
+      "count": 39,
+      "left_id": 333,
+      "pmi_bits": 4.327194,
+      "right_id": 121,
+      "stage": "B_superspan",
+      "token_b64": "b3J5",
+      "token_id": 389
+    },
+    {
+      "byte_len": 5,
+      "count": 28,
+      "left_id": 373,
+      "pmi_bits": 7.129695,
+      "right_id": 357,
+      "stage": "B_superspan",
+      "token_b64": "IGFyY2g=",
+      "token_id": 390
+    },
+    {
+      "byte_len": 4,
+      "count": 28,
+      "left_id": 314,
+      "pmi_bits": 7.0812,
+      "right_id": 333,
+      "stage": "B_superspan",
+      "token_b64": "IGZvcg==",
+      "token_id": 391
+    },
+    {
+      "byte_len": 2,
+      "count": 36,
+      "left_id": 111,
+      "pmi_bits": 4.833022,
+      "right_id": 102,
+      "stage": "B_superspan",
+      "token_b64": "b2Y=",
+      "token_id": 392
+    },
+    {
+      "byte_len": 4,
+      "count": 28,
+      "left_id": 302,
+      "pmi_bits": 6.953504,
+      "right_id": 58,
+      "stage": "B_superspan",
+      "token_b64": "dXJlOg==",
+      "token_id": 393
+    },
+    {
+      "byte_len": 10,
+      "count": 28,
+      "left_id": 327,
+      "pmi_bits": 6.949618,
+      "right_id": 391,
+      "stage": "B_superspan",
+      "token_b64": "RG9tYWluIGZvcg==",
+      "token_id": 394
+    },
+    {
+      "byte_len": 2,
+      "count": 42,
+      "left_id": 32,
+      "pmi_bits": 3.572813,
+      "right_id": 107,
+      "stage": "B_superspan",
+      "token_b64": "IGs=",
+      "token_id": 395
+    },
+    {
+      "byte_len": 3,
+      "count": 41,
+      "left_id": 32,
+      "pmi_bits": 3.82501,
+      "right_id": 315,
+      "stage": "B_superspan",
+      "token_b64": "IGRl",
+      "token_id": 396
+    },
+    {
+      "byte_len": 2,
+      "count": 38,
+      "left_id": 108,
+      "pmi_bits": 4.229506,
+      "right_id": 117,
+      "stage": "B_superspan",
+      "token_b64": "bHU=",
+      "token_id": 397
+    },
+    {
+      "byte_len": 4,
+      "count": 36,
+      "left_id": 116,
+      "pmi_bits": 4.540907,
+      "right_id": 283,
+      "stage": "B_superspan",
+      "token_b64": "dGlvbg==",
+      "token_id": 398
+    },
+    {
+      "byte_len": 3,
+      "count": 33,
+      "left_id": 264,
+      "pmi_bits": 5.146833,
+      "right_id": 109,
+      "stage": "B_superspan",
+      "token_b64": "ZXJt",
+      "token_id": 399
+    },
+    {
+      "byte_len": 13,
+      "count": 30,
+      "left_id": 368,
+      "pmi_bits": 5.781502,
+      "right_id": 49,
+      "stage": "B_superspan",
+      "token_b64": "IHN1bSBlcXVhbHMgMQ==",
+      "token_id": 400
+    },
+    {
+      "byte_len": 7,
+      "count": 28,
+      "left_id": 390,
+      "pmi_bits": 6.240969,
+      "right_id": 294,
+      "stage": "B_superspan",
+      "token_b64": "IGFyY2hpdA==",
+      "token_id": 401
+    },
+    {
+      "byte_len": 9,
+      "count": 28,
+      "left_id": 401,
+      "pmi_bits": 7.215604,
+      "right_id": 340,
+      "stage": "B_superspan",
+      "token_b64": "IGFyY2hpdGVj",
+      "token_id": 402
+    },
+    {
+      "byte_len": 3,
+      "count": 27,
+      "left_id": 120,
+      "pmi_bits": 6.754744,
+      "right_id": 340,
+      "stage": "B_superspan",
+      "token_b64": "eGVj",
+      "token_id": 403
+    },
+    {
+      "byte_len": 5,
+      "count": 27,
+      "left_id": 293,
+      "pmi_bits": 7.462305,
+      "right_id": 403,
+      "stage": "B_superspan",
+      "token_b64": "IGV4ZWM=",
+      "token_id": 404
+    },
+    {
+      "byte_len": 2,
+      "count": 36,
+      "left_id": 48,
+      "pmi_bits": 4.01519,
+      "right_id": 32,
+      "stage": "B_superspan",
+      "token_b64": "MCA=",
+      "token_id": 405
+    },
+    {
+      "byte_len": 5,
+      "count": 26,
+      "left_id": 341,
+      "pmi_bits": 6.613699,
+      "right_id": 389,
+      "stage": "B_superspan",
+      "token_b64": "ZW1vcnk=",
+      "token_id": 406
+    },
+    {
+      "byte_len": 4,
+      "count": 28,
+      "left_id": 319,
+      "pmi_bits": 6.305085,
+      "right_id": 341,
+      "stage": "B_superspan",
+      "token_b64": "c3RlbQ==",
+      "token_id": 407
+    },
+    {
+      "byte_len": 3,
+      "count": 36,
+      "left_id": 105,
+      "pmi_bits": 4.360104,
+      "right_id": 319,
+      "stage": "B_superspan",
+      "token_b64": "aXN0",
+      "token_id": 408
+    },
+    {
+      "byte_len": 7,
+      "count": 26,
+      "left_id": 279,
+      "pmi_bits": 6.5316,
+      "right_id": 406,
+      "stage": "B_superspan",
+      "token_b64": "IG1lbW9yeQ==",
+      "token_id": 409
+    },
+    {
+      "byte_len": 2,
+      "count": 44,
+      "left_id": 32,
+      "pmi_bits": 2.67067,
+      "right_id": 110,
+      "stage": "B_superspan",
+      "token_b64": "IG4=",
+      "token_id": 410
+    },
+    {
+      "byte_len": 3,
+      "count": 30,
+      "left_id": 32,
+      "pmi_bits": 5.417339,
+      "right_id": 374,
+      "stage": "B_superspan",
+      "token_b64": "IEtC",
+      "token_id": 411
+    },
+    {
+      "byte_len": 4,
+      "count": 30,
+      "left_id": 105,
+      "pmi_bits": 5.155131,
+      "right_id": 347,
+      "stage": "B_superspan",
+      "token_b64": "aW1hbA==",
+      "token_id": 412
+    },
+    {
+      "byte_len": 15,
+      "count": 28,
+      "left_id": 370,
+      "pmi_bits": 5.662606,
+      "right_id": 300,
+      "stage": "B_superspan",
+      "token_b64": "IGNvbnNlcnZhdGlvbiBw",
+      "token_id": 413
+    },
+    {
+      "byte_len": 16,
+      "count": 28,
+      "left_id": 413,
+      "pmi_bits": 6.011449,
+      "right_id": 104,
+      "stage": "B_superspan",
+      "token_b64": "IGNvbnNlcnZhdGlvbiBwaA==",
+      "token_id": 414
+    },
+    {
+      "byte_len": 4,
+      "count": 37,
+      "left_id": 121,
+      "pmi_bits": 3.573324,
+      "right_id": 295,
+      "stage": "B_superspan",
+      "token_b64": "eSByZQ==",
+      "token_id": 415
+    }
+  ],
+  "merkle_root_sha256": "ad400f750a973371ded6bcd68e064ad271557a3d4995d7f3c1f91bcf0eafa079",
+  "n_byte_tokens": 408,
+  "schema": "hadukenn.hst.manifest.v1",
+  "stage_a_merges": 94,
+  "stage_b_superspans": 58,
+  "version": "1.0.0",
+  "vocab_size": 416
+}

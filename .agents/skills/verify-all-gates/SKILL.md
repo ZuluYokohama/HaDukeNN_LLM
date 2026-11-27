@@ -15,7 +15,7 @@ Use this skill before and after modifying any code, schema, documentation, or it
    ```
 2. Inspect the emitted JSON summary and `ANTIGRAVITY_VERIFICATION_REPORT.json`:
    - Confirm `"ok": true`.
-   - Confirm `canonical_fixture.anchor_sha256` equals `e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567`.
+   - Confirm `canonical_fixture.anchor_sha256` equals `307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4`.
    - Confirm `pytest_suite.sheaf_verify_line_coverage_pct >= 85.0` and `pytest_suite.failed == 0`.
    - Confirm `gate_trace_coverage.ok == true` (`missing_gates == []`) and `mutation_adequacy.survived == 0`.
 3. If `ruff` and `pytest` are installed in the active Python environment, also run:

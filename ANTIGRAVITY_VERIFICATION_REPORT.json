@@ -20,10 +20,10 @@
     "problems": []
   },
   "docs_budget": {
-    "detail": "docs/ 48605 bytes across 6 files; no external scripts",
+    "detail": "docs/ 54116 bytes across 7 files; no external scripts",
     "ok": true
   },
-  "elapsed_seconds": 31.19,
+  "elapsed_seconds": 71.22,
   "exec_hypergraph_unittest": {
     "failures": 0,
     "ok": true,
@@ -51,25 +51,27 @@
     "coverage_floor_pct": 85.0,
     "failed": 0,
     "failures": [],
-    "passed": 138,
+    "passed": 150,
     "per_module_coverage": {
       "__init__.py": "1/1 (100.0%)",
       "__main__.py": "2/2 (100.0%)",
       "anticheat.py": "111/119 (93.3%)",
       "attestation.py": "203/234 (86.8%)",
-      "campaign.py": "399/426 (93.7%)",
+      "campaign.py": "448/475 (94.3%)",
       "checklist.py": "24/24 (100.0%)",
       "checks.py": "629/755 (83.3%)",
-      "cli.py": "343/355 (96.6%)",
+      "cli.py": "349/367 (95.1%)",
       "compliance.py": "161/163 (98.8%)",
       "context.py": "41/52 (78.8%)",
       "control_graph.py": "72/73 (98.6%)",
+      "cosimilar_trace.py": "508/536 (94.8%)",
       "gate_coverage.py": "130/131 (99.2%)",
       "gate_trace.py": "26/31 (83.9%)",
       "gates.py": "191/223 (85.7%)",
       "git_tree.py": "34/39 (87.2%)",
       "glassbox.py": "628/663 (94.7%)",
       "hashing.py": "43/59 (72.9%)",
+      "hst_standard.py": "387/408 (94.9%)",
       "ledger.py": "124/167 (74.3%)",
       "mutation.py": "84/88 (95.5%)",
       "numerics.py": "184/197 (93.4%)",
@@ -83,9 +85,10 @@
       "stats.py": "167/183 (91.3%)",
       "store.py": "177/232 (76.3%)",
       "synthetic.py": "100/108 (92.6%)",
+      "t38_scaling_audit.py": "200/202 (99.0%)",
       "verify.py": "224/297 (75.4%)"
     },
-    "sheaf_verify_line_coverage_pct": 88.44
+    "sheaf_verify_line_coverage_pct": 89.6
   },
   "schema": "sheaf-verify.antigravity-selftest.v1"
 }

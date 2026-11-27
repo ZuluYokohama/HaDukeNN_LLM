@@ -17,8 +17,8 @@ Use this skill whenever preparing an iteration branch (`iter/<name>`) to open a 
 3. Populate every required section of `.github/PULL_REQUEST_TEMPLATE.md`:
    - `Gates touched`
    - `Evidence files`
-   - `Ledger head before` (`e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567`)
-   - `Ledger head after` (`e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567` when code-only)
+   - `Ledger head before` (`307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4`)
+   - `Ledger head after` (`307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4` when code-only)
    - Explicit confirmation on `amendment` status and zero binary `weights`.
 
 ## Safety

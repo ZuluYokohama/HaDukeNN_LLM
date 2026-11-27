@@ -1,0 +1,40 @@
+{
+  "campaign_id": "T-47",
+  "elapsed_ms": 145.694,
+  "realm_1_trace_and_cosimilarity": {
+    "coarse_lumping_mean_surprise_bpb": 0.023335,
+    "coarse_lumping_min_surprise_bpb": 0.00705,
+    "cosimilar_quotient_max_surprise_bpb": 0.0,
+    "mean_step_dilation_factor": 2.363,
+    "seeds_passing_all_4_trace_laws": 5
+  },
+  "realm_2_hypergraph_vs_2d_markov": {
+    "cartesian_2d_bytes_n9_k3": 3099363912,
+    "cartesian_2d_states_n9_k3": 19683,
+    "hypergraph_3way_xor_accuracy": 1.0,
+    "hypergraph_incidence_bytes_n9_k3": 864,
+    "memory_compression_factor": 3587226.8,
+    "pairwise_2d_markov_xor_accuracy": 0.5
+  },
+  "realm_3_active_window_search": {
+    "c_64_8_total_subsets": 4426165368,
+    "mean_eval_reduction_factor_v18": 92.73,
+    "mean_large_v64_k8_search_ms": 7.31,
+    "mean_optimality_ratio_vs_bruteforce_v18": 1.0
+  },
+  "realm_4_observer_sheaf_and_interventions": {
+    "fork_isolation_and_coherence_seeds": 5,
+    "scitt_rfc9943_verified_seeds": 5,
+    "selective_disconnected_cache_reuse_seeds": 5,
+    "spoof_observer_localized_seeds": 5
+  },
+  "schema": "sheaf-verify.cosimilar-trace.v1",
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "version": "1.0.0"
+}
