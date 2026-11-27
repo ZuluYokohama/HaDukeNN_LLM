@@ -21,6 +21,8 @@ sheaf-verify-ledger-head: sheaf-verify.anchor.v1 307711a4d841c2c8fa0bbd954d15b2a
 
 Reproduce the archive hash with `git archive --format=tar v0.1.0-priority | sha256sum`. The ledger line is `sheaf-verify anchor --store fixtures/passing` on that commit.
 
+The in-tree `fixtures/passing` ledger was later regenerated when each ledger record began carrying an explicit `profile` field (`training` or `hal`). The current fixture head is `sheaf-verify.anchor.v1 e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567`. The four-line `v0.1.0-priority` fingerprint above is unchanged and still describes that tag's tree.
+
 The tag is an SSH-signed annotated tag. The key available here is `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0` (Cursor Agent). It is not a personal key of Blake Jones.
 
 ## Install
@@ -94,7 +96,7 @@ sheaf-verify bundle --store .sheaf --seal-key-file ~/.sheaf-seal-key --out revie
 
 Repeat the checkpoint and log registration for `superword_bpe` and `randomized_hypergraph`. A CUDA, OpenCL, or C kernel must set `host_reference_sha256` to the payload hash of an input manifest that holds the host reference source. The harness records that binding. It does not launch the kernel.
 
-`run` writes every gate, including failures, then registers a result manifest. Exit 0 means every gate passed. Exit 1 means a gate failed and the ledger still holds the failure. Exit 2 means the command itself was refused.
+`run --profile training` (the default) writes every G/H/P gate, including failures, then registers a result manifest. `run --profile hal` writes only HAL0–HAL6 for a hardware or microbench study; it cannot be used to skip the training gates. Exit 0 means every gate passed. Exit 1 means a gate failed and the ledger still holds the failure. Exit 2 means the command itself was refused.
 
 `verify` recomputes hashes, the ledger, and gate replay. It exits 1 on a mismatch. A scientifically failed study can still verify: the failure is what the ledger says. `bundle` exits 1 unless verification is clean, every gate passed, and every checklist objection is answered.
 

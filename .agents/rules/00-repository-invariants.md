@@ -5,7 +5,7 @@ description: Core repository safety, canonical anchor, licensing, and export-hyg
 
 # Repository Safety & Export-Hygiene Invariants
 
-- **Never modify `fixtures/passing/` or `fixtures/test_seal.key`**: The canonical priority anchor `sheaf-verify.anchor.v1 307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4` is frozen by annotated tag `v0.1.0-priority`.
+- **`fixtures/test_seal.key` is a public test vector and must not change.** Annotated tag `v0.1.0-priority` freezes ledger head `sheaf-verify.anchor.v1 307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4` for that tag's tree. The in-tree `fixtures/passing` may be regenerated only when the ledger record format itself changes; the current head is `sheaf-verify.anchor.v1 e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567`.
 - **Preserve Dual-Licensing**: `LICENSE` must remain `PolyForm Noncommercial License 1.0.0` verbatim, `NOTICE` must retain the required `@ZuluYokohama` commercial notice, and `COMMERCIAL_LICENSING.md` documents commercial licensing. Never insert permissive MIT license grant wording into any file.
 - **Export Hygiene (`tests/test_docs.py`)**:
   - Never commit binary model checkpoints or arrays (`.pt`, `.pth`, `.ckpt`, `.safetensors`, `.onnx`, `.bin`).

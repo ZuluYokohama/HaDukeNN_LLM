@@ -1,4 +1,4 @@
-"""Render ``docs/control-graph.mmd`` from ``gates.GATES``.
+"""Render ``docs/control-graph.mmd`` from ``gates.all_gates()``.
 
 The dependency edges come from each gate's ``depends_on`` so the diagram can
 not drift from the code. The dotted comparison edges are not dependencies;
@@ -15,7 +15,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from sheaf_verify.gates import GATES, Gate
+from sheaf_verify.gates import Gate, all_gates
 
 COMPARISONS: tuple[tuple[str, str], ...] = (
     ("hntCtl", "hnt vs equal-size control"),
@@ -36,11 +36,11 @@ DIAGRAM = Path("docs") / "control-graph.mmd"
 EMBEDDED = (Path("GATES.md"), Path("docs") / "graph.html")
 
 
-def dependency_edges(gates: tuple[Gate, ...] = GATES) -> list[tuple[str, str]]:
+def dependency_edges(gates: tuple[Gate, ...] = all_gates()) -> list[tuple[str, str]]:
     return [(dep, gate.id) for gate in gates for dep in gate.depends_on]
 
 
-def render(gates: tuple[Gate, ...] = GATES) -> str:
+def render(gates: tuple[Gate, ...] = all_gates()) -> str:
     ids = {gate.id for gate in gates}
     for source, target in COMPARISON_EDGES:
         if target not in ids:
@@ -73,7 +73,7 @@ def problems(root: Path = ROOT) -> list[str]:
     rendered = render()
     found = []
     if (root / DIAGRAM).read_text(encoding="utf-8") != rendered:
-        found.append(f"{DIAGRAM.as_posix()} differs from gates.GATES")
+        found.append(f"{DIAGRAM.as_posix()} differs from the declared control graph")
     for rel in EMBEDDED:
         if rendered.strip() not in (root / rel).read_text(encoding="utf-8"):
             found.append(f"{rel.as_posix()} does not embed the rendered control graph")

@@ -6,7 +6,7 @@ This repository is configured for autonomous local development in **Google Antig
 
 - **`src/sheaf_verify/` (`sheaf-verify` CLI & verification harness — PURE PYTHON 3.11+ STDLIB)**:
   - Zero runtime dependencies (`dependencies = []` in `pyproject.toml`). Never import `numpy`, `scipy`, `torch`, `pytest`, or any third-party package inside `src/sheaf_verify/`.
-  - Owns the 22-node scientific control graph (`gates.py`, `control_graph.py`), 33 reviewer checklist objections (`checklist.py`), hash-chained sealed ledger (`ledger.py`, `seal.py`, `verify.py`), cellular sheaf cohomology & fault isolation (`sheaf_cohomology.py`), SAVI empirical-Bayes inference (`savi.py`), regulatory [IETF SCITT RFC 9943](https://www.rfc-editor.org/info/rfc9943/) + EU AI Act Art. 12 + FINRA 3110 WORM bundles (`compliance.py`), zero-black-box CTW-PY/Q-nullspace engine (`glassbox.py`), campaign verifiers (`campaign.py`), mutation adequacy (`mutation.py`), and the zero-dependency universal verifier (`selftest.py`).
+  - Owns the training (G/H/P) and HAL control graphs (`gates.py`, `control_graph.py`), 33 reviewer checklist objections (`checklist.py`), hash-chained sealed ledger (`ledger.py`, `seal.py`, `verify.py`), cellular sheaf cohomology & fault isolation (`sheaf_cohomology.py`), SAVI empirical-Bayes inference (`savi.py`), regulatory [IETF SCITT RFC 9943](https://www.rfc-editor.org/info/rfc9943/) + EU AI Act Art. 12 + FINRA 3110 WORM bundles (`compliance.py`), zero-black-box CTW-PY/Q-nullspace engine (`glassbox.py`), campaign verifiers (`campaign.py`), mutation adequacy (`mutation.py`), and the zero-dependency universal verifier (`selftest.py`).
 - **`src/hadukenn_core/` (Core Neuro-Symbolic, Hardware & Sheaf-Bridge Stack — Optional `numpy`/`scipy`/`torch`)**:
   - Owns byte-level structural tokenization (`tokenization.py`), hypergraph incidence & Chodrow configuration nulls (`hypergraph.py`), spectral & paradigmatic partitions (`partitions.py`), Cluster-IS & dense heads (`heads.py`, `fast_ops.py` C11 AVX-512), 12 GiB RTX 5070 & 13 GiB looped INT8 NPU runtime (`rtx5070_frontier.py`), incremental O(1) multiset hypergraph bridge (`exec_bridge.py`), T-43 All-Realms suite (`all_realms_suite.py`), T-44 Glass-Box benchmark (`glassbox_benchmark.py`), and the T-45 **Inverted Oracle-to-Small-LLM Relational Sheaf Bridge** (`sheaf_bridge.py`).
 - **`iterations/exec-hypergraph-v01/` (Merged [PR #9](https://github.com/ZuluYokohama/HaDukeNN_LLM/pull/9) Executable Hypergraph Baseline)**:
@@ -14,12 +14,12 @@ This repository is configured for autonomous local development in **Google Antig
 
 ## 2. Non-Negotiable Gates & Hard Invariants
 
-1. **Canonical Priority Anchor (NEVER MODIFY `fixtures/passing/`)**:
+1. **Canonical Fixture Anchor**:
    - `sheaf-verify anchor --store fixtures/passing` must always output:
-     `sheaf-verify.anchor.v1 307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4`
-2. **All 22 Control-Graph Gates & Coverage Floor**:
+     `sheaf-verify.anchor.v1 e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567`
+2. **All Control-Graph Gates & Coverage Floor**:
    - `src/sheaf_verify` statement coverage must stay **`>= 85.0%`**.
-   - Every gate in `GATES` must record both a `pass` trace and an own-criteria `fail` trace under `SHEAF_GATE_TRACE`.
+   - Every gate in `all_gates()` (G/H/P and HAL0–HAL6) must record both a `pass` trace and an own-criteria `fail` trace under `SHEAF_GATE_TRACE`.
    - `sheaf-verify mutation-score` must achieve **`12/12` killed mutants (`mutation_score == 1.0`)**.
 3. **Lint, Documentation Budget & Export Hygiene**:
    - Zero Ruff `E`, `F`, `I`, `UP` lint errors (`line-length = 120`, `E501` ignored).

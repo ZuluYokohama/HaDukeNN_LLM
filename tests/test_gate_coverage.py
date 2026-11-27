@@ -5,12 +5,13 @@ import json
 import pytest
 
 from sheaf_verify.gate_coverage import assess, load_events, main, render_matrix
-from sheaf_verify.gates import GATES
+from sheaf_verify.gates import all_gates
 
 REQUIRED = {
     "G0", "G1", "G2", "G3", "G4", "G5", "G6",
     "H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7",
     "P0", "P1", "P2", "P3", "P4", "P5", "P6",
+    "HAL0", "HAL1", "HAL2", "HAL3", "HAL4", "HAL5", "HAL6",
 }
 
 
@@ -27,7 +28,7 @@ def _event(gate, *, status, test, own_failed=False, upstream=None, own_evaluated
 
 def _covered():
     events = []
-    for gate in GATES:
+    for gate in all_gates():
         events.append(_event(gate.id, status="pass", test=f"tests/pass_{gate.id}.py::test_ok"))
         events.append(_event(
             gate.id,
@@ -53,7 +54,7 @@ def _covered():
 
 
 def test_required_nodes_are_the_control_graph():
-    assert {gate.id for gate in GATES} == REQUIRED
+    assert {gate.id for gate in all_gates()} == REQUIRED
 
 
 def test_a_complete_trace_passes_and_names_the_test_file():

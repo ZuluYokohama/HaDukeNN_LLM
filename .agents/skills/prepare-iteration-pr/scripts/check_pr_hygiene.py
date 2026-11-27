@@ -37,7 +37,7 @@ def main() -> int:
         check=False,
     )
     anchor_line = anchor_proc.stdout.strip()
-    expected = "sheaf-verify.anchor.v1 307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4"
+    expected = "sheaf-verify.anchor.v1 e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567"
     ok = (not binaries) and (docs_proc.returncode == 0) and (anchor_line == expected)
     summary = {
         "ok": ok,

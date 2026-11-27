@@ -13,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 
 from sheaf_verify.context import Context
 from sheaf_verify.gate_trace import emit, trace_outcome
-from sheaf_verify.gates import GATES, Gate
+from sheaf_verify.gates import Gate, gates_for_profile, normalize_profile, profile_from_records
 from sheaf_verify.hashing import SheafError, canonical_bytes
 from sheaf_verify.ledger import Ledger
 from sheaf_verify.store import Store
@@ -94,14 +94,16 @@ def _trace_event(decision: dict) -> dict:
 
 
 
-def run(store: Store, *, key: bytes | None, clock=None) -> list[dict]:
+def run(store: Store, *, key: bytes | None, clock=None, profile: str = "training") -> list[dict]:
+    profile = normalize_profile(profile)
     clock = UtcClock() if clock is None else clock
     ledger = Ledger(store.root)
     ctx = Context(store)
     written = []
-    for gate in GATES:
+    for gate in gates_for_profile(profile):
         decision = evaluate_one(gate, ctx, ledger.records())
         decision["created_at"] = clock.now()
+        decision["profile"] = profile
         written.append(ledger.append(decision, key=key))
     head = ledger.records()[-1]["record_sha256"]
     outcome = "pass" if all(item["status"] == "pass" for item in written) else "fail"
@@ -113,6 +115,7 @@ def run(store: Store, *, key: bytes | None, clock=None) -> list[dict]:
         ],
         "ledger_head_sha256": head,
         "outcome": outcome,
+        "profile": profile,
     }
     binding = store.binding()
     inputs = [binding[role][0] for role in sorted(binding) if role != "result"]
@@ -135,12 +138,16 @@ def replay(store: Store, records: list[dict]) -> list[str]:
         if isinstance(gate_id, str):
             latest[gate_id] = record
     problems = []
-    for gate in GATES:
+    profile = profile_from_records(records)
+    for gate in gates_for_profile(profile):
         stored = latest.get(gate.id)
         decision = evaluate_one(gate, ctx, records)
         if stored is None:
             problems.append(f"replay: {gate.id} has no ledger record")
             continue
+        recorded_profile = stored.get("profile")
+        if recorded_profile is not None and recorded_profile != profile:
+            problems.append(f"replay: {gate.id} profile does not match the ledger")
         for field in ("status", "bound", "upstream", "criteria"):
             if stored.get(field) != decision[field]:
                 problems.append(f"replay: {gate.id} {field} does not match the ledger")

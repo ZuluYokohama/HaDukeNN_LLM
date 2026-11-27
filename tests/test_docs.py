@@ -4,14 +4,14 @@ import sys
 from pathlib import Path
 
 from sheaf_verify.checklist import OBJECTIONS
-from sheaf_verify.gates import GATES
+from sheaf_verify.gates import all_gates
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_gate_ids_and_thresholds_are_in_the_gate_doc():
     text = (ROOT / "GATES.md").read_text(encoding="utf-8")
-    for gate in GATES:
+    for gate in all_gates():
         assert gate.id in text
     for line in (
         "PILOT_SEEDS = 3",

@@ -88,6 +88,12 @@ def main(argv: list[str] | None = None) -> int:
 
     run_cmd = sub.add_parser("run", parents=[common], help="evaluate every gate and write a result")
     _add_key(run_cmd)
+    run_cmd.add_argument(
+        "--profile",
+        choices=("training", "hal"),
+        default="training",
+        help="Study kind. training (default) evaluates G/H/P and cannot skip those gates. hal evaluates only HAL0-HAL6.",
+    )
     run_cmd.set_defaults(func=_run)
 
     verify_cmd = sub.add_parser("verify", parents=[common], help="recompute hashes, the ledger, and gate replay")
@@ -266,7 +272,7 @@ def _register_env(args) -> int:
 
 
 def _run(args) -> int:
-    records = run(_store(args), key=_key(args), clock=UtcClock())
+    records = run(_store(args), key=_key(args), clock=UtcClock(), profile=args.profile)
     failed = [record["gate_id"] for record in records if record["status"] != "pass"]
     payload = {"failed": failed, "gates": [{"gate_id": record["gate_id"], "status": record["status"]} for record in records]}
     _emit(args, payload)

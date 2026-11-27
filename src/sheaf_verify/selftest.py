@@ -4,7 +4,7 @@ Provides ``sheaf-verify selftest`` (and ``python3 -m sheaf_verify.selftest``) so
 both full developer environments (with ``pytest`` and ``ruff`` installed) and
 air-gapped / sandboxed Google Antigravity local-builder containers can execute
 every repository gate, test function, statement-coverage check (>=85% on
-``src/sheaf_verify``), 22-node control-graph pass+fail matrix, 71-test
+``src/sheaf_verify``), 29-node control-graph pass+fail matrix, 71-test
 executable hypergraph suite, 12-mutant adequacy suite, and export-hygiene audit
 using only the Python 3.11+ standard library.
 """
@@ -39,7 +39,7 @@ from sheaf_verify.seal import load_key
 from sheaf_verify.store import Store
 from sheaf_verify.verify import verify_store
 
-CANONICAL_ANCHOR = "307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4"
+CANONICAL_ANCHOR = "e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567"
 
 
 @dataclass
