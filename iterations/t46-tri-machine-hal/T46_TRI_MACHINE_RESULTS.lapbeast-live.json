@@ -1,0 +1,193 @@
+{
+  "affinity_probe": {
+    "applied": true,
+    "applied_cores": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "machine_id": "lapbeast",
+    "requested_cores": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "role": "compute"
+  },
+  "benchmarks_and_parity": {
+    "c11_cce_ms": 3.7527,
+    "c11_cce_num_threads": 16,
+    "c11_speedup_over_numpy_gemm": 0.7,
+    "c11_speedup_over_py_loop": 7.23,
+    "causal_span_prefix_invariance": true,
+    "causal_spans_extracted": 121,
+    "cce_de_max_abs_err": 1.1559148450912549e-08,
+    "cce_dh_max_abs_err": 2.1620458292605227e-09,
+    "cce_loss_max_abs_err": 1.4136922388274797e-06,
+    "lapbeast_watchdog_rc143_verified": true,
+    "mup_logit_std_scaled_d768": 0.7117,
+    "mup_logit_std_unscaled_d768": 1.4235,
+    "numpy_gemm_cce_ms": 2.6311,
+    "numpy_gemm_openblas_threads": 16,
+    "python_loop_cce_ms": 27.1221,
+    "python_loop_openblas_threads": 1,
+    "sheaf_coherent_neighbor_mass": 1.0,
+    "sheaf_kv_gate_max_abs_err": 0.0,
+    "slab_overflow_refusal_verified": true,
+    "zenbook_npu_int8_cosine_sim": 0.999918,
+    "zenbook_npu_int8_rel_l2_drift": 0.012823,
+    "zenbook_npu_loop_dynamic_allocs": 0
+  },
+  "elapsed_seconds": 0.491,
+  "host_isa": {
+    "backend": "x86_64_avx2_fma3",
+    "caps_mask": 143,
+    "flags": [
+      "SCALAR",
+      "AVX2",
+      "FMA3",
+      "AVX_VNNI",
+      "SHA_NI"
+    ]
+  },
+  "host_probe": {
+    "cpu_model": "13th Gen Intel(R) Core(TM) i9-13980HX",
+    "cuda_arch_primary": "sm_89",
+    "e_cores": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "gpu": {
+      "compute_cap": "8.9",
+      "cuda_arch": "sm_89",
+      "memory_mib": 12282,
+      "name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "temperature_c": 46
+    },
+    "logical_cpus": 32,
+    "p_cores": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "primary_accel": "NVIDIA GeForce RTX 4080 Laptop GPU (12282 MiB, sm_89)",
+    "ram_total_gib": 61.16,
+    "vram_primary_cap_mib": 12282
+  },
+  "live_generation": {
+    "generated_at_local": "2026-11-26 America/Chicago",
+    "host": "jtdev-0",
+    "machine": "lapbeast",
+    "measurement_notes": "Python row loop timed with OpenBLAS=1 (serial GEMVs). NumPy packed GEMM timed with OpenBLAS=P-core count (16). C11 OpenMP kernel timed with OpenBLAS parked at 1 to avoid pool contention. A prior live file with python_loop_cce_ms=360 was discarded as contaminated.",
+    "note": "Live regeneration on this host. Does not overwrite the sealed T46_TRI_MACHINE_RESULTS.json."
+  },
+  "machines_configured": [
+    "wbeast",
+    "lapbeast",
+    "zenbook"
+  ],
+  "profiles": {
+    "lapbeast": {
+      "arch": "x86_64",
+      "battery_gated": true,
+      "cce_tile_v": 1024,
+      "cpu_model": "13th Gen Intel(R) Core(TM) i9-13980HX",
+      "cuda_arch_primary": "sm_89",
+      "l2_cache_mib": 32,
+      "npu_loop_enabled": false,
+      "primary_accel": "NVIDIA GeForce RTX 4080 Laptop GPU (12282 MiB, sm_89)",
+      "ram_arena_cap_gib": 48.0,
+      "ram_total_gib": 61.16,
+      "secondary_accel": "",
+      "vram_primary_cap_mib": 12282
+    },
+    "wbeast": {
+      "arch": "x86_64",
+      "battery_gated": false,
+      "cce_tile_v": 2048,
+      "cpu_model": "Intel Core i9-9900K (8C/16T Coffee Lake)",
+      "cuda_arch_primary": "sm_120",
+      "l2_cache_mib": 48,
+      "npu_loop_enabled": false,
+      "primary_accel": "NVIDIA GeForce RTX 5070 12GB (Blackwell sm_120)",
+      "ram_arena_cap_gib": 26.0,
+      "ram_total_gib": 32.0,
+      "secondary_accel": "NVIDIA GeForce GTX 1660 Ti 6GB (Turing sm_75 async E2 kNN-LM side-lane)",
+      "vram_primary_cap_mib": 11264
+    },
+    "zenbook": {
+      "arch": "arm64",
+      "battery_gated": true,
+      "cce_tile_v": 512,
+      "cpu_model": "Qualcomm Snapdragon X Plus X1P-42-100 (8c Oryon ARMv8.7-A)",
+      "cuda_arch_primary": "",
+      "l2_cache_mib": 42,
+      "npu_loop_enabled": true,
+      "primary_accel": "Qualcomm Hexagon V73 Tensor NPU (45 TOPS persistent looped INT8)",
+      "ram_arena_cap_gib": 13.0,
+      "ram_total_gib": 16.0,
+      "secondary_accel": "Qualcomm Adreno X1-45 iGPU (OpenCL/DirectML FP16 norm+RoPE zero-copy)",
+      "vram_primary_cap_mib": 0
+    }
+  },
+  "regulatory_compliance": {
+    "issues": [],
+    "scitt_rfc9943_verified": true
+  },
+  "schema": "sheaf-verify.tri-machine-hal.v1",
+  "selected_profile": "lapbeast",
+  "version": "0.9.0"
+}
