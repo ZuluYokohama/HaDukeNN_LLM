@@ -1,0 +1,11 @@
+{
+  "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiY2FtcGFpZ24iOiJULTQzIiwiY2hlY2twb2ludGVyX3N1cGVyc3RlcF91cyI6NzkuNDEsImludDhfbnB1X2RyaWZ0X2JwYiI6MC4wMDA1ODgsIm5sX2NvbXBpbGVyX2FjY3VyYWN5IjoxLjAsInZlcnNpb24iOiIwLjYuMCJ9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9oYWR1a2Vubi5vcmcvYXR0ZXN0YXRpb24vdDQzLWFsbC1yZWFsbXMtc3VpdGUvdjEiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiYTJlMjAyMjBmNGQwYTg1Y2NiYmJiZGEyMTRmODRiODQ4MTkwNzY4MWM3YTE5YTc5ZGU5ZmQwMTE0NDRlMzJkNSJ9LCJuYW1lIjoiaXRlcmF0aW9ucy90NDMtYWxsLXJlYWxtcy1kb21pbmFuY2UvVDQzX0FMTF9SRUFMTVNfUkVTVUxUUy5qc29uIn1dfQ==",
+  "payloadType": "application/vnd.in-toto+json",
+  "signatures": [
+    {
+      "alg": "hmac-sha256",
+      "keyid": "ba0d82512956ed83275920efb1c0c57c2e4a8ea374e66fbc75702d18e3b405b5",
+      "sig": "aezkS6FavCg+6z7OiGGRSuGl0jv7cEVPIxixBSgqGZc="
+    }
+  ]
+}

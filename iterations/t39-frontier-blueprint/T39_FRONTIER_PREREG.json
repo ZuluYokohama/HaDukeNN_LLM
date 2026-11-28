@@ -1,0 +1,62 @@
+{
+  "id": "t39-frontier-large-vocab-and-sheaf-kvreg",
+  "status": "PRE_REGISTRATION_TEMPLATE - freeze SHA-256 prior to Stage-A1 launch",
+  "question": "Can Tensor-Core-aligned 256x128 spectral head factorization eliminate the 128k-256k BF16 logit memory wall without per-byte BPB loss (Part A), while Asymmetric Diagonal-Sheaf KV-Prefix registers route cross-document hypergraph context in O(1) L2-resident memory orthogonally to model width (Part B)?",
+  "part_a_spectral_bookend": {
+    "cluster_geometry_32k": {
+      "vocab": 32768,
+      "nc": 256,
+      "S": 128,
+      "dead_pad_slots": 0,
+      "tensor_core_tile_alignment": 128,
+      "passes_p1_max_181": true
+    },
+    "large_vocab_ladder": [
+      {"vocab": 32768, "nc": 256, "S": 128, "flat_logits_8k_bf16_gib": 0.5, "struct_k3_logits_8k_bf16_gib": 0.0117},
+      {"vocab": 131072, "nc": 1024, "S": 128, "flat_logits_8k_bf16_gib": 2.0, "struct_k3_logits_8k_bf16_gib": 0.0234},
+      {"vocab": 262144, "nc": 2048, "S": 128, "flat_logits_8k_bf16_gib": 4.0, "struct_k3_logits_8k_bf16_gib": 0.0391}
+    ],
+    "head_architecture": {
+      "head_mode": "tied_root_spectral_blocked",
+      "k_neg_clusters": 3,
+      "members": "identity",
+      "struct_rank": 0,
+      "resid": "none",
+      "rationale": "Eliminates +19.94M duplicate low-rank/full unit_table parameters on plain BPE while quadrupling negative-logit coverage in static 128-aligned Tensor Core bmm tiles."
+    },
+    "baseline_fairness": {
+      "plain_arm_kernel": "torch.compile + chunked/fused cross-entropy",
+      "wallclock_device_policy": "RTX 5070 (sm_120) solo only; sm_75 side-job GPU strictly excluded from wall-clock timing"
+    },
+    "mup_gate_policy": {
+      "base_width_d0": 384,
+      "gate_rule": "Parity within 1.5 SE of SP at base width S plus verified LR peak stability across S -> M -> L (never gated on beating SP at base width)."
+    }
+  },
+  "part_b_sheaf_kv_registers": {
+    "hypergraph_version": "hg-v3-train-only",
+    "pool_documents": 27902,
+    "edge_cardinality_bounds": [3, 128],
+    "attention_geometry": {
+      "query_window_Q": 256,
+      "intra_article_causal_chunks": 8,
+      "self_excluded_sheaf_stalks": 8,
+      "total_kv_length": 272,
+      "analytic_flop_overhead_scale_s_pct": 0.77,
+      "analytic_flop_overhead_scale_m_pct": 0.41
+    },
+    "l2_cache_budget": {
+      "csr_incidence_mib": 5.05,
+      "article_node_bank_bf16_mib": 20.85,
+      "hyperedge_stalk_bank_bf16_mib": 17.58,
+      "total_working_set_mib": 43.48,
+      "rtx_5070_l2_capacity_mib": 48.0
+    },
+    "pass_criteria": {
+      "primary": "xb_bpb(kvreg_sheaf) <= xb_bpb(kvreg_chodrow_null) - 2*SE_diff (one-sided Welch p < 0.01) AND <= xb_bpb(pack_random) - 2*SE_diff (p < 0.01)",
+      "corpus_guard": "test bpb_corpus degradation <= 0.002 vs pack_random",
+      "canary_gate": "future_suffix_canary_causal == 0.0 AND future_suffix_canary_oracle > 0.0 (else VOID)",
+      "secondary_reported": ["Empirical-Bayes tier-pooled paired-seed t", "Kelly SAVI e-process trajectory"]
+    }
+  }
+}

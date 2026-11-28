@@ -14,7 +14,7 @@ from pathlib import Path
 
 from sheaf_verify.checklist import evaluate_checklist
 from sheaf_verify.checks import code_tree_criteria
-from sheaf_verify.gates import GATES
+from sheaf_verify.gates import gates_for_profile, profile_from_records
 from sheaf_verify.hashing import SheafError, canonical_bytes, is_sha256, parse_json_bytes, sha256_file, sha256_hex
 from sheaf_verify.ledger import Ledger
 from sheaf_verify.runner import RESULT_FORMAT, replay
@@ -171,6 +171,8 @@ def _check_payloads(store: Store, manifests: dict[str, dict], report: VerifyRepo
     if not payloads.is_dir():
         return
     for path in sorted(payloads.iterdir()):
+        if path.name.endswith(".partial"):
+            continue
         if not path.is_file() or not is_sha256(path.name):
             report.problems.append(f"manifest: unexpected payload file {path.name}")
             continue
@@ -325,12 +327,16 @@ def _check_results(store: Store, manifests: dict[str, dict], records: list[dict]
     if records and document.get("ledger_head_sha256") != records[-1]["record_sha256"]:
         report.problems.append("result: latest result does not cite the current ledger head")
     gates = document.get("gates")
+    profile = profile_from_records(records)
+    selected = gates_for_profile(profile)
+    if document.get("profile") not in (None, profile):
+        report.problems.append("result: result profile does not match the ledger")
     expected = [
         {"gate_id": gate.id, "record_sha256": latest[gate.id]["record_sha256"], "status": latest[gate.id]["status"]}
-        for gate in GATES
+        for gate in selected
         if gate.id in latest
     ]
-    if gates != expected or len(expected) != len(GATES):
+    if gates != expected or len(expected) != len(selected):
         report.problems.append("result: latest result gate list does not match the latest ledger records")
     if result_sha not in manifests:
         report.problems.append("result: latest result manifest is not in the store")
@@ -342,8 +348,9 @@ def _gate_rows(records: list[dict]) -> list[dict]:
         gate_id = record.get("gate_id")
         if isinstance(gate_id, str):
             latest[gate_id] = record
+    profile = profile_from_records(records)
     rows = []
-    for gate in GATES:
+    for gate in gates_for_profile(profile):
         record = latest.get(gate.id)
         rows.append({
             "gate_id": gate.id,

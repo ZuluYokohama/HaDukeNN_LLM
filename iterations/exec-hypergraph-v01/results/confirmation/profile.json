@@ -1,0 +1,188 @@
+{
+  "scope": "instrumented diagnostic only; not latency benchmark",
+  "case": "benchmark-revisions-s11-d128",
+  "top_functions": [
+    {
+      "file": "<stdin>",
+      "function": "run",
+      "line": 7,
+      "primitive_calls": 1,
+      "calls": 1,
+      "self_seconds": 0.000195285,
+      "cumulative_seconds": 0.301251262
+    },
+    {
+      "file": "core.py",
+      "function": "execute",
+      "line": 494,
+      "primitive_calls": 338,
+      "calls": 338,
+      "self_seconds": 0.00381334,
+      "cumulative_seconds": 0.301030049
+    },
+    {
+      "file": "core.py",
+      "function": "state_digest",
+      "line": 190,
+      "primitive_calls": 676,
+      "calls": 676,
+      "self_seconds": 0.0038409840000000004,
+      "cumulative_seconds": 0.22290648500000002
+    },
+    {
+      "file": "core.py",
+      "function": "digest",
+      "line": 56,
+      "primitive_calls": 1014,
+      "calls": 1014,
+      "self_seconds": 0.000846299,
+      "cumulative_seconds": 0.13019323500000002
+    },
+    {
+      "file": "core.py",
+      "function": "canonical",
+      "line": 51,
+      "primitive_calls": 1352,
+      "calls": 1352,
+      "self_seconds": 0.0010334950000000002,
+      "cumulative_seconds": 0.123998809
+    },
+    {
+      "file": "__init__.py",
+      "function": "dumps",
+      "line": 183,
+      "primitive_calls": 1352,
+      "calls": 1352,
+      "self_seconds": 0.002006342,
+      "cumulative_seconds": 0.121414645
+    },
+    {
+      "file": "encoder.py",
+      "function": "encode",
+      "line": 183,
+      "primitive_calls": 1352,
+      "calls": 1352,
+      "self_seconds": 0.001531758,
+      "cumulative_seconds": 0.11899042600000001
+    },
+    {
+      "file": "encoder.py",
+      "function": "iterencode",
+      "line": 205,
+      "primitive_calls": 1352,
+      "calls": 1352,
+      "self_seconds": 0.11686223600000001,
+      "cumulative_seconds": 0.11686223600000001
+    },
+    {
+      "file": "core.py",
+      "function": "_state",
+      "line": 179,
+      "primitive_calls": 676,
+      "calls": 676,
+      "self_seconds": 0.019960913,
+      "cumulative_seconds": 0.10338042300000001
+    },
+    {
+      "file": "core.py",
+      "function": "record",
+      "line": 114,
+      "primitive_calls": 107621,
+      "calls": 107621,
+      "self_seconds": 0.050818415000000006,
+      "cumulative_seconds": 0.08357598000000001
+    },
+    {
+      "file": "core.py",
+      "function": "_apply",
+      "line": 374,
+      "primitive_calls": 338,
+      "calls": 338,
+      "self_seconds": 0.0019200130000000001,
+      "cumulative_seconds": 0.048474153000000006
+    },
+    {
+      "file": "core.py",
+      "function": "_evaluate",
+      "line": 319,
+      "primitive_calls": 40,
+      "calls": 40,
+      "self_seconds": 0.015498497000000002,
+      "cumulative_seconds": 0.034406556000000005
+    },
+    {
+      "file": "~",
+      "function": "<method 'update' of 'dict' objects>",
+      "line": 0,
+      "primitive_calls": 107621,
+      "calls": 107621,
+      "self_seconds": 0.024046368000000002,
+      "cumulative_seconds": 0.024046368000000002
+    },
+    {
+      "file": "core.py",
+      "function": "_arithmetic",
+      "line": 288,
+      "primitive_calls": 2560,
+      "calls": 2560,
+      "self_seconds": 0.002824595,
+      "cumulative_seconds": 0.010811511000000001
+    },
+    {
+      "file": "fractions.py",
+      "function": "__str__",
+      "line": 410,
+      "primitive_calls": 59573,
+      "calls": 59573,
+      "self_seconds": 0.009836393,
+      "cumulative_seconds": 0.009836393
+    },
+    {
+      "file": "core.py",
+      "function": "_replace",
+      "line": 265,
+      "primitive_calls": 297,
+      "calls": 297,
+      "self_seconds": 0.000694817,
+      "cumulative_seconds": 0.007236335000000001
+    },
+    {
+      "file": "~",
+      "function": "<built-in method _hashlib.openssl_sha256>",
+      "line": 0,
+      "primitive_calls": 1015,
+      "calls": 1015,
+      "self_seconds": 0.006945192,
+      "cumulative_seconds": 0.006945192
+    },
+    {
+      "file": "core.py",
+      "function": "_invalidate",
+      "line": 251,
+      "primitive_calls": 297,
+      "calls": 297,
+      "self_seconds": 0.003240639,
+      "cumulative_seconds": 0.00603201
+    },
+    {
+      "file": "fractions.py",
+      "function": "forward",
+      "line": 613,
+      "primitive_calls": 2560,
+      "calls": 2560,
+      "self_seconds": 0.0010101090000000001,
+      "cumulative_seconds": 0.0042973840000000004
+    },
+    {
+      "file": "core.py",
+      "function": "_bounded",
+      "line": 78,
+      "primitive_calls": 2729,
+      "calls": 2729,
+      "self_seconds": 0.002469059,
+      "cumulative_seconds": 0.004011687
+    }
+  ],
+  "core_sha256": "90de0fcd0c3bf5d206cd333c4e740cfd1f73f64518f50df079f36ac5ee0f9768",
+  "reproduction": "Run benchmark_workloads(11, 128, queries=40)[2] through one fresh Kernel under cProfile; profiling overhead is excluded from the timing table."
+}

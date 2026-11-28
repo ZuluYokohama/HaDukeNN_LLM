@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from sheaf_verify.gate_trace import trace_outcome
-from sheaf_verify.gates import GATES
+from sheaf_verify.gates import all_gates
 
 
 @dataclass
@@ -44,12 +44,12 @@ def load_events(path: Path) -> list[dict]:
 
 
 def assess(events: list[dict]) -> Report:
-    passes: dict[str, set[str]] = {gate.id: set() for gate in GATES}
-    fails: dict[str, set[str]] = {gate.id: set() for gate in GATES}
-    blocked_gates: dict[str, set[str]] = {gate.id: set() for gate in GATES}
+    passes: dict[str, set[str]] = {gate.id: set() for gate in all_gates()}
+    fails: dict[str, set[str]] = {gate.id: set() for gate in all_gates()}
+    blocked_gates: dict[str, set[str]] = {gate.id: set() for gate in all_gates()}
     satisfied: dict[tuple[str, str], set[str]] = {}
     blocked: dict[tuple[str, str], set[str]] = {}
-    for gate in GATES:
+    for gate in all_gates():
         for dep in gate.depends_on:
             satisfied[(dep, gate.id)] = set()
             blocked[(dep, gate.id)] = set()
@@ -78,7 +78,7 @@ def assess(events: list[dict]) -> Report:
             fails[gate_id].add(test)
     problems = []
     gate_rows = []
-    for gate in GATES:
+    for gate in all_gates():
         if not passes[gate.id]:
             problems.append(f"{gate.id} pass path has no test")
         if not fails[gate.id]:
@@ -95,7 +95,7 @@ def assess(events: list[dict]) -> Report:
             },
         })
     edge_rows = []
-    for gate in GATES:
+    for gate in all_gates():
         for dep in gate.depends_on:
             key = (dep, gate.id)
             label = f"{dep} -> {gate.id}"

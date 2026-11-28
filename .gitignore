@@ -13,3 +13,5 @@ dist/
 *.egg-info/
 reviewer-bundle/
 *.pyc
+.sheaf.prev-*/
+T49_HST_FOUNDATION_RESULTS.lapbeast-live.json

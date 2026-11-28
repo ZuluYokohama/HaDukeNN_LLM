@@ -1,0 +1,89 @@
+[
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "11"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "14"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "25"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "15"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "11"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "12"
+  },
+  {
+    "status": "ok",
+    "unit": "L",
+    "value": "15"
+  },
+  {
+    "error": "conflict",
+    "message": "asserted quantity disagrees with the evaluated result",
+    "status": "error"
+  },
+  {
+    "status": "ok"
+  },
+  {
+    "error": "missing_reference",
+    "message": "unresolved binding: main/outbound",
+    "status": "error"
+  }
+]

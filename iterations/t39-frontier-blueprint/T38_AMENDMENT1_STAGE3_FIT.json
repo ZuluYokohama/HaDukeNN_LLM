@@ -1,0 +1,15 @@
+{
+  "id": "t38-apples-plain-vs-hadukenn-bpe32k/amendment-1-stage3-fit",
+  "type": "AMENDMENT_PROPOSAL - noise-buffered Stage-3 L-rung fit restriction prior to any Stage-3 launch",
+  "applies_to_prereg_sha256": "524fca093dc6c00e803b6f9998e69277f2804cc38e44ad71f94ffd0b88d63590",
+  "created_ct": "2026-11-25 10:05:00 AM CT",
+  "data_state": "Zero Stage-1, Stage-2, or Stage-3 T-38 runs exist at creation.",
+  "defect_identified": "Under an ideal additive Chinchilla scaling law L(N, D) = E + A * N^-alpha + B * D^-beta with zero multi-epoch degradation, expected 1-to-4-epoch data gain E[BPB_1ep - BPB_4ep] = B * (D_1ep^-beta - D_4ep^-beta) is identical at M and L. Consequently, the unbuffered clause 'drop L iff gain_L < gain_M' triggers 50% of the time by pure seed noise, risking discarding 20.4 GPU-hours of valid Stage-3 L runs.",
+  "patched_fit_restriction": {
+    "gain_definition": "gain_R = mean_BPB(R, 1ep) - mean_BPB(R, 4ep)",
+    "se_diff_definition": "SE_gain_diff = sqrt(SE(M,1ep)^2 + SE(M,4ep)^2 + SE(L,1ep)^2 + SE(L,4ep)^2)",
+    "drop_L_iff": "gain_L < gain_M - 2.0 * SE_gain_diff",
+    "false_drop_rate_under_additive_null": 0.0228
+  },
+  "status": "PRE-DECLARED_PROPOSAL"
+}

@@ -33,8 +33,18 @@ from sheaf_verify.checks import (
     vocab_criteria,
 )
 from sheaf_verify.context import Context
+from sheaf_verify.hal import (
+    evaluate_hal0,
+    evaluate_hal1,
+    evaluate_hal2,
+    evaluate_hal3,
+    evaluate_hal4,
+    evaluate_hal5,
+    evaluate_hal6,
+)
 from sheaf_verify.hashing import SheafError, as_int, parse_json_bytes
 from sheaf_verify.policy import HEADLINE_SEEDS, REQUIRED_ARMS
+from sheaf_verify.sheaf_cohomology import cellular_sheaf_criteria
 from sheaf_verify.spec_gates import (
     g0_criteria,
     g1_criteria,
@@ -257,6 +267,8 @@ def evaluate_h4(ctx: Context) -> list:
         criteria.append(bad("causality.provenance", "the trace does not cite the study hypergraph"))
     sheaf = hypergraph.get("sheaf") if isinstance(hypergraph, dict) else None
     criteria.append(loop_criterion(sheaf))
+    if isinstance(hypergraph, dict) and "cellular_sheaf" in hypergraph:
+        criteria.extend(cellular_sheaf_criteria(hypergraph.get("cellular_sheaf")))
     return criteria
 
 
@@ -440,3 +452,53 @@ def topological(gates: tuple[Gate, ...] = GATES) -> tuple[Gate, ...]:
 
 if tuple(gate.id for gate in topological()) != tuple(gate.id for gate in GATES):
     raise SheafError("GATES is not in topological order")
+
+PROFILE_TRAINING = "training"
+PROFILE_HAL = "hal"
+PROFILES = frozenset({PROFILE_TRAINING, PROFILE_HAL})
+
+HAL_GATES: tuple[Gate, ...] = (
+    Gate("HAL0", "HAL profile and claim", ("claim",), (), evaluate_hal0),
+    Gate("HAL1", "Environment live-probed", ("environment",), ("HAL0",), evaluate_hal1),
+    Gate("HAL2", "Code tree hashed", ("code",), ("HAL0",), evaluate_hal2),
+    Gate("HAL3", "Kernel host-reference binding", ("kernel",), ("HAL2",), evaluate_hal3),
+    Gate("HAL4", "Numeric parity vs float64 reference", ("log.parity", "kernel"), ("HAL3",), evaluate_hal4),
+    Gate("HAL5", "Performance from raw timings", ("claim", "log.timings"), ("HAL0",), evaluate_hal5),
+    Gate("HAL6", "Thermal and power guards", ("claim", "log.guards", "environment"), ("HAL1",), evaluate_hal6),
+)
+
+
+def all_gates() -> tuple[Gate, ...]:
+    return GATES + HAL_GATES
+
+
+def normalize_profile(value: str | None) -> str:
+    if value is None or value == "":
+        return PROFILE_TRAINING
+    if value not in PROFILES:
+        raise SheafError(f"unknown study profile: {value}")
+    return value
+
+
+def gates_for_profile(profile: str | None) -> tuple[Gate, ...]:
+    if normalize_profile(profile) == PROFILE_HAL:
+        return HAL_GATES
+    return GATES
+
+
+def profile_from_records(records: list[dict]) -> str:
+    found = set()
+    for record in records:
+        if not isinstance(record, dict) or not isinstance(record.get("gate_id"), str):
+            continue
+        if "profile" in record:
+            found.add(normalize_profile(record.get("profile")))
+    if not found:
+        return PROFILE_TRAINING
+    if len(found) > 1:
+        raise SheafError("ledger records disagree on study profile")
+    return found.pop()
+
+
+if tuple(gate.id for gate in topological(HAL_GATES)) != tuple(gate.id for gate in HAL_GATES):
+    raise SheafError("HAL_GATES is not in topological order")

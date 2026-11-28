@@ -73,3 +73,11 @@ A kernel whose `backend` is `cuda`, `opencl`, or `c` must name `host_reference_s
 The branch's `Check` record (name, passed, detail) is the same shape as a criterion. Severity and category were left off. Every criterion in this harness is blocking. Their router fails closed when a caller forces the flat regime on a frustrated complex. The same posture is why a superiority flag cannot be set without both contrasts supporting it.
 
 Not used. The desktop and web GUI. Sensor-telemetry ingestion and quarantine. Involvement barcodes, hierarchy line graphs, and the gauge numerics in `network_engine/gauge/curved.py` and `flat.py`. The OpenCL and C kernel sources. The mainnet mempool experiments. Their `network_engine/meta/seal.py` reuses the mission-lab key-id label; this harness uses `sheaf-verify.key-id.v1` and does not call that function.
+
+## v0.2.0 Subsystems
+
+- `sheaf_cohomology.py`: Vector-stalk cellular sheaves over graphs and 2-complexes, exact `Fraction` coboundary rank, grounded mapping-cone diagnostics, partitioned O(1)-in-n dirty-cell updates, and tie-abstention versus fault-localization classification. When a `hypergraph` artifact includes an optional `cellular_sheaf` block, `H4` evaluates `cellular_sheaf_criteria` without altering stores that omit it.
+- `numerics.py`: `CertifiedBall` midpoint-radius rational enclosures with outward IEEE-754 float bounds, pairwise tree-reduction error envelopes, and GPU architecture roofline gates.
+- `savi.py`: Game-theoretic Kelly-betting e-processes, e-BH discovery control, Smyth Empirical-Bayes moderated paired-seed t-tests, and Learn-Then-Test Hoeffding-Bentkus threshold calibration.
+- `attestation.py` & `anticheat.py`: Strict RFC 7493/8785 JSON parsing, in-toto Statement v1 + DSSE v1.0 PAE envelopes, RFC 9162 Merkle inclusion/consistency proofs over `ledger.jsonl`, and static AST anti-reward-hacking kernel checks.
+- `campaign.py` & `mutation.py`: Domain of Calibration transition rules, `256 × 128` spectral cluster geometry and head-FLOP scaling verifiers, T-37 / T-38 / `hg-v3` protocol recomputation, and deterministic mutation adequacy scoring (`MS = K / (G - E)`).

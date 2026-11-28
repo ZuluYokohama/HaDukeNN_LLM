@@ -1,0 +1,98 @@
+[
+  {
+    "arm": "reference",
+    "case": "benchmark-cold-s11-d4",
+    "depth": 4,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 1450,
+    "traced_peak_bytes": 2758
+  },
+  {
+    "arm": "cached_dag",
+    "case": "benchmark-cold-s11-d4",
+    "depth": 4,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 3882,
+    "traced_peak_bytes": 4358
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "benchmark-cold-s11-d4",
+    "depth": 4,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 29174,
+    "traced_peak_bytes": 33687
+  },
+  {
+    "arm": "reference",
+    "case": "benchmark-cold-s11-d16",
+    "depth": 16,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 4986,
+    "traced_peak_bytes": 7528
+  },
+  {
+    "arm": "cached_dag",
+    "case": "benchmark-cold-s11-d16",
+    "depth": 16,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 14298,
+    "traced_peak_bytes": 15304
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "benchmark-cold-s11-d16",
+    "depth": 16,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 130902,
+    "traced_peak_bytes": 144340
+  },
+  {
+    "arm": "reference",
+    "case": "benchmark-cold-s11-d64",
+    "depth": 64,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 53100,
+    "traced_peak_bytes": 62648
+  },
+  {
+    "arm": "cached_dag",
+    "case": "benchmark-cold-s11-d64",
+    "depth": 64,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 91036,
+    "traced_peak_bytes": 93960
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "benchmark-cold-s11-d64",
+    "depth": 64,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 533081,
+    "traced_peak_bytes": 584498
+  },
+  {
+    "arm": "reference",
+    "case": "benchmark-cold-s11-d128",
+    "depth": 128,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 119260,
+    "traced_peak_bytes": 143512
+  },
+  {
+    "arm": "cached_dag",
+    "case": "benchmark-cold-s11-d128",
+    "depth": 128,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 196108,
+    "traced_peak_bytes": 205720
+  },
+  {
+    "arm": "hypergraph_kernel",
+    "case": "benchmark-cold-s11-d128",
+    "depth": 128,
+    "metric": "Python allocator, not process RSS",
+    "traced_current_bytes": 1070725,
+    "traced_peak_bytes": 1187671
+  }
+]

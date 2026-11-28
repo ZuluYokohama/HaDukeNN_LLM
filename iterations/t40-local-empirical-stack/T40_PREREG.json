@@ -1,0 +1,19 @@
+{
+  "campaign_id": "T-40",
+  "primary_test": "Empirical-Bayes paired-seed t-test (alpha_one_sided = 0.01) + SAVI Kelly e-process",
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "title": "Local 5-Track, 5-Seed Hypergraph-Sheaf & Paradigmatic-Head Merit Suite",
+  "tracks": [
+    "Track 1: Second-Order Paradigmatic vs Syntagmatic vs Mass-Random Bijection + Tied-Root Shortcut & Cluster-IS (K_neg=3)",
+    "Track 2: Equal-Bytes Span Merging vs Empirical-Bayes Count-Shrunk Residuals, Scheduled StochasTok, and OE-Span",
+    "Track 3: Decontaminated Train-Only Corpus Hypergraph + Chodrow Null + Prefix/Self-Exclusion Canaries + E1/E2/E4",
+    "Track 4: Asymmetric Diagonal-Sheaf KV-Prefix (Q=W, KV=W+4) vs Chodrow-Null Attention-Sink Diagnostic",
+    "Track 5: Native C11 AVX-512 Tiled Cut-Cross-Entropy vs 256x128 & 512x128 Cluster-IS Silicon Roofline"
+  ]
+}

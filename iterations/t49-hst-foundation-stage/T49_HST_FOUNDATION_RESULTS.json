@@ -1,0 +1,277 @@
+{
+  "campaign_id": "T-49",
+  "elapsed_seconds": 51.14,
+  "live_t38_five_rung_1ep_anchor": {
+    "L": {
+      "delta_h_minus_p": 0.01861006,
+      "h_test_bpb": 1.28269156,
+      "h_tflops": 38.9964,
+      "n_body": 84953856.0,
+      "p_test_bpb": 1.2640815,
+      "p_tflops": 45.3577
+    },
+    "M": {
+      "delta_h_minus_p": 0.02743027,
+      "h_test_bpb": 1.30499061,
+      "n_body": 31860288.0,
+      "p_test_bpb": 1.27756034
+    },
+    "M+": {
+      "delta_h_minus_p": 0.02297249,
+      "h_test_bpb": 1.28954805,
+      "n_body": 49575040.0,
+      "p_test_bpb": 1.26657556
+    },
+    "S": {
+      "delta_h_minus_p": 0.034415,
+      "h_test_bpb": 1.35610731,
+      "n_body": 10621824.0,
+      "p_test_bpb": 1.32169231
+    },
+    "XS": {
+      "delta_h_minus_p": 0.03831307,
+      "h_test_bpb": 1.42306351,
+      "n_body": 3213568.0,
+      "p_test_bpb": 1.38475044
+    }
+  },
+  "pillar_1_hst_v1_tokenization_standard": {
+    "bpe_bytes_per_token": 1.9949,
+    "digit_atomic_verified": true,
+    "hst_causal_bytes_per_token": 2.4889,
+    "hst_dp_bytes_per_token": 2.4907,
+    "manifest_schema": "hadukenn.hst.manifest.v1",
+    "manifest_verified": true,
+    "merkle_root_sha256": "ad400f750a973371ded6bcd68e064ad271557a3d4995d7f3c1f91bcf0eafa079",
+    "stage_a_lexical_merges": 94,
+    "stage_b_pmi_superspans": 58,
+    "token_sequence_reduction_pct": 19.85,
+    "universal_control_ids": {
+      "<|hst:assert|>": 261,
+      "<|hst:bos|>": 256,
+      "<|hst:eos|>": 257,
+      "<|hst:fork|>": 260,
+      "<|hst:receipt|>": 263,
+      "<|hst:span_close|>": 259,
+      "<|hst:span_open|>": 258,
+      "<|hst:unit|>": 262
+    },
+    "vocab_size": 416
+  },
+  "pillar_2_equal_bytes_foundation_lm": {
+    "bpe_factored_bottleneck_test_bpb_seeds": [
+      2.955253,
+      3.232813,
+      2.646658,
+      3.38741,
+      2.793799
+    ],
+    "bpe_sp_flat_test_bpb_seeds": [
+      1.160193,
+      1.518963,
+      1.281257,
+      1.254726,
+      1.064781
+    ],
+    "bpe_steps_for_equal_bytes": 125,
+    "factored_bottleneck_penalty_vs_flat_bpb": 1.747203,
+    "hst_gain_over_bpe_sp_bpb": 0.379422,
+    "hst_hadukenn_lm_test_bpb_seeds": [
+      0.744398,
+      1.062111,
+      0.898976,
+      0.824301,
+      0.853024
+    ],
+    "hst_steps_for_equal_bytes": 100,
+    "matched_training_bytes_budget": 48000.0,
+    "mean_bpe_factored_bottleneck_bpb": 3.003187,
+    "mean_bpe_sp_flat_bpb": 1.255984,
+    "mean_hst_hadukenn_lm_bpb": 0.876562,
+    "p_one_sided_hst_beats_bpe": 0.00048054,
+    "paired_se_bpb": 0.043612,
+    "wins_all_5_seeds": true
+  },
+  "pillar_3_mup_zero_shot_width_transfer": {
+    "base_width_d": 32,
+    "mup_beats_sp_at_max_width_bpb": 1.006259,
+    "mup_monotone_improving_with_width": true,
+    "mup_test_bpb_by_width": {
+      "128": 1.470585,
+      "32": 2.26692,
+      "64": 1.781902
+    },
+    "sp_test_bpb_by_width": {
+      "128": 2.476844,
+      "32": 2.241051,
+      "64": 2.009177
+    },
+    "tested_widths": [
+      32,
+      64,
+      128
+    ]
+  },
+  "pillar_4_inline_receipt_gated_decoding": {
+    "seeds_passed_all_gates": 5,
+    "semantic_replay_rate": 1.0,
+    "spoof_refusal_rate": 1.0,
+    "total_seeds": 5
+  },
+  "schema": "sheaf-verify.hst-foundation-stage.v1",
+  "scitt_rfc9943_bundle": {
+    "bundle_schema": "sheaf-verify.regulatory-bundle.v1",
+    "created_at": "2026-11-26T20:55:00-06:00",
+    "dsse_statement_envelope": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiY3JlYXRlZF9hdCI6IjIwMjYtMTEtMjZUMjA6NTU6MDAtMDY6MDAiLCJldV9haV9hY3RfYXJ0aWNsZV8xMiI6eyJhdXRvbWF0aWNfbGlmZXRpbWVfbG9nZ2luZyI6dHJ1ZSwiZXNjYWxhdGVkX2V2ZW50X2luZGljZXMiOltdLCJodW1hbl9vdmVyc2lnaHRfYXJ0aWNsZV8xNF9yZWFkeSI6dHJ1ZSwibWluaW11bV9yZXRlbnRpb25fbW9udGhzIjo4NCwicmVmdXNlZF9ldmVudF9pbmRpY2VzIjpbXSwidG90YWxfZXZlbnRzX2xvZ2dlZCI6NX0sImZpbnJhX3J1bGVfMzExMF93b3JtIjp7ImJvb2tzX2FuZF9yZWNvcmRzX3JlY29uc3RydWN0aWJsZSI6dHJ1ZSwicG9saWN5X3NuYXBzaG90X3NoYTI1NiI6IjgyNjFlNDU0ZDhmMmYwMGQxZDIyMWMwNzYyNDljODY4ZWQ4ZjdkYWU1NmE5MzdkMWNkYjYzOGUzY2IzYWU5YmYiLCJyZXRlbnRpb25feWVhcnNfZmxvb3IiOjcsInN1cGVydmlzb3J5X2VzY2FsYXRpb25fY291bnQiOjAsIndvcm1faW50ZWdyaXR5X3NoYTI1NiI6ImM0ODlhMTgxODJlMjQzM2I5OTNiZjY5NjA1MGYzODRmY2Q3ZTI3MmNlMDU0ZjgyMzg4NzkxMGMxNzViMmY0MWYifSwiaWV0Zl9zY2l0dF9yZmM5OTQzIjp7Im1lcmtsZV90cmVlX2FsZyI6IlJGQzkxNjItU0hBMjU2IiwicmVjZWlwdF90cmVlX3NpemUiOjUsInNpZ25lZF9zdGF0ZW1lbnRfYWxnIjoiRFNTRS12MS1ITUFDLVNIQTI1NiJ9LCJzeXN0ZW1faWQiOiJoYWR1a2Vubi1oc3QtdjEtZm91bmRhdGlvbi1sbSJ9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9oYWR1a2Vubi5vcmcvY29tcGxpYW5jZS9zY2l0dC1ldWFpMTItZmlucmEzMTEwL3YxIiwic3ViamVjdCI6W3siZGlnZXN0Ijp7InNoYTI1NiI6ImM0ODlhMTgxODJlMjQzM2I5OTNiZjY5NjA1MGYzODRmY2Q3ZTI3MmNlMDU0ZjgyMzg4NzkxMGMxNzViMmY0MWYifSwibmFtZSI6ImhhZHVrZW5uLWhzdC12MS1mb3VuZGF0aW9uLWxtL2V2ZW50cy5qc29uIn0seyJkaWdlc3QiOnsic2hhMjU2IjoiYWQ0MDBmNzUwYTk3MzM3MWRlZDZiY2Q2OGUwNjRhZDI3MTU1N2EzZDQ5OTVkN2YzYzFmOTFiY2YwZWFmYTA3OSJ9LCJuYW1lIjoiaGFkdWtlbm4taHN0LXYxLWZvdW5kYXRpb24tbG0vdHJhY2VfaGVhZCJ9LHsiZGlnZXN0Ijp7InNoYTI1NiI6ImY4ZDM1OGM0MjZlZTUxMDRhMzQ5MmEzMWRhN2M1NzU5Y2RiMWU4OWNiNGQxZDE2ZDNkOTRlNzU5N2E5NzJmYWMifSwibmFtZSI6ImhhZHVrZW5uLWhzdC12MS1mb3VuZGF0aW9uLWxtL3N0YXRlX2RpZ2VzdCJ9XX0=",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+        {
+          "alg": "hmac-sha256",
+          "keyid": "264894fd745d4f5a3ade66c7141d05a0fd52dd5ec2c7a133fa91c5d32ca49515",
+          "sig": "zjn76cqa/L8HFERyYW1vZReptiq7pMeYJIyZMvzRFgs="
+        }
+      ]
+    },
+    "events": [
+      {
+        "approved": true,
+        "hst_bpb": 0.744398,
+        "seed": 13,
+        "status": "ok",
+        "verdict": "VALID"
+      },
+      {
+        "approved": true,
+        "hst_bpb": 1.062111,
+        "seed": 21,
+        "status": "ok",
+        "verdict": "VALID"
+      },
+      {
+        "approved": true,
+        "hst_bpb": 0.898976,
+        "seed": 34,
+        "status": "ok",
+        "verdict": "VALID"
+      },
+      {
+        "approved": true,
+        "hst_bpb": 0.824301,
+        "seed": 55,
+        "status": "ok",
+        "verdict": "VALID"
+      },
+      {
+        "approved": true,
+        "hst_bpb": 0.853024,
+        "seed": 89,
+        "status": "ok",
+        "verdict": "VALID"
+      }
+    ],
+    "events_sha256": "c489a18182e2433b993bf696050f384fcd7e272ce054f823887910c175b2f41f",
+    "policy_sha256": "8261e454d8f2f00d1d221c076249c868ed8f7dae56a937d1cdb638e3cb3ae9bf",
+    "scitt_merkle_receipt": {
+      "audit_path": [
+        "7b1ae4f7057d66dfe53455cae87318b561286eaf713ae7c0f3c041518f6a512b"
+      ],
+      "dsse": {
+        "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiZ2F0ZV9pZCI6IkVWRU5UXzQiLCJtZXJrbGVfcm9vdF9zaGEyNTYiOiJhMWVmZTExODNmY2QzNjFiYmQ2OGViNjg0Y2I1NmE4YjE3Y2QyYzA5ZmVjZjk2NWM3ZGIyZDA0MDMyZDM2MjRmIiwic3RhdHVzIjoiUEFTU0VEIiwidHJlZV9zaXplIjo1fSwicHJlZGljYXRlVHlwZSI6Imh0dHBzOi8vaGFkdWtlbm4ub3JnL3NoZWFmLXZlcmlmeS9nYXRlLXZlcmRpY3QvdjIiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiOTI0MWIzYzUyMjU5ODQ2MzhkODkxNGJiMmJhYTIyZDI4NTZiOWViMzU3NTYzNDVlYzc2MmQ0MGZhNmNjMjIzYyJ9LCJuYW1lIjoibGVkZ2VyL3NlcS80In1dfQ==",
+        "payloadType": "application/vnd.in-toto+json",
+        "signatures": [
+          {
+            "alg": "hmac-sha256",
+            "keyid": "264894fd745d4f5a3ade66c7141d05a0fd52dd5ec2c7a133fa91c5d32ca49515",
+            "sig": "9nbs4Em/URImC/R2ctgB+rT1UyLx0I/ClMO01fIxz3Q="
+          }
+        ]
+      },
+      "format": "sheaf-verify.scitt-merkle-receipt.v1",
+      "gate_id": "EVENT_4",
+      "leaf_index": 4,
+      "merkle_root_sha256": "a1efe1183fcd361bbd68eb684cb56a8b17cd2c09fecf965c7db2d04032d3624f",
+      "record": {
+        "created_at": "2026-11-26T20:55:00-06:00",
+        "event_sha256": "8cf4146f3b0b6813e524334470e921654ddd30498b3e43efdb704039aa952603",
+        "format": "sheaf-verify.ledger.v1",
+        "gate_id": "EVENT_4",
+        "prev_sha256": "bd5bc3582e1ca2fece054a4059191195728ac9d77656f1224712cc9defb3245a",
+        "record_sha256": "9241b3c5225984638d8914bb2baa22d2856b9eb35756345ec762d40fa6cc223c",
+        "seq": 4,
+        "status": "PASSED"
+      },
+      "record_sha256": "9241b3c5225984638d8914bb2baa22d2856b9eb35756345ec762d40fa6cc223c",
+      "tree_size": 5
+    },
+    "state_digest_sha256": "f8d358c426ee5104a3492a31da7c5759cdb1e89cb4d1d16d3d94e7597a972fac",
+    "system_id": "hadukenn-hst-v1-foundation-lm",
+    "trace_head_sha256": "ad400f750a973371ded6bcd68e064ad271557a3d4995d7f3c1f91bcf0eafa079"
+  },
+  "scitt_verified": true,
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "staged_foundation_scale_ladder": [
+    {
+      "d_ff": 704,
+      "d_model": 256,
+      "est_bf16_train_vram_gib": 1.6,
+      "head_regime": "tiled_cce",
+      "n_heads": 4,
+      "n_layers": 6,
+      "target_hardware": "Single 12 GB GPU (proxy muP tune)",
+      "tier_id": "HST-Proxy-15M",
+      "vocab_size": 32768
+    },
+    {
+      "d_ff": 2048,
+      "d_model": 768,
+      "est_bf16_train_vram_gib": 4.8,
+      "head_regime": "tiled_cce",
+      "n_heads": 12,
+      "n_layers": 12,
+      "target_hardware": "Single 12 GB GPU (bf16 + CCE)",
+      "tier_id": "HST-Core-125M",
+      "vocab_size": 32768
+    },
+    {
+      "d_ff": 2816,
+      "d_model": 1024,
+      "est_bf16_train_vram_gib": 8.9,
+      "head_regime": "tiled_cce",
+      "n_heads": 16,
+      "n_layers": 20,
+      "target_hardware": "Single 12 GB GPU / 13 GB Looped NPU",
+      "tier_id": "HST-Edge-360M",
+      "vocab_size": 49152
+    },
+    {
+      "d_ff": 5504,
+      "d_model": 2048,
+      "est_bf16_train_vram_gib": 11.4,
+      "head_regime": "tiled_cce",
+      "n_heads": 16,
+      "n_layers": 24,
+      "target_hardware": "Single 24-48 GB or 4xGPU Node",
+      "tier_id": "HST-Base-1.3B",
+      "vocab_size": 65536
+    },
+    {
+      "d_ff": 6912,
+      "d_model": 2560,
+      "est_bf16_train_vram_gib": 19.8,
+      "head_regime": "cluster_is_v128k",
+      "n_heads": 20,
+      "n_layers": 32,
+      "target_hardware": "8xGPU Cloud / INT8 Looped Edge",
+      "tier_id": "HST-Wide-3.2B",
+      "vocab_size": 131072
+    }
+  ],
+  "state_commitment_sha256": "f8d358c426ee5104a3492a31da7c5759cdb1e89cb4d1d16d3d94e7597a972fac"
+}

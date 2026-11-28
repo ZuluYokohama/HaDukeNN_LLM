@@ -9,7 +9,7 @@ import pytest
 from sheaf_verify import control_graph, gate_trace
 from sheaf_verify.gate_coverage import assess, event_outcome, render_matrix
 from sheaf_verify.gate_trace import trace_outcome
-from sheaf_verify.gates import GATES, Gate
+from sheaf_verify.gates import Gate, all_gates
 from sheaf_verify.runner import _trace_event
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,12 +29,12 @@ def test_committed_diagram_matches_gates():
     assert control_graph.problems(ROOT) == []
     committed = (ROOT / "docs" / "control-graph.mmd").read_text(encoding="utf-8")
     assert committed == control_graph.render()
-    assert _solid_edges(committed) == {(dep, gate.id) for gate in GATES for dep in gate.depends_on}
+    assert _solid_edges(committed) == {(dep, gate.id) for gate in all_gates() for dep in gate.depends_on}
 
 
 def test_every_gate_appears_and_comparisons_hit_real_gates():
     text = control_graph.render()
-    for gate in GATES:
+    for gate in all_gates():
         assert re.search(rf"\b{gate.id}\b", text), gate.id
     for source, target in control_graph.COMPARISON_EDGES:
         assert f"{source} -.-> {target}" in text

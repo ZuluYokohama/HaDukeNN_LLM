@@ -4,7 +4,7 @@ Gate contract for HaDukeN //\\\\// HGNLLM Experiments. The package name is `shea
 
 A gate passes only when every criterion it writes has passed, and every gate it depends on has a passing ledger record bound to the same manifest and payload hashes. `run` still writes the failures.
 
-The ids follow the architecture spec. H0–H7 are the stages. G0–G6 are the go/no-go lines of H0–H6. H7 has no numeric gate. P0–P6 are the paper-plan phases. Thresholds below are per-gate parameters taken from those documents. A study cannot loosen them by writing a smaller number into its metrics. There is no single seed minimum: pilots use 3, the headline uses 5. The old global `MIN_SEEDS = 5` would have failed a valid 3-seed pilot.
+The ids follow the architecture spec. H0–H7 are the stages. G0–G6 are the go/no-go lines of H0–H6. H7 has no numeric gate. P0–P6 are the paper-plan phases. `sheaf-verify run --profile training` (the default) evaluates only that graph. `sheaf-verify run --profile hal` evaluates only HAL0–HAL6, the fail-closed hardware / microbench family. The profile is selected explicitly and is recorded on every ledger record and on the result manifest. A training study cannot skip G/H/P by choosing a HAL claim; the requested profile is what is walked. Thresholds below are per-gate parameters taken from those documents. A study cannot loosen them by writing a smaller number into its metrics. There is no single seed minimum: pilots use 3, the headline uses 5. The old global `MIN_SEEDS = 5` would have failed a valid 3-seed pilot.
 
 ## Control graph
 
@@ -47,6 +47,12 @@ flowchart TD
   G6 --> H6
   H6 --> H7
   H7 --> P6
+  HAL0 --> HAL1
+  HAL0 --> HAL2
+  HAL2 --> HAL3
+  HAL3 --> HAL4
+  HAL0 --> HAL5
+  HAL1 --> HAL6
 
   classDef primary fill:#f3e0c4,stroke:#8a4b08,color:#1b1914,stroke-width:2px
   class G1,H1,P2,G4,hntCtl,bestArm,peHeat primary
@@ -73,6 +79,8 @@ MAX_FLOP_RELATIVE_TOLERANCE = 0.05
 ALPHA = 0.05
 MIN_BOOTSTRAP_DRAWS = 1000
 MAX_BOOTSTRAP_DRAWS = 100000
+HAL_MAX_ABS = 1e-4
+MIN_TIMING_REPEATS = 3
 ```
 
 `MAX_FLOP_RELATIVE_TOLERANCE` is the harness reading of the word "matched" where the spec does not give a numeric band. `ALPHA` is the one-sided threshold for G2 and G4. The methodology block inside G4 still recomputes a two-tailed Welch test, a bootstrap interval, and Hedges' g; that two-tailed bar is stricter than the one-sided spec test and is not a second alpha.
@@ -241,3 +249,50 @@ The stage card says work `lm-eval and write-up` and gate `none`. lm-eval tasks a
 Binds `metrics`. Depends on H7.
 
 `replication_recorded` is true and `replication_note` has at least 20 characters. The note is a submitted record. The harness does not contact another machine.
+
+## HAL profile
+
+The HAL graph is a separate study kind for hardware and microbench runs. It does not replace G0–P6. Gates recompute from registered payloads or a live probe. A self-reported speedup, cosine, or temperature in a campaign JSON is not evidence.
+
+### HAL0 HAL profile and claim
+
+Binds `claim`. No dependencies.
+
+The claim format is `sheaf-verify.hal-claim.v1`. `study_profile` is `hal`. The description is at least 20 characters. Performance claims use metric `speedup` in the `greater` direction, subject `c11_tiled_cce`, and a stated baseline that is `serial_python_loop` or `packed_numpy`. `baselines_reported` must include both. `min_speedup` is a positive number. Parity `max_abs` may tighten, but must not exceed `HAL_MAX_ABS = 1e-4`. The claim must not contain a 64-character hex digest. If metrics are also registered, the claim timestamp is earlier than the metrics timestamp.
+
+### HAL1 Environment live-probed
+
+Binds `environment`. Depends on HAL0.
+
+The environment format is `sheaf-verify.environment.v1` with non-blank python, cuda, driver, gpu, and platform. The harness re-probes the live machine and compares each field to the registered payload. A mismatch, or a probe that cannot observe a claimed field, fails.
+
+### HAL2 Code tree hashed
+
+Binds `code`. Depends on HAL0.
+
+The registered code listing is recomputed against the snapshot bytes and the git tree hash, using the same `code_tree_criteria` as a training study.
+
+### HAL3 Kernel host-reference binding
+
+Binds `kernel`. Depends on HAL2.
+
+A `c`, `cuda`, or `opencl` kernel must name a distinct `host_reference_sha256` that is the payload of an input manifest. If `kernel.cuda` is also registered, the same rule applies to it.
+
+### HAL4 Numeric parity vs float64 reference
+
+Binds `log.parity` and `kernel`. Depends on HAL3.
+
+The parity log format is `sheaf-verify.hal-parity.v1`. Each `cce_mup_fwd` case supplies inputs `H`, `E`, `y`, and `mup_base_d`. The harness recomputes Cut-Cross-Entropy in stdlib float64 and compares the registered kernel `loss` to that reference. The cap is the claim's `max_abs`, at most `HAL_MAX_ABS`. Self-reported error fields are ignored.
+
+### HAL5 Performance from raw timings
+
+Binds `claim` and `log.timings`. Depends on HAL0.
+
+The timings log format is `sheaf-verify.hal-timings.v1`. Each case must include at least `MIN_TIMING_REPEATS = 3` raw finite repeats for the subject and for both `serial_python_loop` and `packed_numpy`. The harness recomputes mean, sample standard deviation, and speedup (`baseline_mean / subject_mean`). The pass/fail threshold uses only the claim's own stated baseline and `min_speedup`. The other baseline is still reported. A self-reported speedup field, if present, must match the recomputation.
+
+### HAL6 Thermal and power guards
+
+Binds `claim`, `log.guards`, and `environment`. Depends on HAL1.
+
+The guards log format is `sheaf-verify.hal-guards.v1`. At least two numeric temperature samples are required, `stop_celsius` must not exceed `claim.guards.thermal_stop_celsius` when declared, and the peak must stay strictly below `stop_celsius`. If power is observed, `draw_watts` is required. If power is unobserved, the log must record the probe command and the reason it failed. A study may not silently omit the probe.
+

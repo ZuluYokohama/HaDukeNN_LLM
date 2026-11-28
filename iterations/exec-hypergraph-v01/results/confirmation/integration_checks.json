@@ -1,0 +1,16 @@
+{
+  "prototype_unittest": {
+    "exit_code": 0,
+    "methods": 71
+  },
+  "byte_verified_repository_base_tree": "076c70b7a4cc535a39eb65846e81f51d4ff7ccc7",
+  "parent_commit": "d4f6d5da53d6f7c2f8fbd86a8df17c2b64b66078",
+  "fixture_verify": "pass",
+  "control_graph_check": "pass",
+  "docs_budget": "pass",
+  "full_repository_pytest_local": "unavailable: pytest distribution not accessible in session environment",
+  "ruff_local": "unavailable: ruff distribution not accessible in session environment",
+  "repository_CI": "not run: GitHub source/result upload was blocked by automatic approval review pending explicit user authorization",
+  "original_ledger_head": "307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4",
+  "external_repository_changed": false
+}

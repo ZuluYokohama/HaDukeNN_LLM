@@ -1,0 +1,106 @@
+{
+  "affinity_probe": {
+    "applied": true,
+    "applied_cores": [
+      0,
+      1
+    ],
+    "machine_id": "wbeast",
+    "requested_cores": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "role": "compute"
+  },
+  "benchmarks_and_parity": {
+    "c11_cce_ms": 32.7461,
+    "c11_speedup_over_py_loop": 8.74,
+    "causal_span_prefix_invariance": true,
+    "causal_spans_extracted": 121,
+    "cce_de_max_abs_err": 1.1559148450912549e-08,
+    "cce_dh_max_abs_err": 2.2784611535811225e-09,
+    "cce_loss_max_abs_err": 1.4136922388274797e-06,
+    "lapbeast_watchdog_rc143_verified": true,
+    "mup_logit_std_scaled_d768": 0.7117,
+    "mup_logit_std_unscaled_d768": 1.4235,
+    "python_loop_cce_ms": 286.2153,
+    "sheaf_coherent_neighbor_mass": 1.0,
+    "sheaf_kv_gate_max_abs_err": 0.0,
+    "slab_overflow_refusal_verified": true,
+    "zenbook_npu_int8_cosine_sim": 0.999918,
+    "zenbook_npu_int8_rel_l2_drift": 0.012823,
+    "zenbook_npu_loop_dynamic_allocs": 0
+  },
+  "elapsed_seconds": 1.59,
+  "host_isa": {
+    "backend": "x86_64_avx512f_fma",
+    "caps_mask": 255,
+    "flags": [
+      "SCALAR",
+      "AVX2",
+      "FMA3",
+      "AVX_VNNI",
+      "AVX512F",
+      "AVX512_VNNI",
+      "AVX512_BF16",
+      "SHA_NI"
+    ]
+  },
+  "machines_configured": [
+    "wbeast",
+    "lapbeast",
+    "zenbook"
+  ],
+  "profiles": {
+    "lapbeast": {
+      "arch": "x86_64",
+      "battery_gated": true,
+      "cce_tile_v": 1024,
+      "cpu_model": "Intel Core Ultra 9 275HX (24c = 8 Lion Cove P + 16 Skymont E)",
+      "l2_cache_mib": 32,
+      "npu_loop_enabled": false,
+      "primary_accel": "NVIDIA GeForce RTX 5060 Laptop GPU 8GB (Blackwell sm_120)",
+      "ram_arena_cap_gib": 24.0,
+      "secondary_accel": "Intel AI Boost NPU (INT8 background aboutness/stalk filter)"
+    },
+    "wbeast": {
+      "arch": "x86_64",
+      "battery_gated": false,
+      "cce_tile_v": 2048,
+      "cpu_model": "Intel Core i9-9900K (8C/16T Coffee Lake)",
+      "l2_cache_mib": 48,
+      "npu_loop_enabled": false,
+      "primary_accel": "NVIDIA GeForce RTX 5070 12GB (Blackwell sm_120)",
+      "ram_arena_cap_gib": 26.0,
+      "secondary_accel": "NVIDIA GeForce GTX 1660 Ti 6GB (Turing sm_75 async E2 kNN-LM side-lane)"
+    },
+    "zenbook": {
+      "arch": "arm64",
+      "battery_gated": true,
+      "cce_tile_v": 512,
+      "cpu_model": "Qualcomm Snapdragon X Plus X1P-42-100 (8c Oryon ARMv8.7-A)",
+      "l2_cache_mib": 42,
+      "npu_loop_enabled": true,
+      "primary_accel": "Qualcomm Hexagon V73 Tensor NPU (45 TOPS persistent looped INT8)",
+      "ram_arena_cap_gib": 13.0,
+      "secondary_accel": "Qualcomm Adreno X1-45 iGPU (OpenCL/DirectML FP16 norm+RoPE zero-copy)"
+    }
+  },
+  "regulatory_compliance": {
+    "issues": [],
+    "scitt_rfc9943_verified": true
+  },
+  "schema": "sheaf-verify.tri-machine-hal.v1",
+  "selected_profile": "wbeast",
+  "version": "0.9.0"
+}

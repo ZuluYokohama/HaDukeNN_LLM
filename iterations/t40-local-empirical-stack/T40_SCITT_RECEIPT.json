@@ -1,0 +1,28 @@
+{
+  "audit_path": [
+    "a773140dd90edb8c4f73a686eed0f6ed66ccd790a9e91037226e0d0ace616562"
+  ],
+  "dsse": {
+    "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiZ2F0ZV9pZCI6Ikg2IiwibWVya2xlX3Jvb3Rfc2hhMjU2IjoiYzI5NTQzODZmYjVmNzk5OTcwOTZiZDY1YmQ1ZDNlY2MxMzNhZjE4OGIwNDJjMWZhYjgzNjZlNmY5ZDI0ZTBmYSIsInN0YXR1cyI6InBhc3MiLCJ0cmVlX3NpemUiOjJ9LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly9oYWR1a2Vubi5vcmcvc2hlYWYtdmVyaWZ5L2dhdGUtdmVyZGljdC92MiIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJzaGEyNTYiOiJlZDZkZjlhNWMwNDA3ZjY5OGU4MTFhZmEyMzhmMDEyNDIyYjI2N2RhNWZkYmQwYjhjZmU0MzQ0NDNmOGVlMjFiIn0sIm5hbWUiOiJsZWRnZXIvc2VxLzEifV19",
+    "payloadType": "application/vnd.in-toto+json",
+    "signatures": [
+      {
+        "alg": "hmac-sha256",
+        "keyid": "6580cb27ca6a43793245b1a47f595883a0b2feca033a5c1bb236463e73dca5d1",
+        "sig": "uSdUv5rWjsZzmtRLc0ew4XynHZdzfTiOwkVGapi6pZY="
+      }
+    ]
+  },
+  "format": "sheaf-verify.scitt-merkle-receipt.v1",
+  "gate_id": "H6",
+  "leaf_index": 1,
+  "merkle_root_sha256": "c2954386fb5f79997096bd65bd5d3ecc133af188b042c1fab8366e6f9d24e0fa",
+  "record": {
+    "gate_id": "H6",
+    "record_sha256": "ed6df9a5c0407f698e811afa238f012422b267da5fdbd0b8cfe434443f8ee21b",
+    "seq": 1,
+    "status": "pass"
+  },
+  "record_sha256": "ed6df9a5c0407f698e811afa238f012422b267da5fdbd0b8cfe434443f8ee21b",
+  "tree_size": 2
+}

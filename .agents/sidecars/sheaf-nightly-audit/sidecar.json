@@ -1,0 +1,26 @@
+{
+  "builtin": "schedule",
+  "display_name": "Sheaf Nightly Gate Audit",
+  "description": "Scheduled read-only audit of fixtures/passing anchor, control-graph gate coverage, and docs budget.",
+  "restart_policy": "on-failure",
+  "args": ["0 3 * * *"],
+  "env": {
+    "CRON_TZ": "UTC",
+    "PYTHONPATH": "src"
+  },
+  "arguments": {
+    "workspace": {
+      "type": "workspace_arg",
+      "description": "Target HaDukeNN_LLM workspace root"
+    },
+    "store_path": {
+      "type": "string_arg",
+      "default": "fixtures/passing",
+      "description": "Read-only store path to verify"
+    }
+  },
+  "agent_permissions": {
+    "workspace_uris": ["file://${WORKSPACE_ROOT}"],
+    "access_grants": ["read_file", "command:python3 -m sheaf_verify anchor --store fixtures/passing"]
+  }
+}

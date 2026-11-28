@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1117">
+  <title>HST-v1 briefing (corrected claims, v1.2.0-lapbeast)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="banner">
+    <p class="kicker">Corrected briefing · claims audit 2026-11-26</p>
+    <h1>HST-v1 open tokenization standard</h1>
+    <p class="sub">A corrected copy of the v1.2.0 HST-v1 briefing. Every quantitative claim below matches the LapBeast audit in <a href="HST_V1_CLAIMS_AUDIT.md">HST_V1_CLAIMS_AUDIT.md</a>. The original 1.6&nbsp;MiB HTML is not in this repository.</p>
+    <nav class="local">
+      <a href="index.html">Overview</a>
+      <a href="HST_V1_SPEC.md">HST-v1 spec</a>
+      <a href="HST_V1_CLAIMS_AUDIT.md">Claims audit</a>
+      <a href="https://github.com/ZuluYokohama/HaDukeNN_LLM">Repository</a>
+    </nav>
+  </header>
+
+  <section>
+    <h2>What is actually staged</h2>
+    <p>HST-v1 is specified in <code>docs/HST_V1_SPEC.md</code>, <code>schemas/hst-v1.schema.json</code>, and <code>src/sheaf_verify/hst_standard.py</code>. The package version in <code>pyproject.toml</code> is <strong>1.0.0</strong> even though the source drop was named v1.2.0. Octets 0–255 stay byte-complete, IDs 256–263 are reserved control slots, Stage A keeps ASCII digits atomic, and Stage B contracts cross-boundary phrases only when a PMI threshold is met. The reference Merkle root is <code>10d7198bfcda0cada0d332a979a00004cea7b632c016af61557a239077b45ba8</code>.</p>
+  </section>
+
+  <section>
+    <h2>Verified on LapBeast</h2>
+    <ul>
+      <li>Digit atomicity, lossless roundtrip, prefix invariance, Merkle verify, and tamper rejection: unit tests plus <code>verify_hst_manifest_integrity</code>.</li>
+      <li>Token-sequence reduction of <strong>19.85%</strong> at <code>V = 416</code> versus Byte-BPE on the T-49 toy corpus (2.4889 causal bytes/token vs 1.9949).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>T-49 equal-bytes result is a 48 KB toy campaign</h2>
+    <p>The headline figures from the original briefing — gain <strong>−0.3794 BPB</strong>, <strong>5/5 seeds</strong>, <strong>p = 4.81×10<sup>−4</sup></strong>, <strong>100 vs 125 optimizer steps</strong> (20% fewer), HST mean <strong>0.8766 BPB</strong> vs Byte-BPE + Dense SP <strong>1.2560 BPB</strong> — are the sealed toy campaign in <code>iterations/t49-hst-foundation-stage/T49_HST_FOUNDATION_RESULTS.json</code>, trained on <strong>48,000 synthetic bytes</strong>. A live re-run on this host still won 5/5 with <code>p ≈ 4.26×10<sup>−4</sup></code> and gain 0.3747. That is a reproducibility check of the toy protocol, not a WikiText-103 or FineWeb-Edu pretrain.</p>
+    <p>The original briefing plotted those numbers under a heading that also said “20–35% compute” and “125M–1.3B sweet spot.” Those headings overstated the result. See the audit table.</p>
+  </section>
+
+  <section>
+    <h2>Claims withdrawn or marked as hypotheses</h2>
+    <ul>
+      <li><strong>“221/221 automated checks passing”</strong> (and “150 pytest, 0 failures”): not true on this host as the v1.2.0 drop was delivered (148 passed, 2 failed, INT8 regression). After integration: 227 pytest passed, ruff clean, coverage 86.58%.</li>
+      <li><strong>“20–35% compute left on the table”</strong>: literature hypothesis (SuperBPE), not a HaDukeNN large-corpus measurement. Do not treat 19.85% at V=416 as 20–35% at 32k–65k.</li>
+      <li><strong>“125M–1.3B sweet spot”</strong>: planned ladder in the spec, not a measured optimum. No 125M–1.3B model was trained in-repo for this briefing.</li>
+      <li><strong>“Regulated-domain readiness”</strong> (finance, clinical dosing, 70B comparisons): product hypothesis, not a demonstrated checkpoint property.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Recorded elsewhere, not re-run here</h2>
+    <p>T-37 struct32k <strong>−0.0337 BPB</strong> at M-1.5× (<code>p = 5.1e-5</code>, 16/16 cells) remains a recorded tokenizer-grid result in <code>iterations/t37-grid/</code>. T-38 Stage-3 L 1-epoch and 45.36 TFLOPS figures are recorded WBeast / RTX 5070 sheet values, not LapBeast measurements. This machine is an RTX 4080 Laptop (sm_89, 12282 MiB), not the sealed T-46 inventory of an RTX 5060 / sm_120 / 275HX.</p>
+  </section>
+
+  <section>
+    <h2>Sources</h2>
+    <ul>
+      <li><a href="HST_V1_CLAIMS_AUDIT.md">Claims audit</a> and <a href="HST_V1_SPEC.md">normative spec</a>.</li>
+      <li>Sealed toy campaign: <code>iterations/t49-hst-foundation-stage/T49_HST_FOUNDATION_RESULTS.json</code>.</li>
+      <li>Liu et al. (2025), SuperBPE; Yang et al. (2022), Tensor Programs V; Wijmans et al. (2024), Cut Cross-Entropy; Kudo &amp; Richardson (2018), SentencePiece.</li>
+    </ul>
+  </section>
+</body>
+</html>

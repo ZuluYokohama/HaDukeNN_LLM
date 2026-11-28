@@ -1,0 +1,53 @@
+{
+  "exp1_sequence_compression": {
+    "blackbox_mean_fit_ms": 1108.941,
+    "blackbox_mlp_mean_bpb": 3.263958,
+    "blackbox_mlp_sd_bpb": 0.18243,
+    "bpb_advantage_glassbox": 2.634478,
+    "glassbox_mean_bpb": 0.629481,
+    "glassbox_mean_fit_ms": 44.54,
+    "glassbox_sd_bpb": 0.022749,
+    "paired_one_sided_p": 1.94e-06,
+    "savi_e_value": 7.0175,
+    "speedup_factor": 24.9
+  },
+  "exp2_exact_machine_unlearning": {
+    "blackbox_mean_l1_drift_vs_cleanroom": 0.005944,
+    "glassbox_max_l1_drift_vs_cleanroom": 0.0,
+    "glassbox_mean_unlearn_ms": 0.6985,
+    "merkle_bit_identical_all_seeds": true
+  },
+  "exp3_ood_compositional_and_sheaf_laws": {
+    "adversarial_violation_refusal_rate": 1.0,
+    "blackbox_ood_mean_acc": 0.032,
+    "discovered_q_nullspace_laws": [
+      "TankA + TankB + TankC + TankD == invariant_constant (with stalks >= 0)"
+    ],
+    "eval_depths": [
+      5,
+      6,
+      7,
+      8
+    ],
+    "glassbox_ood_mean_acc": 1.0,
+    "savi_e_value": 12.1858,
+    "scitt_rfc9943_bundles_verified": true,
+    "train_max_depth": 3
+  },
+  "exp4_attribution_and_epistemic_abstention": {
+    "epistemic_abstention_seeds_passed": 5,
+    "reversible_provenance_audit_seeds_passed": 5,
+    "total_seeds": 5
+  },
+  "iteration": "t44-glassbox-no-blackbox",
+  "opaque_neural_parameters_in_glassbox": 0,
+  "schema": "sheaf-verify.glassbox-suite.v1",
+  "seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+  ],
+  "version": "0.7.0"
+}

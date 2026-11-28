@@ -1,0 +1,30 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "hadukenn-sheaf",
+  "displayName": "HaDukeNN Sheaf Verify",
+  "description": "Formal verification gates, pure-stdlib guardrails, and Antigravity MCP tools for HaDukeNN_LLM.",
+  "version": "1.2.0",
+  "disabled": false,
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Verify the canonical fixtures/passing store and report the anchor hash",
+    "Audit all sheaf_verify control-graph gates and RLM/SIIP budget guards",
+    "Check Antigravity rules, hooks, and MCP server integration health"
+  ],
+  "skills": [
+    "skills/verify-all-gates"
+  ],
+  "author": {
+    "name": "Blake Jones",
+    "url": "https://github.com/ZuluYokohama/HaDukeNN_LLM"
+  },
+  "repository": "https://github.com/ZuluYokohama/HaDukeNN_LLM",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "keywords": [
+    "sheaf-verify",
+    "hadukenn",
+    "formal-verification",
+    "mcp",
+    "antigravity"
+  ]
+}

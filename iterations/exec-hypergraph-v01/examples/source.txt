@@ -1,0 +1,2 @@
+A starts with 20 L and B with 5 L. A transfers 12 L to B. B returns 3 L to A.
+Scope preserves identity: α and β are distinct. μs and ms are distinct symbols.

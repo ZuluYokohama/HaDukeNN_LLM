@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sheaf-verify.hal-guards.v1",
+  "type": "object",
+  "required": ["format", "thermal"],
+  "properties": {
+    "format": {"const": "sheaf-verify.hal-guards.v1"},
+    "thermal": {"type": "object"},
+    "power": {"type": "object"}
+  }
+}

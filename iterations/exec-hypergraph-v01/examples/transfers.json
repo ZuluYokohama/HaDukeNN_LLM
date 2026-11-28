@@ -1,0 +1,28 @@
+{
+  "description": "Formal-input demonstration. The text is retained as evidence; these commands are supplied explicitly, not extracted by a language model.",
+  "commands": [
+    {"action":"source","id":"transfer-record","text":"A starts with 20 L and B with 5 L. A transfers 12 L to B. B returns 3 L to A."},
+    {"action":"set","name":"a_initial","value":20,"unit":"L","source":"transfer-record"},
+    {"action":"set","name":"b_initial","value":5,"unit":"L","source":"transfer-record"},
+    {"action":"set","name":"outbound","value":12,"unit":"L","source":"transfer-record"},
+    {"action":"set","name":"returned","value":3,"unit":"L","source":"transfer-record"},
+    {"action":"derive","name":"a_after_transfer","op":"sub","args":{"left":"a_initial","right":"outbound"}},
+    {"action":"derive","name":"b_after_transfer","op":"add","args":{"left":"b_initial","right":"outbound"}},
+    {"action":"derive","name":"a_final","op":"add","args":{"left":"a_after_transfer","right":"returned"}},
+    {"action":"derive","name":"b_final","op":"sub","args":{"left":"b_after_transfer","right":"returned"}},
+    {"action":"derive","name":"total","op":"add","args":{"left":"a_final","right":"b_final"}},
+    {"action":"query","name":"a_final"},
+    {"action":"query","name":"b_final"},
+    {"action":"assert","name":"total","value":25,"unit":"L"},
+    {"action":"fork","new_scope":"hypothetical"},
+    {"action":"set","scope":"hypothetical","name":"outbound","value":8,"unit":"L"},
+    {"action":"query","scope":"hypothetical","name":"a_final"},
+    {"action":"query","name":"a_final"},
+    {"action":"set","name":"returned","value":4,"unit":"L"},
+    {"action":"query","name":"a_final"},
+    {"action":"query","scope":"hypothetical","name":"a_final"},
+    {"action":"assert","name":"a_final","value":99,"unit":"L"},
+    {"action":"retract","name":"outbound"},
+    {"action":"query","name":"a_final"}
+  ]
+}
