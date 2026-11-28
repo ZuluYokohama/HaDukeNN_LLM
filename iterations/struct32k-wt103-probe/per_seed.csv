@@ -1,0 +1,4 @@
+plan_id,iteration_id,seed,test_bpb_corpus,valid_bpb_corpus,params,train_bytes,train_flops,finished_ct
+probe-tokenizer-struct32k-resid-full-bytes,auto-20261127-110400,13,1.424167,1.398734,23204736,87087822,2.6890e+15,2026-11-27 11:06:30
+probe-tokenizer-struct32k-resid-full-bytes,auto-20261127-110400,21,1.418576,1.390892,23204736,87087822,2.6890e+15,2026-11-27 11:08:48
+probe-tokenizer-struct32k-resid-full-bytes,auto-20261127-110400,34,1.421989,1.398310,23204736,87087822,2.6890e+15,2026-11-27 11:11:05
