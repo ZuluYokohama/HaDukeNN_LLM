@@ -1,0 +1,69 @@
+{
+  "id": "t38-apples-plain-vs-hadukenn-bpe32k/addendum-flopmatch",
+  "type": "ADDENDUM - descriptive/secondary de-confound only; does not change any rule, verdict, run, or stage gate of T38_PREREG.json",
+  "applies_to_prereg_sha256": "524fca093dc6c00e803b6f9998e69277f2804cc38e44ad71f94ffd0b88d63590",
+  "created_ct": "2026-11-25 10:06:04 PM CT",
+  "approval": "Blake Jones via parent agent, ruling t234u, 2026-11-25 10:06:04 PM CT: Yes on the horizon-matched P FLOP control (3 seeds, 2.605 epochs to 9.755e16 FLOPs, cosine ending at 1e-4, ~2 GPU-h): draft and freeze the separate prereg addendum now before any data exists, and queue those 3 seeds to run after T-38 finishes so GPU 0 stays uninterrupted on Stage 2.",
+  "data_state": "No data for these plans existed at created_ct 2026-11-25 10:06:04 PM CT. Checked: 0 iteration folders whose names contain flopmatch/horizon-matched; 0 TERMINAL.json plan_ids in those names or the three plan ids; 0 LAUNCH_QUEUE.json entries with those ids (before this freeze's later queue insert); 0 t38 driver_state keys; 0 autolaunch-audit.jsonl lines. The only pre-existing file is the t232 staging draft T38_FLOPMATCH_P.DRAFT.json, which is not a run.",
+  "purpose": "De-confound F-T38-02 (the Stage 1 equal-analytic-FLOPs mid-run partial-val H-P of -0.0240). That mid-run slice compared H at the end of its 4ep cosine (min_lr 1e-4) to P at 65.12% of P's 4ep token/FLOP budget, where P's logged LR was still 3.53e-4. This addendum pre-registers a native P control whose cosine terminates at H's Stage 1 analytic FLOP total.",
+  "status_of_results": "descriptive and secondary",
+  "verdicts": "unchanged: the T-38 Stage 1 headline remains the equal-bytes 4ep Welch rule in T38_PREREG.json (KILL already recorded). This addendum never decides PASS/KILL/PARITY/INCONCLUSIVE, never amends ladder_rule or stage3_stop, and never overrides F-T38-02 as a mid-run descriptive curve.",
+  "scope": {
+    "arms": "P only (flat ModernGPT), M rung (d=576, L=8, ff=1536, heads=9), same tokenizer and trainer knobs as t38-M-4ep-P except the budget and therefore the cosine horizon",
+    "seeds": [
+      13,
+      21,
+      34
+    ],
+    "plan_ids": [
+      "t38-flopmatch-P-M-s13",
+      "t38-flopmatch-P-M-s21",
+      "t38-flopmatch-P-M-s34"
+    ],
+    "not_in_scope": "No H runs, no other rungs, no mid-run partial-val points as the primary metric of this addendum"
+  },
+  "budget": {
+    "kind": "flops",
+    "target_analytic_flops": 97550600306688000,
+    "source": "H Stage 1 recorded train_flops on all 5 seeds, equal to analytic_flops_per_token.v1 for H (207,411,840) times Stage 1 tokens_seen (470,323,200)",
+    "P_flops_per_token": 318504960,
+    "tokens_exact": 306276550,
+    "tokens_per_step": 12288,
+    "steps": 24925,
+    "steps_rule": "trainer: steps = ceil(budget_flops / (flops_per_token * tok_per_step)) = ceil(24924.849446614582) = 24925",
+    "tokens_after_ceil": 306278400,
+    "flops_after_ceil": 97551189540864000,
+    "relative_flops_overshoot": 6.040292670137495e-06,
+    "epochs_after_ceil": 2.604833442194644,
+    "bytes_after_ceil_using_official_4ep_bpt": 1408095933.925539,
+    "official_4ep_budget_bytes": 2162281720.0,
+    "warmup_frac": 0.02,
+    "warmup_steps": 498,
+    "lr": 0.001,
+    "min_lr_frac": 0.1,
+    "cosine_ends_at_min_lr": 0.0001,
+    "cosine_formula": "if s < warm: lr*(s+1)/warm; else t=(s-warm)/(steps-warm); lr*(min_lr_frac+(1-min_lr_frac)*0.5*(1+cos(pi*t)))",
+    "eval_every": 498,
+    "launch_flag": "--budget-flops 97550600306688000 (no budget_bytes; trainer ceils to 24925 steps)"
+  },
+  "metric": "fwedu32 test bpb_corpus on the full test split (same estimator as the T-38 headline). Validation bpb_corpus is recorded but is not the primary metric of this addendum.",
+  "comparison": {
+    "treatment": "the 3 horizon-matched P runs (seeds 13, 21, 34) of this addendum, full-split test bpb_corpus",
+    "control": "the 5 already-finished Stage 1 H M-4ep runs (seeds 13, 21, 34, 55, 89), full-split test bpb_corpus; these H numbers already exist and are not re-run",
+    "delta": "mean_H_stage1 - mean_P_flopmatch (same sign as T-38: positive = H worse)",
+    "test": "Welch two-sample t on the seed-level test bpb values, unequal variances, Satterthwaite df; report the two-sided p and both one-sided p values",
+    "alpha": 0.01,
+    "also_report": "means, SE_diff, 95% CI, and the n=3 shared-seed subset (13/21/34) as a descriptive paired cut d_s = H_stage1(s) - P_flopmatch(s). The 5-vs-3 Welch comparison is the pre-declared primary of this addendum.",
+    "does_not_alter_headline": true
+  },
+  "stopping": "No early stopping and no futility rule. Cap, thermal, and safety stops still apply. All 3 seeds are run to the frozen FLOP budget.",
+  "queue": {
+    "when": "after T-38 finishes, so GPU 0 stays on Stage 2 (and Stage 3 if released) without interruption",
+    "mechanism": "depends_on t38-M-1ep-H (the last Stage 2 plan). Plans are launchable=false until that dependency is done. If Stage 3 is released, those plans keep lower rank_within / queue_order than the flopmatch plans, so they still run first. If stage3_stop skips L, the flopmatch plans become the next launch_priority=3 items. claimed_by is left unset so autolaunch can flip launchable when the dependency is satisfied, without a code change or server restart.",
+    "not_used": "depends_on a Stage 3 plan (would never fire if stage3_stop skips L). claimed_by=hold:after-T38 (honored as a hold, but t38_driver does not auto-clear that claim when T-38 ends)."
+  },
+  "gpu_hours_estimate": "about 1.97 GPU-hours (estimate: 3 seeds times 306,278,400 tokens / mean Stage 1 P tok/s 129,761; compile/eval not perfectly linear). Blake's ~2 GPU-h is consistent.",
+  "not_affected": "T38_PREREG.json remains unedited. Amendment 1 remains in force only for ladder_rule.fit_restriction. Addendum PAIRED remains the reported secondary paired-seed analysis of equal-bytes cells.",
+  "related_finding": "F-T38-02",
+  "draft_history": "Staged first as analysis-t38/T38_FLOPMATCH_P.DRAFT.json (launchable=false, not queued) in t232; frozen here after t234u approval, before any flopmatch data existed."
+}
