@@ -1,0 +1,53 @@
+{
+ "iteration": "t37-mup-probe",
+ "plan": "t37-mup-s32-M-b025-bytes",
+ "dataset": "fwedu32",
+ "metric": "test bpb_corpus",
+ "arm": "fwedu-struct32k, M size (8 layers, d 576, 6 heads, ff 1,024), flat head, struct none, muP-scaled hidden learning rate (mup on, d0 = 384)",
+ "budget_bytes": 87082055,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "muP": {
+  "values": {
+   "13": 1.5421259900140842,
+   "21": 1.5561729179479142,
+   "34": 1.5430230565068142
+  },
+  "mean": 1.5471073214896043,
+  "sd": 0.007863838848284416
+ },
+ "baseline": {
+  "plan_id": "t37-sg-s32-M-b025",
+  "values": {
+   "13": 1.571415,
+   "21": 1.584377,
+   "34": 1.587762
+  },
+  "mean": 1.5811846666666667,
+  "sd": 0.008628403463754599,
+  "source": "iterations/t37-grid/per_seed.csv"
+ },
+ "delta_muP_minus_baseline": {
+  "mean": -0.0340773451770624,
+  "per_seed": {
+   "13": -0.02928900998591577,
+   "21": -0.02820408205208569,
+   "34": -0.044738943493185745
+  }
+ },
+ "welch_descriptive": {
+  "t": -5.0558652191246845,
+  "df": 3.966051345643274,
+  "se": 0.006740160922043319,
+  "p_two_sided": 0.007365710025528873,
+  "note": "unequal-variance two-sample test, n=3 vs 3, computed here from the six values; descriptive only"
+ },
+ "args_differences_from_baseline": "only mup=true and mup_d0=384 differ in the recorded trainer args, plus trainer flags that did not exist for the baseline run and are at their defaults or off (k_neg 0, stochastok off, OE off, resid_shrink_kappa 400 unused, ckpt_dtype fp32, compile_fullgraph false)",
+ "caveats": [
+  "The baseline ran on an earlier trainer version than the muP run (the r2 trainer promoted on 2026-11-27). The new r2 flags are off in the muP run; a same-version baseline rerun has not been done.",
+  "n=3, one size, one data budget (0.25x). No pass/fail is claimed."
+ ]
+}
