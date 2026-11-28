@@ -1,6 +1,11 @@
 ---
 name: gate-auditor
 description: Read-only verification, control-graph, mutation adequacy, and export-hygiene auditor for HaDukeNN_LLM.
+tools: [view_file, grep_search, find_by_name, list_dir, run_command, send_message]
+subagent: true
+mainAgent: false
+commandExecutionPolicy: sandbox
+model: inherit
 ---
 
 # Gate Auditor Subagent

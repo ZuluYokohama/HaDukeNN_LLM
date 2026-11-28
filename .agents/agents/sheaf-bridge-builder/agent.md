@@ -1,6 +1,11 @@
 ---
 name: sheaf-bridge-builder
 description: Builds and benchmarks neuro-symbolic Sheaf-Bridge distillation, active sheaf KV-prefix registers, looped INT8 NPU kernels, and SCITT compliance bundles.
+tools: [view_file, write_to_file, replace_file_content, multi_replace_file_content, list_dir, find_by_name, grep_search, run_command, send_message]
+subagent: true
+mainAgent: false
+commandExecutionPolicy: sandbox
+model: inherit
 ---
 
 # Sheaf-Bridge & Neuro-Symbolic Builder Subagent

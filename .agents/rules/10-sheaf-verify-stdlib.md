@@ -1,8 +1,6 @@
 ---
 trigger: glob
-globs:
-  - "src/sheaf_verify/**/*.py"
-  - "tests/**/*.py"
+globs: "src/sheaf_verify/**/*.py, tests/**/*.py"
 description: Enforces Python 3.11+ pure-stdlib constraints, >=85% coverage, 22-gate traces, and 12/12 mutant adequacy on sheaf_verify.
 ---
 

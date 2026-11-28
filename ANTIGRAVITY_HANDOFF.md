@@ -47,3 +47,15 @@ Once `HaDukeNN_LLM-v0.8.0` is open in Antigravity, dispatch these sequenced task
    - Prompt: *"Extend `src/hadukenn_core/sheaf_bridge.py` with a streaming chunked CLI exporter that reads precomputed `struct32k` token embeddings (`[32768, D_oracle]`), writes the whitened SVD warm-start + sparse CSR `(I - W_lle)^T(I - W_lle) + gamma * L_mst` matrix (`<= 8 MiB`), and registers its SHA-256 manifest via `sheaf-verify register`."*
 3. **Task 3 — Post-`T-38` Integration of `T-38` 5-Rung Scaling & FLOP-Control Records**:
    - Prompt: *"Once `T-38` Stage 3 (`L`) and the 3-seed horizon-matched FLOP control (`25f13f2d`) finish, ingest the final 5-rung `N_body` scaling JSON into `iterations/t38-design/`, run `sheaf-verify campaign --mode t38-prereg`, and update `iterations/INDEX.md` while keeping all `test_docs.py` G1 invariants intact."*
+
+## 4. `v1.2.0` Antigravity Platform Modalities (Hooks, MCP, Plugin, Sidecar & SDK)
+
+| Surface | Path | Purpose |
+| :--- | :--- | :--- |
+| Lifecycle Hooks | `.agents/hooks.json`, `.agents/hooks/pre_tool_use_guard.py` | Pure-stdlib `exit 0` JSON guardrails enforcing `sheaf_verify` stdlib purity, binary/drive-path bans, sealed fixture protection, and `T-38` `182x181` `32k` GPU exclusion. |
+| Stdio MCP & UI | `.agents/mcp_config.json`, `.agents/mcp/sheaf_mcp_server.py` | Pure-stdlib JSON-RPC 2.0 stdio server (`sheaf_anchor`, `sheaf_verify_store`, `sheaf_gate_coverage`, `rlm_budget_check`, `siip_gate_check`, `kernel_pipeline_summary`) with MCP Apps UI (`io.modelcontextprotocol/ui`, `com.google.antigravity/ui`). |
+| Plugin Bundle | `.agents/plugins/hadukenn-sheaf/.antigravity-plugin/plugin.json` | Draft `2020-12` Antigravity plugin (`agy plugin validate --strict --json .agents/plugins/hadukenn-sheaf`) with `skills/`, `agents/`, `./scripts/` hooks, and `${PLUGIN_ROOT}` MCP config. |
+| Sidecar Spec | `.agents/sidecars/sheaf-nightly-audit/sidecar.json` | App scheduled gate-audit sidecar (`builtin: "schedule"`, `restart_policy: "on-failure"`). |
+| Python SDK Adapter | `src/hadukenn_core/antigravity_sdk.py` | `LocalAgentConfig`, `LiteRTAgentConfig`, `LocalOpenAIAgentConfig`, `BuiltinTools`, `CapabilitiesConfig`, `LifecycleHooks`, permission precedence (`Deny > Ask > Allow`), `validate_response_schema`, `run_multimodal_pathway`, and `agy -p` / `agy acp` contracts with stdlib fallback. |
+
+- **Headless CLI & ACP**: Run `agy -p "<prompt>" --output-format stream-json` for NDJSON CI/headless runs or `agy acp` for IDE ACP integration (Zed, JetBrains, Android Studio, Xcode).

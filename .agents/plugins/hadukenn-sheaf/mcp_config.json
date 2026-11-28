@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "sheaf": {
+      "command": "python3",
+      "args": ["${PLUGIN_ROOT}/scripts/sheaf_mcp_server.py"],
+      "env": {
+        "SHEAF_PLUGIN_DATA": "${PLUGIN_DATA}",
+        "PYTHONPATH": "src"
+      },
+      "timeoutSeconds": 60,
+      "tools": {
+        "sheaf_anchor": {"background": "off"},
+        "sheaf_verify_store": {"background": "off"},
+        "sheaf_gate_coverage": {"background": "off"},
+        "rlm_budget_check": {"background": "off"},
+        "siip_gate_check": {"background": "off"},
+        "kernel_pipeline_summary": {"background": "off"}
+      }
+    }
+  }
+}
