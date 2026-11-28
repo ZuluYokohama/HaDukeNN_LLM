@@ -13,7 +13,7 @@ Times are US Central (CT), Fri Nov 27, 2026, 11:04 to 11:11 AM. WikiText-103 tes
 
 ## Orient
 
-A three-seed probe of the struct32k tokenizer (V 32,768) at S size (6 layers, d 384, 6 heads, ff 1,024; 23,204,736 parameters, 10,621,824 non-embedding), flat head, structure off, full residual table, eager mode, at 87,087,822 train bytes. **No comparison run was made.** Do not read this number against g1d, g1i, or any other row: they differ in data budget, residual setting, or compile mode.
+A three-seed probe of the struct32k tokenizer (V 32,768) at S size (6 layers, d 384, 6 heads, ff 1,024; 23,204,736 parameters, 10,621,824 non-embedding), flat head, structure off, eager mode, at 87,087,822 train bytes. The plan's residual setting is `full`; with the structure off, the parameter count equals that of the plain struct32k S model, so the setting adds no parameters here. **No comparison run was made.** Do not read this number against g1d, g1i, or any other row: they differ in data budget, dataset, or compile mode.
 
 ## Decide / Act
 

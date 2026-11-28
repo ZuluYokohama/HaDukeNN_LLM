@@ -2,7 +2,7 @@
 
 ## Mode
 
-Probe: struct32k tokenizer, S size, flat head, structure off, full residual table, at a small data budget on WikiText-103. No paired comparison.
+Probe: struct32k tokenizer, S size, flat head, structure off, residual setting `full` (adds no parameters with the structure off), at a small data budget on WikiText-103. No paired comparison.
 
 ## Method
 
