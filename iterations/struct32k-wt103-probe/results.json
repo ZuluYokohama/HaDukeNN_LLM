@@ -1,0 +1,24 @@
+{
+ "iteration": "struct32k-wt103-probe",
+ "plan": "probe-tokenizer-struct32k-resid-full-bytes",
+ "dataset": "WikiText-103",
+ "metric": "test bpb_corpus",
+ "arm": "struct32k tokenizer (V 32,768), S size (6 layers, d 384, 6 heads, ff 1,024), flat head, struct none, resid setting full (no extra parameters with structure off), eager (compile off), seq 256, batch 48 (micro 16), lr 1e-3",
+ "budget_bytes": 87087822,
+ "seeds": [
+  13,
+  21,
+  34
+ ],
+ "test_bpb": {
+  "13": 1.4241668867455595,
+  "21": 1.4185755484342033,
+  "34": 1.4219891059402632
+ },
+ "mean": 1.421577180373342,
+ "sd": 0.00281833781376937,
+ "params": 23204736,
+ "non_embedding_params": 10621824,
+ "comparison": "none. No matched comparison run exists for this arm at this budget; do not read this number against g1d, g1i or any other row.",
+ "status": "completed, 3 seeds, one scheduler pass; no pass/fail"
+}

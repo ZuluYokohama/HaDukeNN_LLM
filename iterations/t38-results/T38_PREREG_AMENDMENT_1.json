@@ -1,0 +1,50 @@
+{
+  "id": "t38-apples-plain-vs-hadukenn-bpe32k/amendment-1",
+  "type": "AMENDMENT - supersedes exactly one clause of T38_PREREG.json: ladder_rule.fit_restriction. Every other field of T38_PREREG.json stays in force unchanged.",
+  "amends_prereg_sha256": "524fca093dc6c00e803b6f9998e69277f2804cc38e44ad71f94ffd0b88d63590",
+  "frozen_ct": "2026-11-25 01:07:57 PM CT",
+  "approval": "Blake Jones via parent agent, ruling t218u, 2026-11-25 1:06 PM CT: freeze Amendment 1",
+  "history": {
+    "draft_file": "T38_PREREG_AMENDMENT_1.DRAFT.json (kept unedited as history)",
+    "draft_sha256": "5447c63dbef10eec51d1c191c03beda115a3af0cde5ebd97b25d7ee1c209ffc2",
+    "drafted_ct": "2026-11-25 9:20 AM CT"
+  },
+  "supersedes": {
+    "field": "ladder_rule.fit_restriction",
+    "old_text": "drop L from the N-fit iff gain_L < gain_M, gain = BPB_1ep - BPB_4ep (L gains less from 4x data than M, i.e. L is data-limited)"
+  },
+  "rule": {
+    "gain": "gain_{arm,rung} = mean BPB_1ep - mean BPB_4ep for that arm and rung (fwedu32 test bpb_corpus, the T-38 primary metric).",
+    "a_drop_condition": "Drop L from the PRIMARY N-fit only if BOTH (1) gain_M - gain_L >= 2 * SE_diff AND (2) the one-sided Welch test of gain_M > gain_L has p < 0.01. Direction is gain_M > gain_L only; gain_L > gain_M never drops L.",
+    "b_se_and_df": "SE_diff = sqrt(s2_M1/n_M1 + s2_M4/n_M4 + s2_L1/n_L1 + s2_L4/n_L4), where s2 is the sample variance over seeds of each cell. All available seeds are used: n_M4 = 5 (Stage 1, seeds 13,21,34,55,89); n_M1 = n_L1 = n_L4 = 3 (seeds 13,21,34). df is the 4-cell Welch-Satterthwaite df = SE_diff^4 / sum_c ((s2_c/n_c)^2 / (n_c - 1)). Seeds are not paired across cells for this rule.",
+    "c_symmetric_domain": "The condition is evaluated separately for P and for H. If it fires for either arm, L is dropped for BOTH P and H, so the primary alpha_H - alpha_P contrast always uses the same rung set for both arms.",
+    "d_always_report": "The full 5-rung fit (XS, S, M, M+, L) including L is always reported alongside, whether or not L is dropped from the primary fit.",
+    "scope": "Only decides which rungs enter the primary N-fit. It never decides which runs are launched (Stage 3 still runs unless stage3_stop fires) and never changes per-cell PASS/KILL verdicts or Holm."
+  },
+  "data_state_at_freeze": {
+    "statement": "No Stage 2 or Stage 3 data existed at frozen_ct. Checked: 0 terminal records and 0 autolaunch audit events for any Stage 2/3 plan (sweep-M+, XS, S-1ep/4ep, M+, M-1ep, sweep-L, L).",
+    "stage1_existing": {
+      "finished": [
+        "t38-M-4ep-H-s13",
+        "t38-M-4ep-P-s13"
+      ],
+      "in_progress": [
+        "t38-M-4ep-P-s21"
+      ]
+    },
+    "honest_note": "Stage 1 (M-4ep) data exists for the finished plans listed above, and one more is in progress. Of this rule's four inputs, only the M-4ep cell comes from Stage 1: it feeds gain_M through mean and s2 of M-4ep. M-1ep, L-1ep and L-4ep are Stage 2/3 cells with no data yet. The rule's form (2*SE_diff AND p<0.01, n_M4=5) was drafted at 9:20 AM CT, before any T-38 run started, and only that form is frozen here. No Stage 1 value was looked at to choose it.",
+    "t38_terminal_plans_at_freeze": [
+      "t38-M-4ep-H-s13",
+      "t38-M-4ep-P-s13",
+      "t38-smoke-S-H",
+      "t38-smoke-S-P",
+      "t38-sweep-M-H-lr0.0005",
+      "t38-sweep-M-H-lr0.001",
+      "t38-sweep-M-H-lr0.002",
+      "t38-sweep-M-P-lr0.0005",
+      "t38-sweep-M-P-lr0.001",
+      "t38-sweep-M-P-lr0.002"
+    ]
+  },
+  "reason": "Under the original strict inequality, if L and M gain equally from 4x data, the rule fires with probability about 0.5 from seed noise alone. The 2*SE AND p<0.01 rule bounds that at 1% (one-sided) and matches the evidence bar of every other T-38 rule."
+}

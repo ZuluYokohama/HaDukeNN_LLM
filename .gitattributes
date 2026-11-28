@@ -3,3 +3,6 @@ fixtures/** -text
 
 # Frozen pre-registration copies are hashed byte for byte.
 iterations/t38-design/*.json -text
+
+# Frozen T-38 pre-registration copies are hashed byte for byte.
+iterations/t38-results/*.json -text

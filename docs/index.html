@@ -167,7 +167,11 @@
   <p>These folders are on <code>main</code> under <code>iterations/</code>.</p>
   <ul>
     <li><strong>t37-grid.</strong> T-37 tokenizer scaling grid on FineWeb-Edu, flat heads, fwedu-hnt40k against fwedu-struct32k, 2 sizes × 4 byte budgets, n=3. struct32k is better in all 8 contrasts, and Holm (α 0.01) keeps 5 of 8. The edge shrinks with data (log2 k slope −0.232 at S, −0.137 at M) and is larger at M than at S (+0.125, 95% CI +0.080 to +0.173). These are tokenizer effects, not structured-head effects.</li>
-    <li><strong>t38-design.</strong> Frozen T-38 pre-registration (SHA-256 524fca09…, path-redacted public copy) and a paired-seed addendum (reported secondary only). Plain against the structure component on the same 32k BPE tokenizer. No result yet.</li>
+    <li><strong>t38-design.</strong> Frozen T-38 pre-registration (SHA-256 524fca09…, path-redacted public copy) and a paired-seed addendum (reported secondary only). Plain against the structure component on the same 32k BPE tokenizer. Results are in t38-results.</li>
+    <li><strong>t38-results.</strong> T-38 Stages 1 to 3 on FineWeb-Edu. Stage 1 headline is KILL: at M and 4 epochs the structure component (H) scores 1.228146 against plain (P) 1.209366, H worse by 0.018780 (n=5 per arm). H is worse in all 10 rung × data cells, and the gap shrinks with size (Spearman rho −1.00 over 5 rungs, so the Stage 3 stop rule did not fire). alpha_H − alpha_P is -0.0278, 95% CI [-0.0493, -0.0046]. At equal analytic FLOPs, H is still worse by 0.004321 (secondary).</li>
+    <li><strong>t37-mup-probe.</strong> muP-scaled learning rate at T-37 M, struct32k, 0.25× bytes: 1.547107 (n=3) against 1.581185. Earlier-trainer baseline, no pass/fail.</li>
+    <li><strong>struct32k-wt103-probe.</strong> struct32k, S size, 87.1M bytes, WikiText-103: 1.421577 ± 0.002818 (n=3). No comparison run.</li>
+    <li><strong>code-hash-records.</strong> SHA-256 values of trainer-side changes since Nov 27. Hashes only.</li>
     <li><strong>hg-e1-pack-random.</strong> E1 packing control, random article order: E1 held-out-article BPB 1.093936 ± 0.003312 (n=3). It has no pass/fail of its own.</li>
     <li><strong>LEDGER_since_g1i.csv.</strong> Every iteration recorded after g1i, numbers only, with no verdict labels.</li>
   </ul>

@@ -1,0 +1,119 @@
+{
+ "purpose": "Pre-data code-hash records for the trainer changes made between Nov 27 7:20 PM and Nov 28 5:03 AM CT, 2026. The code itself is not in this repository. Each record was written before any run that used the changed code produced data, and it was approved by Blake Jones (rulings t250u and t251u). Only SHA-256 values and descriptions are published here. Local paths are removed. File names are kept except for the trainer main script and its corpus-hypergraph wrapper, which are named by role.",
+ "records": [
+  {
+   "id": "t250u-r2-trainer-promotion",
+   "written_ct": "2026-11-27 07:27 PM CT, superseded for the main script by the FINAL record below at 07:30 PM CT",
+   "pre_data": true,
+   "files": {
+    "trainer main script": {
+     "sha256_before": "247a8023cce9b4a5ea0841f099dadc3fb22b6d55d762cc3bda22f05c8c1ce755",
+     "sha256_intermediate_never_used_for_data": "27c20fffde45107d1fba41018bb5650fbbabbdce016f60e4f2b4f49c88247280",
+     "sha256_final": "5796c6e5e4113f32c199c7839751a3e9210b5f47d3e14264215421dcfbbaf6af"
+    },
+    "struct_model.py": {
+     "sha256_before": "2ff140ed374b283b57fec89a673a44ed5fe482ed4112c89b3394659364494c56",
+     "sha256_after": "1229b7c37ba57ba053a4d41201d73c0efa11b0c0a83ca8fac9bc2f45ac6a53f4"
+    },
+    "stochastok.py": {
+     "sha256_before": "7332093200a7fd07a4f38fe95352f440b2226dc6ed558e20c4cd5a65582a4544",
+     "sha256_after": "6637f100d6f0838a060c4c29503c2e3a59455b3443c8e9f47def3aa995723ca8"
+    },
+    "model_modern.py": {
+     "sha256": "f85ed6578951f815999fbd607c72bd8a1716714adce6a425c4132a2e9ff37896",
+     "changed": false
+    },
+    "oe_hnt.py": {
+     "sha256": "cf953f39b97f018a68090d05a32c358a23e2af99ae60f7d525344ed71ce1c696",
+     "changed": false
+    },
+    "paired_seed.py": {
+     "sha256": "35070b925bf20f6b25bd82a36df53be654e193b743461b3ff249b0918bfafca1",
+     "changed": false
+    }
+   },
+   "changes": "The staged r2 trainer (sha256 2f46f898b83ccc7c8c7edde523ce832e73acec94a7fe41b9bb85965fd7b7f22d) with the --ckpt-dtype option (Blake t219u) re-applied, plus struct_model.py and stochastok.py from the r2 stage. The r2 flags are additive and default off: --mup/--mup-d0, --k-neg/--k-neg-mix, --resid shrunk with --resid-shrink-kappa, --compose rsqrt, the StochasTok schedule (p-end, hold-start, hold-end), --oe-hnt40k and its options, and --compile-fullgraph.",
+   "final_fix": "A 2-step real-data smoke of the muP plan trained and evaluated, then crashed when writing results: the muP parameter-group loop reused the name `root`, shadowing the results root. The loop variable was renamed (2 lines). No math change. This produced the final main-script hash 5796c6e5.",
+   "smoke_after_fix": {
+    "t37-mup-s32-M-b025-bytes": "2 steps, test and validation eval completed, exit 0",
+    "r2-kneg3-hnt40k-bytes": "exit 0",
+    "r2-shrunk-resid-hnt40k-bytes": "exit 0",
+    "stochastok-sched-012-003-bpe32k-bytes": "exit 0",
+    "r2 arm unit tests": "9 of 9 passed"
+   },
+   "plans_covered": [
+    "t37-mup-s32-M-b025-bytes",
+    "r2-kneg3-hnt40k-bytes",
+    "r2-shrunk-resid-hnt40k-bytes",
+    "stochastok-sched-012-003-bpe32k-bytes",
+    "r2-oe-hnt40k-s32-bytes (held: the OE span sidecar is not built)"
+   ]
+  },
+  {
+   "id": "t250u-corpus-hypergraph-kvreg-and-gpu1-fp32",
+   "written_ct": "2026-11-27 07:39 PM CT",
+   "pre_data": true,
+   "files": {
+    "corpus-hypergraph trainer wrapper": {
+     "sha256_before": "6aaa6a2dba626fa9ee5dd690b104570116a63d88ac5afd23499a25625ae8ade1",
+     "sha256_after": "758ce7c9c9e1a5df0fd75b08c1e576a897650eb734974581c7aa2a7cd6f9c58c"
+    },
+    "e2_knnlm.py": {
+     "sha256_before": "2f4e78e1811df7cdc382b455c8c0546d30006ffa1ccf7c83ec686ba0bca2bb21",
+     "sha256_after": "dd948292e968bd25032bd36679dd9d2decd6a67b470675f84322e44af4a48fc0"
+    },
+    "hg_common.py": {
+     "sha256_before": "dc4e3f6893c70a1c7be04e7af17ff3790328cd85a09cd70b1dfb936759f03d1f",
+     "sha256_after": "87c3ad119c982be1678a71ddeff7ee9b7ae4ee7a162e6ec46af78d833067fc6a"
+    },
+    "kvreg_model.py": {
+     "sha256": "c49889c48c95032c75c0461b7a427434f0f810cfd3c55cc1a80e32fbde36fc0c",
+     "changed": false
+    }
+   },
+   "trainer_used_via_import": {
+    "trainer main script": "5796c6e5e4113f32c199c7839751a3e9210b5f47d3e14264215421dcfbbaf6af",
+    "model_modern.py": "f85ed6578951f815999fbd607c72bd8a1716714adce6a425c4132a2e9ff37896"
+   },
+   "kvreg_fix": "The assert at kvreg_model.py line 166 (register batch must match the eval micro-batch) fired because the wrapper ran the registers-OFF evaluation while the model still held the registers of the last training micro-batch (6 rows) against an eval micro-batch of 16. Root cause was the caller, not kvreg_model.py. Fix: call set_regs(None) before that ablation eval, which is what registers-off means. Slicing or expanding the stale registers would have fed unrelated training-window registers to eval windows, so kvreg_model.py and its assert are unchanged (hash identical). The canonical registers-ON eval already builds per-window causal registers.",
+   "gpu1_fp32": "Eval-only runs (--steps 0 --ckpt) on the GTX 1660 Ti run in fp32 (autocast disabled for that process), eval micro-batch 4, and skip the GPU-0 idle wait. Every other CUDA run still asserts the RTX 5070. e2_knnlm.py on the 1660 Ti: fp32, no GPU-0 idle wait, temperature read from the 1660 Ti by name; the 5070 path and its assert are unchanged. Result JSONs gain `device` and `eval_dtype`.",
+   "hg_common": "The raw WikiText-103 path falls back to a second storage location when the first is absent (the raw text had been moved). The moved file's SHA-256 equals the source hash recorded in the data's train.meta.json.",
+   "smoke": {
+    "kvreg-null": "GPU 0, --steps 2, full eval: registers-off, kvreg, E1, probe and E1V3 evals all completed",
+    "e1v3-eval-only (GPU 1, fp32)": "checkpoint hg-e1-pack-random-wt103 seed 13: test BPB 1.192099 on the 1660 Ti in fp32 against 1.192132 on the 5070 in bf16 in the source run (difference 3.3e-5)",
+    "e2 (GPU 1, fp32, 200,000 tokens)": "completed in 103 s, peak 50 C; the first try failed on the raw-path fallback above and was fixed by hg_common"
+   },
+   "comparability": "GPU-1 fp32 numbers are compared only within the same plan: all E2 arms, or all e1v3 conditions, share device and dtype.",
+   "plans_covered": [
+    "kvreg-null-prefix-wt103",
+    "kvreg-sheaf-prefix-wt103",
+    "hg-e2-knnlm-wt103",
+    "hg-e1v3-prefix-causal-wt103"
+   ]
+  },
+  {
+   "id": "t251u-single-arm-r2-and-flop-probe",
+   "written_ct": "2026-11-28 05:02 AM CT",
+   "pre_data": true,
+   "summary": "Per Blake's ruling t251u: the legacy paired second arm (sw40k) is dropped from the r2-kneg3 and r2-shrunk-resid plans, which test a single hnt40k arm against completed baselines. The tokenizer preflight rule is unchanged (not relaxed). The plans are routed to the existing single-arm launch path by changing the plan source label, with no supervisor code change. The primary-arm command line is identical to the earlier launches apart from the arm label suffix. Separately, the FLOP cross-check tool (measurement only, never part of training) was fixed: it built the model without the counts, shrink, k_neg and struct-head options the trainer passes, so the shrunk-resid probe raised an error and the k_neg probe undercounted. After the fix a CPU check of both plans measured status ok.",
+   "code_hashes": {
+    "trainer main script": "5796c6e5e4113f32c199c7839751a3e9210b5f47d3e14264215421dcfbbaf6af",
+    "struct_model.py": "1229b7c37ba57ba053a4d41201d73c0efa11b0c0a83ca8fac9bc2f45ac6a53f4",
+    "model_modern.py": "f85ed6578951f815999fbd607c72bd8a1716714adce6a425c4132a2e9ff37896",
+    "stochastok.py": "6637f100d6f0838a060c4c29503c2e3a59455b3443c8e9f47def3aa995723ca8",
+    "scheduler (unchanged)": "015acedc6feff7429d291fba00bcb3cdc594fd340b827c09049b370d798c2251",
+    "flop_probe.py after": "22543bb522254cf3d3331f862b79bd536979ea07db3063b696cc420025cb1873",
+    "flop_probe.py before": "faec88b60feeacb72e08242d97ecf3766d6b408976564313e293d6f85e9852ff",
+    "combined trainer code hash": "4c87ae94a44b62d12f0b51bd1f0bf491bb979f9c569e07f8349327d4f119ffa5"
+   }
+  },
+  {
+   "id": "trainer-hash-equivalence-r2",
+   "approved": "Blake t251u (2026-11-28 about 4:50 AM CT): keep 5796c6e5 in the reviewed equivalence group with the deterministic bit-identical check logged",
+   "logged_ct": "2026-11-28 05:03 AM CT",
+   "claim": "The r2 trainer (combined hash 4c87ae94a44b62d12f0b51bd1f0bf491bb979f9c569e07f8349327d4f119ffa5) is equivalent to the previous reviewed trainer on every flags-off path. Runs that set the new r2 flags differ from their baselines by design.",
+   "evidence": "CPU, fp32, 3 steps, batch 16, seed 13, old against new trainer: arm A (hnt40k, spectral) and arm B (bpe32k, struct none, StochasTok p 0.10) were bit-identical, 0 differing values, comparison exit 0 (A test BPB 2.4013597469969548, B 2.854553595231888, from the t251u re-comparison). r2 arm unit tests 9 of 9. A GPU-0 20-step comparison differed within old-against-old GPU nondeterminism for arm A. The evidence was produced on CPU with GPUs hidden. It was cited, not re-trained, at t251u.",
+   "scope": "Flags-off runs only."
+  }
+ ]
+}

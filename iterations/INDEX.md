@@ -33,14 +33,18 @@ G1c does not have an `iter/` branch here. g1d, g1g, g1h, and g1i have folders un
 | g1i | g1i, the same plain hnt40k at g1d's 348.35M train bytes (9.350e15 train FLOPs), scored 1.211442 ± 0.003395 (seeds 1.210431, 1.215228, 1.208666). That is 0.017287 above g1d (p 0.0094), so at equal bytes plain hnt40k loses to struct32k. g1i and g1d use different tokenizers, so this is a tokenizer contrast, not a structure ablation. |
 | A3 | A3, the random-cluster control (hnt40k with random clusters, FLOPs-matched), finished as g1j: 1.176685 ± 0.002032 (n=3). That is 0.002369 above g1g (Welch two-sided p 0.17). It is not a clean contrast, because spectral init was on in g1g and off in g1j. Untested. |
 
-## Since g1i (Nov 24–25, 2026)
+## Since g1i (Nov 24–28, 2026)
 
 These folders are on `main`:
 
 | Folder | What it holds |
 | --- | --- |
 | [`iterations/t37-grid/`](t37-grid/) | T-37 tokenizer scaling grid on FineWeb-Edu: fwedu-hnt40k against fwedu-struct32k, flat heads, 2 sizes × 4 byte budgets, n=3. All 8 contrasts favour struct32k; Holm (α 0.01) keeps 5 of 8. The edge shrinks with data (log2 k slope −0.232 at S, −0.137 at M) and is larger at M than at S (+0.125, 95% CI +0.080 to +0.173). These are tokenizer effects, not structured-head effects. |
-| [`iterations/t38-design/`](t38-design/) | T-38 pre-registration (SHA-256 `524fca09…`, path-redacted public copy) and its paired-seed addendum (`34ffcbdc…`, reported secondary only). Plain against structure component on the same 32k BPE tokenizer. No T-38 result yet. |
+| [`iterations/t38-design/`](t38-design/) | T-38 pre-registration (SHA-256 `524fca09…`, path-redacted public copy) and its paired-seed addendum (`34ffcbdc…`, reported secondary only). Plain against structure component on the same 32k BPE tokenizer. Results are in `t38-results/`. |
+| [`iterations/t38-results/`](t38-results/) | T-38 Stages 1 to 3 plus the horizon-matched P control, FineWeb-Edu, n=3 (n=5 at M-4ep). Stage 1 headline KILL: H +0.018780 BPB against P at M-4ep (Welch p 2.3e-07). H is worse in all 10 rung × data cells, and the gap shrinks with size (Spearman rho −1.00, so `stage3_stop` did not fire). alpha_H − alpha_P -0.0278, 95% CI [-0.0493, -0.0046]. Equal analytic FLOPs: H +0.004321 against P (secondary). Frozen Amendment 1 and a public copy of the flopmatch addendum are included. |
+| [`iterations/t37-mup-probe/`](t37-mup-probe/) | muP-scaled hidden learning rate at T-37 M, struct32k, 0.25× bytes: 1.547107 (n=3) against the grid's 1.581185. Earlier-trainer baseline. No pass/fail. |
+| [`iterations/struct32k-wt103-probe/`](struct32k-wt103-probe/) | struct32k, S size, 87.1M bytes, WikiText-103: 1.421577 ± 0.002818 (n=3). No comparison run. |
+| [`iterations/code-hash-records/`](code-hash-records/) | SHA-256 values and descriptions of the trainer-side changes since Nov 27 (hashes only, no code). |
 | [`iterations/hg-e1-pack-random/`](hg-e1-pack-random/) | E1 packing control (random article order): E1 held-out-article BPB 1.093936 ± 0.003312 (n=3), plus a labelled extra replicate. No pass/fail of its own. |
 | [`iterations/exec-hypergraph-v01/`](exec-hypergraph-v01/) | Code only, no result. The exec-hypergraph-v01 reference kernel plus `IncrementalKernel`, whose state digest is an incremental integrity checksum against accidental drift, not a cryptographic commitment. |
 | [`iterations/LEDGER_since_g1i.csv`](LEDGER_since_g1i.csv) | One row per iteration recorded after g1i, as recorded in the campaign sheet (arm knobs, n, mean and sd of the listed metric). Most rows are not written up individually, and the table carries no verdict labels. Read the `metric` column; datasets differ. |
