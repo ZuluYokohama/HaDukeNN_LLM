@@ -100,6 +100,17 @@ def test_hst_v1_manifest_merkle_verification_and_tamper_rejection():
     ok_bad, bad_probs = verify_hst_manifest_integrity(tampered)
     assert ok_bad is False and any("Merkle root mismatch" in msg for msg in bad_probs)
 
+    counted = json.loads(json.dumps(doc))
+    changed = False
+    for entry in counted["merges"]:
+        if entry["stage"] == "B_superspan":
+            entry["count"] = 1_000_000_000
+            changed = True
+            break
+    assert changed
+    ok_count, count_probs = verify_hst_manifest_integrity(counted)
+    assert ok_count is False and any("Merkle root mismatch" in msg for msg in count_probs)
+
     # Invalid mode / invalid token ID / invalid vocab size checks
     with pytest.raises(ValueError, match="Unknown HST encode mode"):
         reloaded.encode_bytes(b"abc", mode="nonexistent")
