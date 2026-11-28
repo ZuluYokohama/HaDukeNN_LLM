@@ -17,11 +17,18 @@ and multi-billion-parameter (`1.1B` from-scratch, `3B` & `8B` surgery) experimen
 
 from __future__ import annotations
 
+import ctypes
+import hashlib
 import json
 import math
+import os
+import shutil
+import subprocess
 import time
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -881,6 +888,389 @@ def run_t41_frontier5070_suite(
             encoding="utf-8",
         )
     return report
+
+
+RTX_5070_SPECS: dict[str, Any] = {
+    "gpu": "NVIDIA GeForce RTX 5070 (Blackwell GB205)",
+    "sms": 48,
+    "cuda_cores": 6144,
+    "tensor_cores_5th_gen": 192,
+    "rt_cores_4th_gen": 48,
+    "boost_clock_ghz": 2.512,
+    "ai_tops_fp4_sparse": 988.0,
+    "fp8_dense_tflops": 247.0,
+    "fp32_int32_tflops": 30.87,
+    "register_file_total_kb": 12288,
+    "l1_shared_sram_total_kb": 6144,
+    "l2_cache_total_kb": 49152,
+    "vram_gddr7_gb": 12.0,
+    "vram_bw_gbs": 672.0,
+    "tgp_watts": 250.0,
+}
+
+_CU_SOURCE_PATH = Path(__file__).resolve().parent / "csrc" / "c0_rtx5070_sheaf_tuple.cu"
+CUDA_RTX5070_KERNEL_SOURCE: str = _CU_SOURCE_PATH.read_text(encoding="utf-8")
+C0_RTX5070_CUDA_SOURCE: str = CUDA_RTX5070_KERNEL_SOURCE
+_CUDA_LIB_CACHE: dict[tuple[str, str, str], ctypes.CDLL | None] = {}
+
+
+def export_cuda_kernel_source(dest_path: str | Path | None = None) -> str:
+    """Return (and optionally write) the single-source RTX 5070 sm_120 CUDA C++ kernel."""
+    if dest_path is not None:
+        out = Path(dest_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(CUDA_RTX5070_KERNEL_SOURCE, encoding="utf-8")
+    return CUDA_RTX5070_KERNEL_SOURCE
+
+
+export_c0_rtx5070_cuda_kernel = export_cuda_kernel_source
+
+
+def _qmul_f32(p: np.ndarray, q: np.ndarray) -> np.ndarray:
+    pw, px, py, pz = p[..., 0], p[..., 1], p[..., 2], p[..., 3]
+    qw, qx, qy, qz = q[..., 0], q[..., 1], q[..., 2], q[..., 3]
+    ow = pw * qw - px * qx - py * qy - pz * qz
+    ox = pw * qx + px * qw + py * qz - pz * qy
+    oy = pw * qy - px * qz + py * qw + pz * qx
+    oz = pw * qz + px * qy - py * qx + pz * qw
+    return np.stack([ow, ox, oy, oz], axis=-1).astype(np.float32)
+
+
+def _validate_warp_inputs(
+    c_H_in: np.ndarray | Sequence[Sequence[float]],
+    gamma_sheaf: float,
+) -> tuple[np.ndarray, float]:
+    c = np.asarray(c_H_in, dtype=np.float32)
+    if c.ndim != 2 or c.shape[1] != 4:
+        raise ValueError(f"c_H_in must have shape (N, 4), got {c.shape}")
+    if not np.all(np.isfinite(c)):
+        raise ValueError("c_H_in must contain only finite values")
+    gamma_f = float(gamma_sheaf)
+    if not math.isfinite(gamma_f):
+        raise ValueError("gamma_sheaf must be finite")
+    return c, gamma_f
+
+
+def c0_rtx5070_warp_julia_and_tuple_cpu(
+    c_H_in: np.ndarray | Sequence[Sequence[float]],
+    gamma_sheaf: float = 0.25,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Emulate ``c0_rtx5070_warp_julia_and_tuple_kernel`` in strict ``np.float32`` with 32-lane warp resets."""
+    c, gamma_f = _validate_warp_inputs(c_H_in, gamma_sheaf)
+    n = int(c.shape[0])
+    if n == 0:
+        return np.empty((0, 4), dtype=np.float32), np.empty((0,), dtype=np.float32)
+
+    gamma = np.float32(gamma_f)
+    q = c.copy()
+    lanes = np.arange(n, dtype=np.int32) & 31
+    for offset in (1, 2, 4, 8, 16):
+        prev = np.zeros_like(q)
+        if offset < n:
+            prev[offset:] = q[:-offset]
+        mask = lanes >= offset
+        updated = _qmul_f32(prev, q)
+        q = np.where(mask[:, None], updated, q)
+
+    c0 = c[..., 0]
+    c1 = c[..., 1]
+    c2 = c[..., 2]
+    c3 = c[..., 3]
+    two = np.float32(2.0)
+    quarter = np.float32(0.25)
+    one = np.float32(1.0)
+    three = np.float32(3.0)
+
+    for _ in range(4):
+        sq = _qmul_f32(q, q)
+        qx = q[..., 1]
+        qy = q[..., 2]
+        qz = q[..., 3]
+        lx = two * (qy * c3 - qz * c2)
+        ly = two * (qz * c1 - qx * c3)
+        lz = two * (qx * c2 - qy * c1)
+
+        nw = sq[..., 0] + c0
+        nx = sq[..., 1] + c1 + gamma * lx
+        ny = sq[..., 2] + c2 + gamma * ly
+        nz = sq[..., 3] + c3 + gamma * lz
+
+        msq = quarter * (nw * nw + nx * nx + ny * ny + nz * nz)
+        gain = (three + msq) / (one + three * msq)
+        q = np.stack([nw * gain, nx * gain, ny * gain, nz * gain], axis=-1).astype(np.float32)
+
+    p5 = np.sqrt(q[..., 2] ** 2 + q[..., 3] ** 2).astype(np.float32)
+    return q, p5
+
+
+emulate_warp_julia_and_tuple_cpu = c0_rtx5070_warp_julia_and_tuple_cpu
+emulate_c0_rtx5070_warp_julia_kernel = c0_rtx5070_warp_julia_and_tuple_cpu
+cpu_warp_julia_tuple_parity = c0_rtx5070_warp_julia_and_tuple_cpu
+run_sm120_warp_julia_cpu_ref = c0_rtx5070_warp_julia_and_tuple_cpu
+
+
+def _scalar_lane_warp_julia_ref(c: np.ndarray, gamma_f: float) -> tuple[np.ndarray, np.ndarray]:
+    n = int(c.shape[0])
+    q_ref = np.empty((n, 4), dtype=np.float32)
+    p5_ref = np.empty((n,), dtype=np.float32)
+    f32 = np.float32
+    gamma = f32(gamma_f)
+
+    for w_start in range(0, n, 32):
+        w_end = min(w_start + 32, n)
+        w_len = w_end - w_start
+        warp_q = [tuple(f32(v) for v in c[w_start + idx]) for idx in range(w_len)]
+        for offset in (1, 2, 4, 8, 16):
+            next_q = list(warp_q)
+            for lane in range(offset, w_len):
+                pw, px, py, pz = warp_q[lane - offset]
+                qw, qx, qy, qz = warp_q[lane]
+                next_q[lane] = (
+                    f32(pw * qw - px * qx - py * qy - pz * qz),
+                    f32(pw * qx + px * qw + py * qz - pz * qy),
+                    f32(pw * qy - px * qz + py * qw + pz * qx),
+                    f32(pw * qz + px * qy - py * qx + pz * qw),
+                )
+            warp_q = next_q
+
+        for lane in range(w_len):
+            qw, qx, qy, qz = warp_q[lane]
+            cw, cx, cy, cz = (f32(v) for v in c[w_start + lane])
+            for _ in range(4):
+                sqw = f32(qw * qw - qx * qx - qy * qy - qz * qz)
+                sqx = f32(qw * qx + qx * qw + qy * qz - qz * qy)
+                sqy = f32(qw * qy - qx * qz + qy * qw + qz * qx)
+                sqz = f32(qw * qz + qx * qy - qy * qx + qz * qw)
+
+                lx = f32(f32(2.0) * f32(qy * cz - qz * cy))
+                ly = f32(f32(2.0) * f32(qz * cx - qx * cz))
+                lz = f32(f32(2.0) * f32(qx * cy - qy * cx))
+
+                nw = f32(sqw + cw)
+                nx = f32(sqx + cx + gamma * lx)
+                ny = f32(sqy + cy + gamma * ly)
+                nz = f32(sqz + cz + gamma * lz)
+
+                msq = f32(f32(0.25) * f32(nw * nw + nx * nx + ny * ny + nz * nz))
+                gain = f32(f32(f32(3.0) + msq) / f32(f32(1.0) + f32(3.0) * msq))
+                qw = f32(nw * gain)
+                qx = f32(nx * gain)
+                qy = f32(ny * gain)
+                qz = f32(nz * gain)
+
+            q_ref[w_start + lane] = (qw, qx, qy, qz)
+            p5_ref[w_start + lane] = f32(math.sqrt(float(qy * qy + qz * qz)))
+
+    return q_ref, p5_ref
+
+
+def verify_c0_rtx5070_cpu_parity(
+    c_H_in: np.ndarray | Sequence[Sequence[float]],
+    gamma_sheaf: float = 0.25,
+    *,
+    reference_q: np.ndarray | None = None,
+    reference_p5: np.ndarray | None = None,
+    atol: float = 1e-5,
+) -> dict[str, Any]:
+    """Verify 32-lane float32 warp-Julia CPU parity against provided or scalar-lane reference."""
+    c_arr, gamma_f = _validate_warp_inputs(c_H_in, gamma_sheaf)
+    q_out, p5_out = c0_rtx5070_warp_julia_and_tuple_cpu(c_arr, gamma_f)
+    n = int(c_arr.shape[0])
+
+    if reference_q is not None and reference_p5 is not None:
+        ref_q = np.asarray(reference_q, dtype=np.float32)
+        ref_p5 = np.asarray(reference_p5, dtype=np.float32)
+    else:
+        ref_q, ref_p5 = _scalar_lane_warp_julia_ref(c_arr, gamma_f)
+
+    if n == 0:
+        max_q_err = 0.0
+        max_p5_err = 0.0
+    else:
+        max_q_err = float(np.max(np.abs(q_out - ref_q)))
+        max_p5_err = float(np.max(np.abs(p5_out - ref_p5)))
+
+    ok = bool(
+        np.all(np.isfinite(q_out))
+        and np.all(np.isfinite(p5_out))
+        and max_q_err <= atol
+        and max_p5_err <= atol
+    )
+    return {
+        "ok": ok,
+        "passed": ok,
+        "q_out": q_out,
+        "p5_jk_rotor_out": p5_out,
+        "max_q_err": max_q_err,
+        "max_p5_err": max_p5_err,
+        "n_elements": n,
+        "n_warps": (n + 31) // 32,
+        "backend": "cpu_parity",
+    }
+
+
+verify_sm120_warp_julia_cpu_parity = verify_c0_rtx5070_cpu_parity
+
+
+def discover_nvcc() -> str | None:
+    """Locate an ``nvcc`` compiler binary if available on the host."""
+    env_nvcc = os.environ.get("NVCC", "").strip()
+    if env_nvcc:
+        found_env = shutil.which(env_nvcc) or (env_nvcc if Path(env_nvcc).is_file() else None)
+        if found_env:
+            return found_env
+    which_nvcc = shutil.which("nvcc")
+    if which_nvcc:
+        return which_nvcc
+    default_cuda = Path("/usr/local/cuda/bin/nvcc")
+    if default_cuda.is_file():
+        return str(default_cuda)
+    return None
+
+
+def compile_c0_rtx5070_cuda_kernel(
+    arch: str = "sm_120",
+    cache_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Lazily compile ``c0_rtx5070_sheaf_tuple.cu`` into ``$HOME/.cache/hadukenn_core`` when ``nvcc`` exists."""
+    nvcc_bin = discover_nvcc()
+    if nvcc_bin is None:
+        return {
+            "available": False,
+            "compiled": False,
+            "reason": "nvcc_not_found",
+            "arch": arch,
+            "source_path": str(_CU_SOURCE_PATH),
+            "library_path": None,
+        }
+
+    target_dir = cache_dir or (Path.home() / ".cache" / "hadukenn_core")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(f"{CUDA_RTX5070_KERNEL_SOURCE}:{arch}:{nvcc_bin}".encode()).hexdigest()[:16]
+    so_path = target_dir / f"c0_rtx5070_{digest}_{arch}.so"
+    if so_path.is_file():
+        return {
+            "available": True,
+            "compiled": True,
+            "reason": "cached",
+            "arch": arch,
+            "source_path": str(_CU_SOURCE_PATH),
+            "library_path": str(so_path),
+        }
+
+    tmp_so = target_dir / f".tmp_c0_rtx5070_{digest}_{os.getpid()}.so"
+    cmd = [
+        nvcc_bin,
+        "-O3",
+        f"-arch={arch}",
+        "-Xcompiler",
+        "-fPIC",
+        "-shared",
+        str(_CU_SOURCE_PATH),
+        "-o",
+        str(tmp_so),
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        if tmp_so.exists():
+            tmp_so.unlink()
+        return {
+            "available": True,
+            "compiled": False,
+            "reason": f"nvcc_exec_error: {exc}",
+            "arch": arch,
+            "source_path": str(_CU_SOURCE_PATH),
+            "library_path": None,
+        }
+
+    if proc.returncode != 0 or not tmp_so.is_file():
+        if tmp_so.exists():
+            tmp_so.unlink()
+        return {
+            "available": True,
+            "compiled": False,
+            "reason": f"nvcc_failed_{proc.returncode}",
+            "arch": arch,
+            "source_path": str(_CU_SOURCE_PATH),
+            "library_path": None,
+        }
+
+    os.replace(tmp_so, so_path)
+    return {
+        "available": True,
+        "compiled": True,
+        "reason": "compiled",
+        "arch": arch,
+        "source_path": str(_CU_SOURCE_PATH),
+        "library_path": str(so_path),
+    }
+
+
+def run_c0_rtx5070_cuda_if_available(
+    c_H_in: np.ndarray | Sequence[Sequence[float]],
+    gamma_sheaf: float = 0.25,
+    *,
+    arch: str = "sm_120",
+) -> tuple[np.ndarray, np.ndarray, str]:
+    """Run ``c0_rtx5070_warp_julia_host`` on GPU when available, else return CPU warp parity."""
+    c_arr, gamma_f = _validate_warp_inputs(c_H_in, gamma_sheaf)
+    if (
+        os.environ.get("CUDA_VISIBLE_DEVICES") == ""
+        or os.environ.get("NVIDIA_VISIBLE_DEVICES") == "void"
+        or not Path("/dev/nvidiactl").exists()
+        or discover_nvcc() is None
+    ):
+        q_cpu, p5_cpu = c0_rtx5070_warp_julia_and_tuple_cpu(c_arr, gamma_f)
+        return q_cpu, p5_cpu, "cpu_parity"
+
+    comp = compile_c0_rtx5070_cuda_kernel(arch=arch)
+    lib_path = comp.get("library_path")
+    if not comp.get("compiled") or not isinstance(lib_path, str):
+        q_cpu, p5_cpu = c0_rtx5070_warp_julia_and_tuple_cpu(c_arr, gamma_f)
+        return q_cpu, p5_cpu, "cpu_parity"
+
+    cache_key = (lib_path, arch, str(_CU_SOURCE_PATH))
+    lib = _CUDA_LIB_CACHE.get(cache_key)
+    if lib is None and cache_key not in _CUDA_LIB_CACHE:
+        try:
+            loaded = ctypes.CDLL(lib_path)
+            host_fn = loaded.c0_rtx5070_warp_julia_host
+            host_fn.argtypes = [
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.c_float,
+                ctypes.c_int,
+            ]
+            host_fn.restype = ctypes.c_int
+            lib = loaded
+        except OSError:
+            lib = None
+        _CUDA_LIB_CACHE[cache_key] = lib
+
+    if lib is None:
+        q_cpu, p5_cpu = c0_rtx5070_warp_julia_and_tuple_cpu(c_arr, gamma_f)
+        return q_cpu, p5_cpu, "cpu_parity"
+
+    n = int(c_arr.shape[0])
+    c_contig = np.ascontiguousarray(c_arr, dtype=np.float32)
+    q_out = np.empty((n, 4), dtype=np.float32)
+    p5_out = np.empty((n,), dtype=np.float32)
+    rc = int(
+        lib.c0_rtx5070_warp_julia_host(
+            c_contig.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            q_out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            p5_out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_float(gamma_f),
+            ctypes.c_int(n),
+        )
+    )
+    if rc == 0:
+        return q_out, p5_out, f"cuda_{arch}"
+
+    q_cpu, p5_cpu = c0_rtx5070_warp_julia_and_tuple_cpu(c_arr, gamma_f)
+    return q_cpu, p5_cpu, "cpu_parity"
 
 
 if __name__ == "__main__":  # pragma: no cover
