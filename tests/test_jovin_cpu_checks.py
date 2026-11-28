@@ -288,3 +288,58 @@ def test_e2e_jovin_cpu_checks_when_sandbox_is_ready(tmp_path):
     if "--live-sidecars" in argv:
         assert summary["live_sidecars"] is True
         assert summary["total"] >= 16  # 12 deterministic + 4 live
+
+
+def test_payload_rejects_mup_overflow_and_spoofed_guard_threshold():
+    payload = _payload()
+    claim, parity, _timings, guards = _fixture_docs()
+
+    with pytest.raises(payload.PayloadError, match="overflow|finite"):
+        payload.cce_mup_loss_f64([[4.0, 4.0]], [[4.0, 4.0], [0.5, 0.5]], [0], 1e308)
+
+    bad_parity = json.loads(json.dumps(parity))
+    bad_parity["cases"][0]["inputs"]["H"] = [[4.0, 4.0, 4.0, 4.0], [1.0, 1.0, 1.0, 1.0]]
+    bad_parity["cases"][0]["inputs"]["E"][0] = [4.0, 4.0, 4.0, 4.0]
+    bad_parity["cases"][0]["inputs"]["mup_base_d"] = 1e308
+    bad_parity["cases"][0]["kernel_outputs"]["loss"] = [0.0, 0.0]
+    ctx_p = _Ctx(claim=claim, **{"log.parity": bad_parity})
+    assert _ids(payload.evaluate_parity(bad_parity, claim)) == _ids(evaluate_hal4(ctx_p))
+    assert not payload.all_passed(payload.evaluate_parity(bad_parity, claim))
+
+    spoof_guards = json.loads(json.dumps(guards))
+    spoof_guards["thermal"]["stop_celsius"] = 150
+    spoof_guards["thermal"]["samples"][1]["celsius"] = 90
+    ctx_g = _Ctx(claim=claim, **{"log.guards": spoof_guards})
+    assert _ids(payload.evaluate_guards(spoof_guards, claim)) == _ids(evaluate_hal6(ctx_g))
+    assert not payload.all_passed(payload.evaluate_guards(spoof_guards, claim))
+
+    claim_no_guards = json.loads(json.dumps(claim))
+    claim_no_guards.pop("guards", None)
+    assert payload.all_passed(payload.evaluate_guards(guards, claim_no_guards))
+
+
+def test_payload_guards_reject_overflow_stop_and_non_finite_samples():
+    payload = _payload()
+    claim, _parity, _timings, guards = _fixture_docs()
+
+    big_stop = json.loads(json.dumps(guards))
+    big_stop["thermal"]["stop_celsius"] = 10**400
+    assert _ids(payload.evaluate_guards(big_stop, claim)) == _ids(
+        evaluate_hal6(_Ctx(claim=claim, **{"log.guards": big_stop}))
+    )
+    assert not payload.all_passed(payload.evaluate_guards(big_stop, claim))
+
+    big_claim = json.loads(json.dumps(claim))
+    big_claim["guards"]["thermal_stop_celsius"] = 10**400
+    assert _ids(payload.evaluate_guards(guards, big_claim)) == _ids(
+        evaluate_hal6(_Ctx(claim=big_claim, **{"log.guards": guards}))
+    )
+    assert not payload.all_passed(payload.evaluate_guards(guards, big_claim))
+
+    for bad_c in (float("nan"), float("inf")):
+        bad_samples = json.loads(json.dumps(guards))
+        bad_samples["thermal"]["samples"].append({"t": "2026-01-01T00:00:30Z", "celsius": bad_c})
+        assert _ids(payload.evaluate_guards(bad_samples, claim)) == _ids(
+            evaluate_hal6(_Ctx(claim=claim, **{"log.guards": bad_samples}))
+        )
+        assert not payload.all_passed(payload.evaluate_guards(bad_samples, claim))

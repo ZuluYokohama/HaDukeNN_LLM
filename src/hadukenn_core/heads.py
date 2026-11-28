@@ -242,16 +242,30 @@ def cluster_is_fwd_bwd(
     u_noise = np.clip(rng.random((n, nc), dtype=np.float32), 1e-7, 1.0 - 1e-7)
     gumbel = np.log(np.maximum(q_tilde, 1e-12)) - np.log(-np.log(u_noise))
     gumbel[idx, tc] = -1e30
-    neg_c = np.argpartition(-gumbel, kth=k_eff - 1, axis=1)[:, :k_eff]
+    if k_eff >= nc - 1:
+        neg_c = np.argpartition(-gumbel, kth=k_eff - 1, axis=1)[:, :k_eff]
+        tau = None
+    else:
+        top_kp1 = np.argpartition(-gumbel, kth=k_eff, axis=1)[:, : k_eff + 1]
+        top_vals = np.take_along_axis(gumbel, top_kp1, axis=1)
+        order = np.argsort(-top_vals, axis=1)
+        top_sorted = np.take_along_axis(top_kp1, order, axis=1)
+        vals_sorted = np.take_along_axis(top_vals, order, axis=1)
+        neg_c = top_sorted[:, :k_eff]
+        tau = vals_sorted[:, k_eff : k_eff + 1]
 
     active_c = np.concatenate([tc[:, None], neg_c], axis=1)
     active_cols = (1 + k_eff) * s_sz
     E_act_flat = E_cl[active_c].reshape(n, active_cols, d)
     flat_logits = (E_act_flat @ H[:, :, None]).squeeze(-1)
 
-    q_neg = np.take_along_axis(q_tilde, neg_c, axis=1)
-    p_incl = 1.0 - np.power(np.maximum(1.0 - q_neg, 0.0), k_eff)
-    log_w_neg = -np.log(np.maximum(p_incl, 1e-7))
+    if tau is None:
+        log_w_neg = np.zeros((n, k_eff), dtype=flat_logits.dtype)
+    else:
+        q_neg = np.take_along_axis(q_tilde, neg_c, axis=1)
+        log_x = np.log(np.maximum(q_neg, 1e-12)).astype(np.float64) - tau.astype(np.float64)
+        p_incl = -np.expm1(-np.exp(np.clip(log_x, -80.0, 40.0)))
+        log_w_neg = (-np.log(np.maximum(p_incl, 1e-12))).astype(flat_logits.dtype)
 
     blk_view = flat_logits.reshape(n, 1 + k_eff, s_sz)
     blk_view[:, 1:, :] += log_w_neg[:, :, None]

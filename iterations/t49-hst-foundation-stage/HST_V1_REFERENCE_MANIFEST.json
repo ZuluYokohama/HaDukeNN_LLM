@@ -1533,7 +1533,7 @@
       "token_id": 415
     }
   ],
-  "merkle_root_sha256": "ad400f750a973371ded6bcd68e064ad271557a3d4995d7f3c1f91bcf0eafa079",
+  "merkle_root_sha256": "10d7198bfcda0cada0d332a979a00004cea7b632c016af61557a239077b45ba8",
   "n_byte_tokens": 408,
   "schema": "hadukenn.hst.manifest.v1",
   "stage_a_merges": 94,

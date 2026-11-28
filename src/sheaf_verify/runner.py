@@ -94,20 +94,21 @@ def _trace_event(decision: dict) -> dict:
 
 
 
-def run(store: Store, *, key: bytes | None, clock=None, profile: str = "training") -> list[dict]:
-    profile = normalize_profile(profile)
+def run(store: Store, *, key: bytes | None, clock=None, profile: str | None = None) -> list[dict]:
+    selected = normalize_profile(profile) if profile is not None else None
     clock = UtcClock() if clock is None else clock
     ledger = Ledger(store.root)
     ctx = Context(store)
     written = []
-    for gate in gates_for_profile(profile):
+    for gate in gates_for_profile(selected):
         decision = evaluate_one(gate, ctx, ledger.records())
         decision["created_at"] = clock.now()
-        decision["profile"] = profile
+        if selected is not None:
+            decision["profile"] = selected
         written.append(ledger.append(decision, key=key))
     head = ledger.records()[-1]["record_sha256"]
     outcome = "pass" if all(item["status"] == "pass" for item in written) else "fail"
-    payload = {
+    payload: dict = {
         "format": RESULT_FORMAT,
         "gates": [
             {"gate_id": item["gate_id"], "record_sha256": item["record_sha256"], "status": item["status"]}
@@ -115,8 +116,9 @@ def run(store: Store, *, key: bytes | None, clock=None, profile: str = "training
         ],
         "ledger_head_sha256": head,
         "outcome": outcome,
-        "profile": profile,
     }
+    if selected is not None:
+        payload["profile"] = selected
     binding = store.binding()
     inputs = [binding[role][0] for role in sorted(binding) if role != "result"]
     store.register(

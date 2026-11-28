@@ -135,10 +135,17 @@ if TORCH_AVAILABLE:  # pragma: no cover
                 u_rand = torch.rand_like(q_tilde).clamp_(1e-7, 1.0 - 1e-7)
                 gumbel = q_tilde.clamp_min(1e-12).log() - (-u_rand.log()).log()
                 gumbel.scatter_(1, tc.unsqueeze(1), -1e30)
-                neg_c = gumbel.topk(self.k_neg, dim=-1).indices
-                q_neg = q_tilde.gather(1, neg_c)
-                p_incl = 1.0 - (1.0 - q_neg).clamp_min(0.0).pow(self.k_neg)
-                log_w_neg = -p_incl.clamp_min(1e-7).log().to(dt)
+                if self.k_neg >= self.n_clusters - 1:
+                    neg_c = gumbel.topk(self.k_neg, dim=-1).indices
+                    log_w_neg = torch.zeros(n_tok, self.k_neg, device=hidden.device, dtype=dt)
+                else:
+                    top_kp1 = gumbel.topk(self.k_neg + 1, dim=-1)
+                    neg_c = top_kp1.indices[:, : self.k_neg]
+                    tau = top_kp1.values[:, self.k_neg : self.k_neg + 1]
+                    q_neg = q_tilde.gather(1, neg_c)
+                    log_x = q_neg.clamp_min(1e-12).double().log() - tau.double()
+                    p_incl = -torch.expm1(-torch.exp(log_x.clamp(-80.0, 40.0)))
+                    log_w_neg = (-p_incl.clamp_min(1e-12).log()).to(dt)
 
             active_c = torch.cat([tc.unsqueeze(1), neg_c], dim=1)
             lm_loss_accum = torch.zeros((), device=hidden.device, dtype=torch.float32)

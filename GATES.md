@@ -292,7 +292,7 @@ The timings log format is `sheaf-verify.hal-timings.v1`. Each case must include 
 
 ### HAL6 Thermal and power guards
 
-Binds `log.guards` and `environment`. Depends on HAL1.
+Binds `claim`, `log.guards`, and `environment`. Depends on HAL1.
 
-The guards log format is `sheaf-verify.hal-guards.v1`. At least two numeric temperature samples are required, and the peak must stay strictly below `stop_celsius`. If power is observed, `draw_watts` is required. If power is unobserved, the log must record the probe command and the reason it failed. A study may not silently omit the probe.
+The guards log format is `sheaf-verify.hal-guards.v1`. At least two numeric temperature samples are required, `stop_celsius` must not exceed `claim.guards.thermal_stop_celsius` when declared, and the peak must stay strictly below `stop_celsius`. If power is observed, `draw_watts` is required. If power is unobserved, the log must record the probe command and the reason it failed. A study may not silently omit the probe.
 

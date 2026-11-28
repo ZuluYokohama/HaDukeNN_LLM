@@ -342,3 +342,39 @@ def test_torch_bridge_cpu_mixed_dtypes_when_available():
     assert torch.isfinite(lm_only) and lm_only.item() == 0.0 and lm_only.requires_grad
     lm_only.backward()
     assert head_empty2.delta_root.grad is not None and torch.isfinite(head_empty2.delta_root.grad).all()
+
+    # 4. Gumbel top-k without-replacement weights: exact log(4) and Monte Carlo unbiasedness
+    import math
+
+    cu4 = torch.arange(4, dtype=torch.long).view(4, 1)
+    head4 = torch_bridge.ParadigmaticClusterISHeadTorch(cu4, d_model=4, k_neg=3, chunk_tokens=16)
+    lm4, _ = head4(
+        torch.zeros(2, 4, 4, dtype=torch.float32),
+        torch.tensor([[0, 1, 2, 3], [3, 2, 1, 0]], dtype=torch.long),
+        torch.zeros(4, 4, dtype=torch.float32),
+    )
+    assert math.isclose(float(lm4.item()), math.log(4.0), abs_tol=1e-5)
+
+    torch.manual_seed(99)
+    nc_mc, d_mc, n_mc = 8, 6, 4000
+    cu8 = torch.arange(nc_mc, dtype=torch.long).view(nc_mc, 1)
+    h_vec = torch.randn(1, d_mc, dtype=torch.float32) * 0.6
+    e_mc = torch.randn(nc_mc, d_mc, dtype=torch.float32) * 0.7
+    head8_batch = torch_bridge.ParadigmaticClusterISHeadTorch(cu8, d_model=d_mc, k_neg=3, chunk_tokens=n_mc)
+    with torch.no_grad():
+        lm8, _ = head8_batch(h_vec.repeat(n_mc, 1).unsqueeze(0), torch.zeros(1, n_mc, dtype=torch.long), e_mc)
+    all_logits = (h_vec @ e_mc.t())[0].double()
+    z_star = float(all_logits[0].item())
+    true_z_neg = float(torch.exp(all_logits[1:]).sum().item())
+    # Verify exact expected NLL via Jensen-free check across 16 independent small batches (gives direct sample SE)
+    ests = []
+    head8_small = torch_bridge.ParadigmaticClusterISHeadTorch(cu8, d_model=d_mc, k_neg=3, chunk_tokens=16)
+    with torch.no_grad():
+        for _ in range(2000):
+            lm_1, _ = head8_small(h_vec.unsqueeze(0), torch.zeros(1, 1, dtype=torch.long), e_mc)
+            ests.append(math.exp(z_star) * (math.exp(float(lm_1.item())) - 1.0))
+    mean_est = sum(ests) / len(ests)
+    var_est = sum((x - mean_est) ** 2 for x in ests) / (len(ests) - 1)
+    se = math.sqrt(var_est / len(ests))
+    assert abs(mean_est - true_z_neg) < max(4.0 * se, 0.25)
+    assert math.isfinite(float(lm8.item()))

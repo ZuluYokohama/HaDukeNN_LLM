@@ -299,3 +299,241 @@ def test_verify_t43_all_realms_and_cli() -> None:
 
     rc = cli_main(["campaign", "--mode", "t43-all-realms", "--json", "--path", str(T43_JSON)])
     assert rc == 0
+
+
+def test_local_action_ontology_exact_fraction_witness_consensus() -> None:
+    ont = LocalActionOntology(
+        "test.exact.consensus.v1",
+        [ActionRuleSpec(action_name="wire_funds", dimension="currency")],
+    )
+
+    # Large integer difference that collapses under IEEE-754 float64
+    v_big = ont.evaluate_transfer_action(
+        action_name="wire_funds",
+        actor_role="operator",
+        src_entity="VaultA",
+        dst_entity="VaultB",
+        src_witnesses={"w1": ("100000000000000000", "USD"), "w2": ("100000000000000001", "USD")},
+        dst_initial=("0", "USD"),
+        transfer_amount=("10", "USD"),
+    )
+    assert v_big.verdict == "ABSTAIN_TIE"
+    assert v_big.approved is False
+    assert v_big.human_escalation_required is True
+
+    # Tiny 1e-7 tie below float cohomology tolerance (tol=1e-6)
+    v_tiny_tie = ont.evaluate_transfer_action(
+        action_name="wire_funds",
+        actor_role="operator",
+        src_entity="VaultA",
+        dst_entity="VaultB",
+        src_witnesses={"w1": ("1000", "USD"), "w2": ("1000.0000001", "USD")},
+        dst_initial=("0", "USD"),
+        transfer_amount=("10", "USD"),
+    )
+    assert v_tiny_tie.verdict == "ABSTAIN_TIE"
+    assert v_tiny_tie.approved is False
+    assert v_tiny_tie.human_escalation_required is True
+
+    # Tiny 1e-7 2-vs-1 outlier must isolate faulty witness
+    v_tiny_fault = ont.evaluate_transfer_action(
+        action_name="wire_funds",
+        actor_role="operator",
+        src_entity="VaultA",
+        dst_entity="VaultB",
+        src_witnesses={"w1": ("1000", "USD"), "w2": ("1000", "USD"), "w3": ("1000.0000001", "USD")},
+        dst_initial=("200", "USD"),
+        transfer_amount=("100", "USD"),
+    )
+    assert v_tiny_fault.verdict == "RECOVERABLE_FAULT"
+    assert v_tiny_fault.approved is True
+    assert v_tiny_fault.isolated_fault_sources == ("w3",)
+
+
+def test_local_action_ontology_rejects_post_state_dimension_mismatch() -> None:
+    ont = LocalActionOntology(
+        "test.postdim.v1",
+        [ActionRuleSpec(action_name="wire_funds", dimension="currency")],
+    )
+
+    v_both = ont.evaluate_transfer_action(
+        action_name="wire_funds",
+        actor_role="operator",
+        src_entity="VaultA",
+        dst_entity="VaultB",
+        src_witnesses={"w1": ("1000", "USD")},
+        dst_initial=("200", "USD"),
+        transfer_amount=("100", "USD"),
+        claimed_post_src=("900", "kg"),
+        claimed_post_dst=("300", "L"),
+    )
+    assert v_both.verdict == "INVALID"
+    assert v_both.approved is False
+    assert "dimension" in v_both.reason
+
+    v_src_only = ont.evaluate_transfer_action(
+        action_name="wire_funds",
+        actor_role="operator",
+        src_entity="VaultA",
+        dst_entity="VaultB",
+        src_witnesses={"w1": ("1000", "USD")},
+        dst_initial=("200", "USD"),
+        transfer_amount=("100", "USD"),
+        claimed_post_src=("900", "kg"),
+    )
+    assert v_src_only.verdict == "INVALID"
+    assert v_src_only.approved is False
+
+    v_dst_only = ont.evaluate_transfer_action(
+        action_name="wire_funds",
+        actor_role="operator",
+        src_entity="VaultA",
+        dst_entity="VaultB",
+        src_witnesses={"w1": ("1000", "USD")},
+        dst_initial=("200", "USD"),
+        transfer_amount=("100", "USD"),
+        claimed_post_dst=("300", "L"),
+    )
+    assert v_dst_only.verdict == "INVALID"
+    assert v_dst_only.approved is False
+
+
+def test_regulatory_bundle_rejects_tampered_metadata_and_predicates() -> None:
+    from sheaf_verify.attestation import dsse_sign, dsse_verify
+
+    key = b"test-compliance-secret"
+    pol_sha = "a" * 64
+    trace_sha = "b" * 64
+    state_sha = "c" * 64
+    events = [{"step": 0, "approved": True}, {"step": 1, "approved": True}]
+    bundle = emit_regulatory_bundle(
+        system_id="sys-alpha",
+        trace_head_sha256=trace_sha,
+        state_digest_sha256=state_sha,
+        policy_sha256=pol_sha,
+        events=events,
+        created_at="2026-11-28T00:00:00Z",
+        signing_key=key,
+    )
+    ok_b, errs_b = verify_regulatory_bundle(bundle, signing_key=key)
+    assert ok_b is True and errs_b == []
+
+    # Non-dict bundle
+    for bad_obj in (None, [], "bad"):
+        ok_n, _ = verify_regulatory_bundle(bad_obj, signing_key=key)  # type: ignore[arg-type]
+        assert ok_n is False
+
+    # Tamper top-level metadata fields
+    for field, val in (
+        ("system_id", "sys-evil"),
+        ("created_at", "2099-01-01T00:00:00Z"),
+        ("policy_sha256", "f" * 64),
+    ):
+        tampered = copy.deepcopy(bundle)
+        tampered[field] = val
+        ok_t, errs_t = verify_regulatory_bundle(tampered, signing_key=key)
+        assert ok_t is False and errs_t
+
+    # Re-sign DSSE with tampered predicate/subject fields
+    base_stmt = dsse_verify(bundle["dsse_statement_envelope"], key=key)
+
+    def _check_resigned(mutator):
+        t = copy.deepcopy(bundle)
+        stmt = copy.deepcopy(base_stmt)
+        mutator(stmt)
+        t["dsse_statement_envelope"] = dsse_sign(stmt, key=key)
+        ok_m, errs_m = verify_regulatory_bundle(t, signing_key=key)
+        assert ok_m is False and errs_m
+
+    _check_resigned(lambda s: s.__setitem__("predicateType", "https://example.org/other"))
+    _check_resigned(lambda s: s["predicate"].__setitem__("system_id", "sys-evil"))
+    _check_resigned(lambda s: s["predicate"].__setitem__("created_at", "2099-01-01T00:00:00Z"))
+    _check_resigned(lambda s: s["predicate"]["finra_rule_3110_worm"].__setitem__("policy_snapshot_sha256", "d" * 64))
+    _check_resigned(lambda s: s["predicate"]["finra_rule_3110_worm"].__setitem__("worm_integrity_sha256", "e" * 64))
+    _check_resigned(lambda s: s["predicate"]["eu_ai_act_article_12"].__setitem__("total_events_logged", 99))
+    _check_resigned(lambda s: s["predicate"]["ietf_scitt_rfc9943"].__setitem__("receipt_tree_size", 99))
+    _check_resigned(lambda s: s["subject"][0].__setitem__("name", "other-sys/events.json"))
+
+    # Transplant SCITT receipt from a different bundle signed with the same key
+    other = emit_regulatory_bundle(
+        system_id="sys-alpha",
+        trace_head_sha256=trace_sha,
+        state_digest_sha256=state_sha,
+        policy_sha256=pol_sha,
+        events=[{"step": 999, "approved": True}],
+        created_at="2026-11-28T01:00:00Z",
+        signing_key=key,
+    )
+    transplanted = copy.deepcopy(bundle)
+    transplanted["scitt_merkle_receipt"] = other["scitt_merkle_receipt"]
+    ok_tr, errs_tr = verify_regulatory_bundle(transplanted, signing_key=key)
+    assert ok_tr is False and errs_tr
+
+    # 2-event SCITT receipt transplant sharing events[-1], len(events), created_at, signing_key
+    # but differing in events[0] must fail full Merkle root recomputation
+    other_2 = emit_regulatory_bundle(
+        system_id="sys-other",
+        trace_head_sha256=trace_sha,
+        state_digest_sha256=state_sha,
+        policy_sha256=pol_sha,
+        events=[{"step": 999, "approved": True}, events[-1]],
+        created_at="2026-11-28T00:00:00Z",
+        signing_key=key,
+    )
+    transplanted_2 = copy.deepcopy(bundle)
+    transplanted_2["scitt_merkle_receipt"] = other_2["scitt_merkle_receipt"]
+    ok_tr2, errs_tr2 = verify_regulatory_bundle(transplanted_2, signing_key=key)
+    assert ok_tr2 is False and any("merkle_root_sha256" in e for e in errs_tr2)
+
+    # Non-canonical float("nan") in bundle["events"] must return (False, errors) cleanly
+    nan_bundle = copy.deepcopy(bundle)
+    nan_bundle["events"] = [{"action": float("nan")}]
+    ok_nan, errs_nan = verify_regulatory_bundle(nan_bundle, signing_key=key)
+    assert ok_nan is False and errs_nan
+
+
+def test_compliance_exact_unit_lattice_and_ontology_rejects_malformed_inputs() -> None:
+    for bad_val in (1.5, float("nan"), True, False, "abc", "1/0", None):
+        with pytest.raises(SheafError):
+            ExactUnitLattice.normalize(bad_val, "USD")  # type: ignore[arg-type]
+
+    ont = LocalActionOntology(
+        "test.malformed.v1",
+        [ActionRuleSpec(action_name="wire_funds", dimension="currency")],
+    )
+
+    for bad_val in (1.5, float("nan"), True, False, "abc", "1/0"):
+        v_post_src = ont.evaluate_transfer_action(
+            action_name="wire_funds",
+            actor_role="operator",
+            src_entity="VaultA",
+            dst_entity="VaultB",
+            src_witnesses={"w1": ("1000", "USD")},
+            dst_initial=("200", "USD"),
+            transfer_amount=("100", "USD"),
+            claimed_post_src=(bad_val, "USD"),  # type: ignore[arg-type]
+        )
+        assert v_post_src.verdict == "INVALID" and v_post_src.approved is False
+
+        v_post_dst = ont.evaluate_transfer_action(
+            action_name="wire_funds",
+            actor_role="operator",
+            src_entity="VaultA",
+            dst_entity="VaultB",
+            src_witnesses={"w1": ("1000", "USD")},
+            dst_initial=("200", "USD"),
+            transfer_amount=("100", "USD"),
+            claimed_post_dst=(bad_val, "USD"),  # type: ignore[arg-type]
+        )
+        assert v_post_dst.verdict == "INVALID" and v_post_dst.approved is False
+
+        v_wit = ont.evaluate_transfer_action(
+            action_name="wire_funds",
+            actor_role="operator",
+            src_entity="VaultA",
+            dst_entity="VaultB",
+            src_witnesses={"w1": (bad_val, "USD")},  # type: ignore[dict-item]
+            dst_initial=("200", "USD"),
+            transfer_amount=("100", "USD"),
+        )
+        assert v_wit.verdict == "IMPOSSIBLE" and v_wit.approved is False

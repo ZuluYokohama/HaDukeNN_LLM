@@ -306,3 +306,80 @@ def test_hal6_fails_when_temperature_reaches_the_stop(tmp_path):
     assert rows["HAL1"]["status"] == "pass"
     assert rows["HAL6"]["status"] == "fail"
     assert criterion(rows["HAL6"], "hal.guard.thermal")["passed"] is False
+
+
+def test_hal4_rejects_mup_overflow_non_finite_loss(tmp_path):
+    from sheaf_verify.hashing import SheafError
+
+    with pytest.raises(SheafError, match="overflow|finite"):
+        cce_mup_loss_f64([[4.0, 4.0]], [[4.0, 4.0], [0.5, 0.5]], [0], 1e308)
+
+    with pytest.raises(SheafError, match="finite"):
+        cce_mup_loss_f64([[1.0, 1.0]], [[1.0, 1.0]], [0], float("nan"))
+
+    def mutate(parts):
+        parts["parity"]["cases"][0]["inputs"]["H"] = [[4.0, 4.0, 4.0, 4.0], [1.0, 1.0, 1.0, 1.0]]
+        parts["parity"]["cases"][0]["inputs"]["E"][0] = [4.0, 4.0, 4.0, 4.0]
+        parts["parity"]["cases"][0]["inputs"]["mup_base_d"] = 1e308
+        parts["parity"]["cases"][0]["kernel_outputs"]["loss"] = [0.0, 0.0]
+
+    rows = latest(build_hal(tmp_path, "hal4-overflow", mutate))
+    assert rows["HAL3"]["status"] == "pass"
+    assert rows["HAL4"]["status"] == "fail"
+    assert criterion(rows["HAL4"], "hal.parity.cce_tiny")["passed"] is False
+
+
+def test_hal6_enforces_claim_thermal_threshold_and_allows_missing_optional_guards(tmp_path):
+    def mutate_spoof(parts):
+        parts["guards"]["thermal"]["stop_celsius"] = 150
+        parts["guards"]["thermal"]["samples"][1]["celsius"] = 90
+
+    rows_spoof = latest(build_hal(tmp_path, "hal6-spoof", mutate_spoof))
+    assert rows_spoof["HAL1"]["status"] == "pass"
+    assert rows_spoof["HAL6"]["status"] == "fail"
+    assert criterion(rows_spoof["HAL6"], "hal.guard.stop")["passed"] is False
+
+    def mutate_optional(parts):
+        parts["claim"].pop("guards", None)
+
+    rows_opt = latest(build_hal(tmp_path, "hal6-opt", mutate_optional))
+    assert rows_opt["HAL6"]["status"] == "pass"
+
+
+def test_hal6_rejects_overflow_stop_and_non_finite_thermal_samples():
+    import json
+
+    from sheaf_verify.hal import evaluate_hal6
+    from sheaf_verify.hashing import parse_json_bytes
+
+    class _RawCtx:
+        def __init__(self, claim_doc, guards_doc):
+            self._docs = {"claim": claim_doc, "log.guards": guards_doc}
+
+        def has(self, role: str) -> bool:
+            return role in self._docs
+
+        def parse(self, role: str):
+            raw = json.dumps(self._docs[role], allow_nan=True).encode("utf-8")
+            return parse_json_bytes(raw, role)
+
+    base_guards = _guards()
+
+    # 10**400 stop_celsius must fail cleanly without OverflowError
+    big_stop_guards = deepcopy(base_guards)
+    big_stop_guards["thermal"]["stop_celsius"] = 10**400
+    res_big = evaluate_hal6(_RawCtx(deepcopy(CLAIM), big_stop_guards))
+    assert any(c.id == "hal.guard.stop" and not c.passed for c in res_big)
+
+    # 10**400 claim thermal_stop_celsius must fail cleanly without OverflowError
+    big_claim = deepcopy(CLAIM)
+    big_claim["guards"]["thermal_stop_celsius"] = 10**400
+    res_big_claim = evaluate_hal6(_RawCtx(big_claim, deepcopy(base_guards)))
+    assert any(c.id == "hal.guard.stop" and not c.passed for c in res_big_claim)
+
+    # NaN / Inf sample alongside >=2 valid samples must still fail hal.guard.thermal
+    for bad_c in (float("nan"), float("inf")):
+        nan_guards = deepcopy(base_guards)
+        nan_guards["thermal"]["samples"].append({"t": "2026-01-01T00:00:30Z", "celsius": bad_c})
+        res_nan = evaluate_hal6(_RawCtx(deepcopy(CLAIM), nan_guards))
+        assert any(c.id == "hal.guard.thermal" and not c.passed for c in res_nan)

@@ -14,9 +14,11 @@ from __future__ import annotations
 import argparse
 import ast
 import contextlib
+import importlib
 import importlib.util
 import inspect
 import io
+import itertools
 import json
 import math
 import os
@@ -39,7 +41,7 @@ from sheaf_verify.seal import load_key
 from sheaf_verify.store import Store
 from sheaf_verify.verify import verify_store
 
-CANONICAL_ANCHOR = "e247484042475d381eb454df95b718f55739a6cd0385006f142be257b8b86567"
+CANONICAL_ANCHOR = "307711a4d841c2c8fa0bbd954d15b2a585012608528c9f53b9ea08ad717bd7c4"
 
 
 @dataclass
@@ -147,25 +149,284 @@ class _CapSys:
         return types.SimpleNamespace(out=out_val, err=err_val)
 
 
-class _SkipTest(BaseException):
-    """Pure-stdlib equivalent of pytest.skip for selftest runs."""
+class _Skipped(BaseException):
+    """Pure-stdlib equivalent of pytest.skip / pytest.importorskip for selftest runs."""
 
 
-def _raise_skip(reason: str = "") -> None:
-    raise _SkipTest(reason)
+_SkipTest = _Skipped
 
 
-_raise_skip.Exception = _SkipTest  # type: ignore[attr-defined]
+def _raise_skip(reason: str = "", *, allow_module_level: bool = False) -> None:
+    del allow_module_level
+    raise _Skipped(reason)
+
+
+_raise_skip.Exception = _Skipped  # type: ignore[attr-defined]
+
+
+def _parse_version_tuple(version_str: str) -> tuple[int, ...]:
+    parts: list[int] = []
+    for seg in str(version_str).strip().split("."):
+        m = re.match(r"^(\d+)", seg.strip())
+        if m:
+            parts.append(int(m.group(1)))
+        else:
+            break
+    return tuple(parts)
+
+
+def _importorskip(
+    modname: str,
+    minversion: str | None = None,
+    reason: str | None = None,
+) -> types.ModuleType:
+    if importlib.util.find_spec(modname) is None:
+        raise _Skipped(reason or f"could not import {modname!r}")
+    try:
+        mod = importlib.import_module(modname)
+    except ImportError as exc:
+        raise _Skipped(reason or f"could not import {modname!r}: {exc}") from exc
+    if minversion is not None:
+        raw_ver = getattr(mod, "__version__", None)
+        if raw_ver is None:
+            raise _Skipped(reason or f"{modname!r} has no __version__ (requires >= {minversion})")
+        got_parts = _parse_version_tuple(str(raw_ver))
+        req_parts = _parse_version_tuple(str(minversion))
+        if not got_parts or not req_parts:
+            if str(raw_ver) < str(minversion):
+                raise _Skipped(reason or f"{modname!r} version {raw_ver!r} < {minversion!r}")
+        else:
+            width = max(len(got_parts), len(req_parts))
+            got_padded = got_parts + (0,) * (width - len(got_parts))
+            req_padded = req_parts + (0,) * (width - len(req_parts))
+            if got_padded < req_padded:
+                raise _Skipped(reason or f"{modname!r} version {raw_ver!r} < {minversion!r}")
+    return mod
+
+
+@dataclass
+class _ParameterSet:
+    values: tuple[object, ...]
+    marks: tuple[object, ...] = ()
+    id: str | None = None
+
+
+def _param(*values: object, marks: object = (), id: str | None = None) -> _ParameterSet:
+    if isinstance(marks, (tuple, list)):
+        mark_tuple = tuple(marks)
+    else:
+        mark_tuple = (marks,)
+    return _ParameterSet(values=values, marks=mark_tuple, id=id)
+
+
+@dataclass
+class _Mark:
+    name: str
+    args: tuple[object, ...]
+    kwargs: dict[str, object]
+
+
+class _MarkDecorator:
+    def __init__(self, mark: _Mark, *, configured: bool = False) -> None:
+        self.mark = mark
+        self._configured = configured
+
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        if self._configured:
+            if len(args) == 1 and callable(args[0]) and not kwargs:
+                fn = args[0]
+                existing = list(getattr(fn, "pytestmark", []))
+                existing.append(self.mark)
+                fn.pytestmark = existing  # type: ignore[attr-defined]
+                return fn
+            return _MarkDecorator(
+                _Mark(self.mark.name, (*self.mark.args, *args), {**self.mark.kwargs, **kwargs}),
+                configured=True,
+            )
+        if len(args) == 1 and not kwargs and (inspect.isfunction(args[0]) or inspect.isclass(args[0])):
+            fn = args[0]
+            existing = list(getattr(fn, "pytestmark", []))
+            existing.append(self.mark)
+            fn.pytestmark = existing  # type: ignore[attr-defined]
+            return fn
+        return _MarkDecorator(_Mark(self.mark.name, args, kwargs), configured=True)
+
+
+class _MarkGenerator:
+    def __getattr__(self, name: str) -> _MarkDecorator:
+        return _MarkDecorator(_Mark(name, (), {}), configured=False)
+
+
+def _fixture_decorator(fn: Callable | None = None, *, autouse: bool = False, **_kwargs: object) -> Callable:
+    def _wrap(func: Callable) -> Callable:
+        func._sheaf_autouse = bool(autouse)  # type: ignore[attr-defined]
+        return func
+
+    if fn is not None and callable(fn):
+        return _wrap(fn)
+    return _wrap
 
 
 def _install_pytest_shim() -> None:
-    if "pytest" in sys.modules:
+    existing = sys.modules.get("pytest")
+    if existing is not None:
+        if getattr(existing, "_sheaf_shim", False):
+            return
+        if hasattr(existing, "mark") and hasattr(existing, "fixture"):
+            return
+        if getattr(existing, "__spec__", None) is None:
+            has_real_pytest = False
+        else:
+            try:
+                has_real_pytest = importlib.util.find_spec("pytest") is not None
+            except ValueError:
+                has_real_pytest = False
+    else:
+        try:
+            has_real_pytest = importlib.util.find_spec("pytest") is not None
+        except ValueError:
+            has_real_pytest = False
+    if has_real_pytest:
         return
     mod = types.ModuleType("pytest")
+    mod._sheaf_shim = True  # type: ignore[attr-defined]
     mod.raises = lambda expected, match=None: _RaisesContext(expected, match=match)  # type: ignore[attr-defined]
     mod.approx = lambda val, rel=None, abs=None: _Approx(val, rel=rel, abs_tol=abs)  # type: ignore[attr-defined]
     mod.skip = _raise_skip  # type: ignore[attr-defined]
+    mod.importorskip = _importorskip  # type: ignore[attr-defined]
+    mod.mark = _MarkGenerator()  # type: ignore[attr-defined]
+    mod.fixture = _fixture_decorator  # type: ignore[attr-defined]
+    mod.param = _param  # type: ignore[attr-defined]
     sys.modules["pytest"] = mod
+
+
+def _is_skipped(exc: BaseException) -> bool:
+    if isinstance(exc, _Skipped):
+        return True
+    if type(exc).__name__ == "Skipped":
+        return any("pytest" in getattr(base, "__module__", "") for base in type(exc).__mro__)
+    skip_cls = getattr(getattr(sys.modules.get("pytest"), "skip", None), "Exception", None)
+    return isinstance(skip_cls, type) and issubclass(skip_cls, BaseException) and isinstance(exc, skip_cls)
+
+
+def _parametrize_groups(fn: Callable) -> list[tuple[list[str], list[object]]]:
+    marks = getattr(fn, "pytestmark", ())
+    groups: list[tuple[list[str], list[object]]] = []
+    for item in marks:
+        if getattr(item, "name", None) != "parametrize":
+            continue
+        args = getattr(item, "args", ())
+        kwargs = getattr(item, "kwargs", {})
+        argnames = kwargs.get("argnames", args[0] if len(args) >= 1 else ())
+        argvalues = kwargs.get("argvalues", args[1] if len(args) >= 2 else ())
+        if isinstance(argnames, str):
+            names = [part.strip() for part in argnames.split(",") if part.strip()]
+        else:
+            names = [str(part).strip() for part in argnames]
+        groups.append((names, list(argvalues)))
+    return groups
+
+
+def _mark_name(item: object) -> str | None:
+    inner = getattr(item, "mark", None)
+    if inner is not None and isinstance(getattr(inner, "name", None), str):
+        return inner.name
+    name = getattr(item, "name", None)
+    return name if isinstance(name, str) else None
+
+
+def _parametrize_entries(fn: Callable) -> list[tuple[dict[str, object], tuple[object, ...]]]:
+    groups = _parametrize_groups(fn)
+    if not groups:
+        return [({}, ())]
+    # Stacked @pytest.mark.parametrize stores marks bottom-up; reverse so outer varies slowest.
+    ordered = list(reversed(groups))
+    per_group_rows: list[list[tuple[dict[str, object], tuple[object, ...]]]] = []
+    for names, values in ordered:
+        rows: list[tuple[dict[str, object], tuple[object, ...]]] = []
+        for val in values:
+            if hasattr(val, "values") and hasattr(val, "marks"):
+                raw_tuple = tuple(val.values)
+                val_marks = tuple(val.marks) if isinstance(val.marks, (tuple, list)) else (val.marks,)
+            elif len(names) == 1:
+                raw_tuple = (val,)
+                val_marks = ()
+            else:
+                raw_tuple = tuple(val)
+                val_marks = ()
+            rows.append((dict(zip(names, raw_tuple, strict=True)), val_marks))
+        per_group_rows.append(rows)
+    entries: list[tuple[dict[str, object], tuple[object, ...]]] = []
+    for combo in itertools.product(*per_group_rows):
+        merged: dict[str, object] = {}
+        merged_marks: list[object] = []
+        for part, part_marks in combo:
+            merged.update(part)
+            merged_marks.extend(part_marks)
+        entries.append((merged, tuple(merged_marks)))
+    return entries
+
+
+def _parametrize_cases(fn: Callable) -> list[dict[str, object]]:
+    return [case for case, _ in _parametrize_entries(fn)]
+
+
+def _has_skip_mark(fn: Callable) -> bool:
+    for item in getattr(fn, "pytestmark", ()):
+        if _mark_name(item) == "skip":
+            return True
+    return False
+
+
+def _autouse_fixtures(module: types.ModuleType) -> list[Callable]:
+    fixtures: list[Callable] = []
+    for obj in vars(module).values():
+        if getattr(obj, "__module__", None) != module.__name__:
+            continue
+        is_auto = (
+            getattr(obj, "_sheaf_autouse", False) is True
+            or getattr(getattr(obj, "_pytestfixturefunction", None), "autouse", False) is True
+            or getattr(getattr(obj, "_fixture_function_marker", None), "autouse", False) is True
+        )
+        if is_auto:
+            fixtures.append(obj)
+    return fixtures
+
+
+def _enter_autouse(
+    fixtures: list[Callable],
+    builtins_map: dict[str, object],
+    active_gens: list[object] | None = None,
+) -> list[object]:
+    gens = active_gens if active_gens is not None else []
+    for fix in fixtures:
+        raw_fn = getattr(fix, "_fixture_function", getattr(fix, "__wrapped__", fix))
+        fix_kwargs = {
+            pname: builtins_map[pname]
+            for pname in inspect.signature(raw_fn).parameters
+            if pname in builtins_map
+        }
+        if inspect.isgeneratorfunction(raw_fn):
+            gen = raw_fn(**fix_kwargs)
+            next(gen)
+            gens.append(gen)
+        else:
+            raw_fn(**fix_kwargs)
+    return gens
+
+
+def _leave_autouse(active_gens: list[object]) -> None:
+    first_exc: BaseException | None = None
+    for gen in reversed(active_gens):
+        try:
+            next(gen)  # type: ignore[arg-type]
+        except StopIteration:
+            pass
+        except BaseException as exc:  # noqa: BLE001
+            if first_exc is None:
+                first_exc = exc
+    if first_exc is not None:
+        raise first_exc
 
 
 def _executable_lines(py_file: Path) -> set[int]:
@@ -307,46 +568,79 @@ def _run_pytest_suite_stdlib(repo_root: Path) -> tuple[int, int, list[str], floa
                 continue
             module = importlib.util.module_from_spec(spec)
             sys.modules[mod_name] = module
-            spec.loader.exec_module(module)
+            try:
+                spec.loader.exec_module(module)
+            except BaseException as exc:  # noqa: BLE001
+                if _is_skipped(exc):
+                    continue
+                failed += 1
+                failures.append(f"tests/{test_path.name}: {type(exc).__name__}: {exc}")
+                continue
 
+            fixtures = _autouse_fixtures(module)
             for attr_name in dir(module):
                 if not attr_name.startswith("test_"):
                     continue
                 fn = getattr(module, attr_name)
                 if not callable(fn) or not inspect.isfunction(fn):
                     continue
-                nodeid = f"tests/{test_path.name}::{attr_name}"
-                gate_trace.enable(clear=True)
-                gate_trace.set_test(nodeid)
-                mp = _MonkeyPatch()
-                cap = _CapSys()
-                quiet_out = io.StringIO()
-                quiet_err = io.StringIO()
-                with tempfile.TemporaryDirectory(prefix="sheaf_t_") as tmp_dir:
-                    sig = inspect.signature(fn)
-                    kwargs: dict[str, object] = {}
-                    for pname in sig.parameters:
-                        if pname == "tmp_path":
-                            kwargs[pname] = Path(tmp_dir)
-                        elif pname == "monkeypatch":
-                            kwargs[pname] = mp
-                        elif pname == "capsys":
-                            kwargs[pname] = cap
-                    skip_exc = getattr(getattr(sys.modules.get("pytest"), "skip", None), "Exception", _SkipTest)
-                    try:
-                        out_sink = cap._out if "capsys" in kwargs else quiet_out
-                        err_sink = cap._err if "capsys" in kwargs else quiet_err
-                        with contextlib.redirect_stdout(out_sink), contextlib.redirect_stderr(err_sink):
-                            fn(**kwargs)
-                        passed += 1
-                    except (_SkipTest, skip_exc):
-                        pass
-                    except BaseException as exc:  # noqa: BLE001
-                        failed += 1
-                        failures.append(f"{nodeid}: {type(exc).__name__}: {exc}")
-                    finally:
-                        mp.restore()
-                        accumulated_events.extend(gate_trace.events())
+                if _has_skip_mark(fn):
+                    continue
+                entries = _parametrize_entries(fn)
+                is_param = len(_parametrize_groups(fn)) > 0
+                sig = inspect.signature(fn)
+                for index, (extra, case_marks) in enumerate(entries):
+                    if any(_mark_name(m) == "skip" for m in case_marks):
+                        continue
+                    nodeid = (
+                        f"tests/{test_path.name}::{attr_name}[{index}]"
+                        if is_param
+                        else f"tests/{test_path.name}::{attr_name}"
+                    )
+                    gate_trace.enable(clear=True)
+                    gate_trace.set_test(nodeid)
+                    mp = _MonkeyPatch()
+                    cap = _CapSys()
+                    quiet_out = io.StringIO()
+                    quiet_err = io.StringIO()
+                    with tempfile.TemporaryDirectory(prefix="sheaf_t_") as tmp_dir:
+                        builtins_map: dict[str, object] = {
+                            "tmp_path": Path(tmp_dir),
+                            "monkeypatch": mp,
+                            "capsys": cap,
+                        }
+                        kwargs: dict[str, object] = {}
+                        for pname in sig.parameters:
+                            if pname in extra:
+                                kwargs[pname] = extra[pname]
+                            elif pname in builtins_map:
+                                kwargs[pname] = builtins_map[pname]
+                        active_gens: list[object] = []
+                        body_ok = False
+                        teardown_ok = True
+                        try:
+                            out_sink = cap._out if "capsys" in kwargs else quiet_out
+                            err_sink = cap._err if "capsys" in kwargs else quiet_err
+                            with contextlib.redirect_stdout(out_sink), contextlib.redirect_stderr(err_sink):
+                                _enter_autouse(fixtures, builtins_map, active_gens=active_gens)
+                                fn(**kwargs)
+                            body_ok = True
+                        except BaseException as exc:  # noqa: BLE001
+                            if not _is_skipped(exc):
+                                failed += 1
+                                failures.append(f"{nodeid}: {type(exc).__name__}: {exc}")
+                        finally:
+                            try:
+                                _leave_autouse(active_gens)
+                            except BaseException as exc:  # noqa: BLE001
+                                teardown_ok = False
+                                if not _is_skipped(exc):
+                                    failed += 1
+                                    failures.append(f"{nodeid} (teardown): {type(exc).__name__}: {exc}")
+                            if body_ok and teardown_ok:
+                                passed += 1
+                            mp.restore()
+                            accumulated_events.extend(gate_trace.events())
     finally:
         sys.settrace(prev_trace)
 

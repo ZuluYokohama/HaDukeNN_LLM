@@ -1,0 +1,1 @@
+{"format":"sheaf-verify.manifest.v1","inputs":[],"kind":"kernel","locator":"payloads/21d6900f9edbe63a3ed929d4d4b41665f4d01efa67901105f287d1ddad4dcd2f","metadata":{"backend":"cpu","entry":"apply"},"payload_sha256":"21d6900f9edbe63a3ed929d4d4b41665f4d01efa67901105f287d1ddad4dcd2f","registered_at":"2026-01-01T00:00:08Z","role":"kernel","size_bytes":37,"storage":"inline"}

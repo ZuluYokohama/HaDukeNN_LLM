@@ -246,3 +246,41 @@ def test_t40_sealed_campaign_cli_and_receipts():
     from sheaf_verify.cli import main as cli_main
     rc = cli_main(["campaign", "--mode", "t40-stack", "--path", str(res_path), "--json"])
     assert rc == 0
+
+
+def test_cluster_is_gumbel_topk_without_replacement_unbiased():
+    import math
+
+    # 1. Exact log(4) for 4 singleton clusters, zero logits, k_neg=3
+    part4 = build_balanced_partition(4, 4, 1, [np.arange(4, dtype=np.int32)], mode="mass_random", seed=1)
+    H0 = np.zeros((8, 4), dtype=np.float32)
+    E0 = np.zeros((4, 4), dtype=np.float32)
+    delta0 = np.zeros((4, 4), dtype=np.float32)
+    y0 = np.arange(8, dtype=np.int32) % 4
+    loss0, _, _, _, _ = cluster_is_fwd_bwd(
+        H0, E0, delta0, part4, y0, k_neg=3, rng=np.random.default_rng(7), compute_grad=False
+    )
+    assert np.allclose(loss0, math.log(4.0), atol=1e-5)
+
+    # 2. Monte Carlo unbiasedness for non-uniform logits (C=8 singleton clusters, k_neg=3)
+    rng_init = np.random.default_rng(42)
+    n_mc = 4000
+    nc, d = 8, 6
+    part8 = build_balanced_partition(nc, nc, 1, [np.arange(nc, dtype=np.int32)], mode="mass_random", seed=2)
+    h_vec = (rng_init.standard_normal((1, d)) * 0.6).astype(np.float32)
+    H_mc = np.repeat(h_vec, n_mc, axis=0)
+    E_mc = (rng_init.standard_normal((nc, d)) * 0.7).astype(np.float32)
+    delta8 = np.zeros((nc, d), dtype=np.float32)
+    target_tok = 0
+    y_mc = np.full(n_mc, target_tok, dtype=np.int32)
+
+    loss_mc, _, _, _, _ = cluster_is_fwd_bwd(
+        H_mc, E_mc, delta8, part8, y_mc, k_neg=3, rng=np.random.default_rng(123), compute_grad=False
+    )
+    all_logits = (h_vec @ E_mc.T).astype(np.float64)[0]
+    z_star = float(all_logits[target_tok])
+    true_z_neg = float(np.sum(np.exp(np.delete(all_logits, target_tok))))
+    est_z_neg = np.exp(z_star) * (np.exp(loss_mc.astype(np.float64)) - 1.0)
+    mean_est = float(np.mean(est_z_neg))
+    se = float(np.std(est_z_neg, ddof=1) / math.sqrt(n_mc))
+    assert abs(mean_est - true_z_neg) < max(4.0 * se, 0.25)

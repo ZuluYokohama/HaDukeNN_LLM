@@ -18,16 +18,17 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
+from sheaf_verify.action_gate import witness_consensus
 from sheaf_verify.attestation import (
     build_ledger_receipt,
     dsse_sign,
     dsse_verify,
     intoto_statement_v1,
+    merkle_tree_head,
     validate_strict_json_bytes,
     verify_ledger_receipt,
 )
 from sheaf_verify.hashing import SheafError, canonical_bytes
-from sheaf_verify.sheaf_cohomology import CellularSheaf, SheafEdge, diagnose_contradictions
 
 # Canonical base units per dimension:
 #   volume -> L, currency -> USD, mass -> kg, time -> s, energy -> J, ratio -> 1
@@ -91,17 +92,36 @@ FORMAL_VERDICTS = (
 )
 
 
+def _to_fraction(value: Any) -> Fraction:
+    if isinstance(value, bool):
+        raise SheafError("boolean is not a quantity")
+    if isinstance(value, float):
+        raise SheafError("float is not an exact quantity")
+    if isinstance(value, Fraction):
+        return value
+    if isinstance(value, int):
+        return Fraction(value)
+    if isinstance(value, str):
+        try:
+            return Fraction(value.strip())
+        except (ValueError, ZeroDivisionError, TypeError) as error:
+            raise SheafError(f"malformed quantity {value!r}") from error
+    raise SheafError(f"quantity must be str, int or Fraction, not {type(value).__name__}")
+
+
 class ExactUnitLattice:
-    """Exact rational dimensional unit normalizer and arithmetic verifier."""
+    """Exact rational unit normaliser and arithmetic verifier."""
 
     @staticmethod
     def normalize(value: str | int | Fraction, unit: str) -> tuple[Fraction, str, str]:
         """Return `(canonical_value, canonical_unit_symbol, dimension)` in exact `Fraction` form."""
+        if not isinstance(unit, str):
+            raise SheafError("unit must be a string in ExactUnitLattice")
         key = unit.strip().lower()
         if key not in _UNIT_TABLE:
             raise SheafError(f"unknown unit {unit!r} in ExactUnitLattice")
         dim, scale = _UNIT_TABLE[key]
-        frac = value if isinstance(value, Fraction) else Fraction(str(value).strip())
+        frac = _to_fraction(value)
         return frac * scale, _CANONICAL_SYMBOL[dim], dim
 
     @staticmethod
@@ -285,47 +305,21 @@ class LocalActionOntology:
                 policy_sha256=self.policy_sha256,
             )
 
-        # 3. Cellular Sheaf multi-witness cohomology gate over source witnesses
-        fault_sources: tuple[str, ...] = ()
-        if len(norm_witnesses) == 1:
-            resolved_src = next(iter(norm_witnesses.values()))
-        else:
-            w_ids = list(norm_witnesses.keys())
-            vertex_dims = {w: 1 for w in w_ids}
-            edges = [
-                SheafEdge(
-                    id=f"e_{i}_{j}",
-                    source=w_ids[i],
-                    target=w_ids[j],
-                    edge_dim=1,
-                    source_map=[[1.0]],
-                    target_map=[[1.0]],
-                )
-                for i in range(len(w_ids))
-                for j in range(i + 1, len(w_ids))
-            ]
-            sheaf = CellularSheaf(vertex_dims=vertex_dims, edges=edges)
-            w_report = diagnose_contradictions(
-                sheaf,
-                assignment={w: [float(norm_witnesses[w])] for w in w_ids},
-                tol=1e-6,
+        # 3. Exact rational multi-witness consensus gate over source witnesses
+        regime, resolved_src, fault_sources = witness_consensus(norm_witnesses)
+        if regime == "ABSTAIN_TIE" or resolved_src is None:
+            return ActionVerdict(
+                verdict="ABSTAIN_TIE",
+                approved=False,
+                human_escalation_required=True,
+                canonical_unit=canon_sym,
+                resolved_initial_src=None,
+                post_src_balance=None,
+                post_dst_balance=None,
+                isolated_fault_sources=(),
+                reason="1-vs-1 or symmetric witness tie detected via exact rational witness consensus; abstaining",
+                policy_sha256=self.policy_sha256,
             )
-            if w_report.regime == "ABSTAIN_TIE":
-                return ActionVerdict(
-                    verdict="ABSTAIN_TIE",
-                    approved=False,
-                    human_escalation_required=True,
-                    canonical_unit=canon_sym,
-                    resolved_initial_src=None,
-                    post_src_balance=None,
-                    post_dst_balance=None,
-                    isolated_fault_sources=(),
-                    reason="1-vs-1 or symmetric witness tie detected via cellular sheaf coboundary; abstaining",
-                    policy_sha256=self.policy_sha256,
-                )
-            fault_sources = tuple(w_report.faulty_vertices)
-            clean_vals = [v for k, v in norm_witnesses.items() if k not in fault_sources]
-            resolved_src = clean_vals[0]
 
         # 4. Precondition & bound checks (`IMPOSSIBLE` if domain invariants forbid transition)
         if amt_val < rule.min_amount or (rule.max_amount is not None and amt_val > rule.max_amount):
@@ -361,16 +355,18 @@ class LocalActionOntology:
         # 5. Claimed output conservation & exact equality check (`INVALID` if proposed post-state drifts)
         if claimed_post_src is not None or claimed_post_dst is not None:
             try:
-                c_src = (
-                    ExactUnitLattice.normalize(claimed_post_src[0], claimed_post_src[1])[0]
-                    if claimed_post_src is not None
-                    else post_src
-                )
-                c_dst = (
-                    ExactUnitLattice.normalize(claimed_post_dst[0], claimed_post_dst[1])[0]
-                    if claimed_post_dst is not None
-                    else post_dst
-                )
+                if claimed_post_src is not None:
+                    c_src, _, c_src_dim = ExactUnitLattice.normalize(claimed_post_src[0], claimed_post_src[1])
+                    if c_src_dim != rule.dimension:
+                        raise SheafError(f"claimed_post_src has dimension {c_src_dim}, expected {rule.dimension}")
+                else:
+                    c_src = post_src
+                if claimed_post_dst is not None:
+                    c_dst, _, c_dst_dim = ExactUnitLattice.normalize(claimed_post_dst[0], claimed_post_dst[1])
+                    if c_dst_dim != rule.dimension:
+                        raise SheafError(f"claimed_post_dst has dimension {c_dst_dim}, expected {rule.dimension}")
+                else:
+                    c_dst = post_dst
             except SheafError as exc:
                 return ActionVerdict(
                     verdict="INVALID",
@@ -430,6 +426,33 @@ class LocalActionOntology:
         )
 
 
+def _build_regulatory_ledger_records(
+    events: list[dict[str, Any]],
+    created_at: str,
+    escalations: list[int],
+    refusals: list[int],
+) -> list[dict[str, Any]]:
+    esc_set = set(escalations)
+    ref_set = set(refusals)
+    ledger_like_records: list[dict[str, Any]] = []
+    prev = None
+    for idx, ev in enumerate(events):
+        rec_body: dict[str, Any] = {
+            "created_at": created_at,
+            "event_sha256": hashlib.sha256(canonical_bytes(ev)).hexdigest(),
+            "format": "sheaf-verify.ledger.v1",
+            "gate_id": f"EVENT_{idx}",
+            "prev_sha256": prev,
+            "seq": idx,
+            "status": "ESCALATED" if idx in esc_set else ("REFUSED" if idx in ref_set else "PASSED"),
+        }
+        rec_sha = hashlib.sha256(canonical_bytes(rec_body)).hexdigest()
+        rec_body["record_sha256"] = rec_sha
+        prev = rec_sha
+        ledger_like_records.append(rec_body)
+    return ledger_like_records
+
+
 def emit_regulatory_bundle(
     *,
     system_id: str,
@@ -444,7 +467,7 @@ def emit_regulatory_bundle(
     """Emit a unified SCITT (RFC 9943) + EU AI Act Art. 12/14 + FINRA 3110 WORM compliance bundle."""
     if retention_months < 6:
         raise SheafError("EU AI Act Article 19/26(6) floor requires retention_months >= 6")
-    if not events:
+    if not events or not all(isinstance(ev, dict) for ev in events):
         raise SheafError("compliance bundle requires at least one recorded event")
 
     escalations = [
@@ -461,22 +484,7 @@ def emit_regulatory_bundle(
     events_sha = hashlib.sha256(events_bytes).hexdigest()
 
     # Build a 1-leaf or multi-event RFC 9162 Merkle ledger receipt
-    ledger_like_records = []
-    prev = None
-    for idx, ev in enumerate(events):
-        rec_body = {
-            "created_at": created_at,
-            "event_sha256": hashlib.sha256(canonical_bytes(ev)).hexdigest(),
-            "format": "sheaf-verify.ledger.v1",
-            "gate_id": f"EVENT_{idx}",
-            "prev_sha256": prev,
-            "seq": idx,
-            "status": "ESCALATED" if idx in escalations else ("REFUSED" if idx in refusals else "PASSED"),
-        }
-        rec_sha = hashlib.sha256(canonical_bytes(rec_body)).hexdigest()
-        rec_body["record_sha256"] = rec_sha
-        prev = rec_sha
-        ledger_like_records.append(rec_body)
+    ledger_like_records = _build_regulatory_ledger_records(events, created_at, escalations, refusals)
 
     scitt_receipt = build_ledger_receipt(
         ledger_like_records, seq=len(ledger_like_records) - 1, key=signing_key
@@ -533,6 +541,10 @@ def emit_regulatory_bundle(
 def verify_regulatory_bundle(bundle: dict[str, Any], *, signing_key: bytes) -> tuple[bool, list[str]]:
     """Cryptographically and structurally verify a regulatory compliance bundle."""
     errors: list[str] = []
+    if not isinstance(bundle, dict):
+        errors.append("bundle must be a JSON object")
+        return False, errors
+
     if bundle.get("bundle_schema") != "sheaf-verify.regulatory-bundle.v1":
         errors.append("unexpected bundle_schema")
         return False, errors
@@ -542,24 +554,123 @@ def verify_regulatory_bundle(bundle: dict[str, Any], *, signing_key: bytes) -> t
         errors.append("events must be a non-empty list")
         return False, errors
 
-    recomputed_events_sha = hashlib.sha256(canonical_bytes(events)).hexdigest()
-    if recomputed_events_sha != bundle.get("events_sha256"):
+    if not all(isinstance(ev, dict) for ev in events):
+        errors.append("events entries must be JSON objects")
+        return False, errors
+
+    system_id = bundle.get("system_id")
+    created_at = bundle.get("created_at")
+    policy_sha256 = bundle.get("policy_sha256")
+    if not isinstance(system_id, str) or not system_id.strip():
+        errors.append("system_id must be a non-empty string")
+    if not isinstance(created_at, str) or not created_at.strip():
+        errors.append("created_at must be a non-empty string")
+    if not isinstance(policy_sha256, str) or not policy_sha256.strip():
+        errors.append("policy_sha256 must be a non-empty string")
+
+    recomputed_events_sha: str | None = None
+    try:
+        recomputed_events_sha = hashlib.sha256(canonical_bytes(events)).hexdigest()
+    except SheafError as exc:
+        errors.append(f"events are not canonical JSON: {exc}")
+
+    if recomputed_events_sha is not None and recomputed_events_sha != bundle.get("events_sha256"):
         errors.append("events_sha256 mismatch (tampered event log)")
 
     try:
         stmt = dsse_verify(bundle["dsse_statement_envelope"], key=signing_key)
-        subj_map = {s["name"].split("/")[-1]: s["digest"]["sha256"] for s in stmt.get("subject", [])}
-        if subj_map.get("events.json") != recomputed_events_sha:
+        if stmt.get("predicateType") != "https://hadukenn.org/compliance/scitt-euai12-finra3110/v1":
+            errors.append("unexpected DSSE statement predicateType")
+
+        raw_subjects = stmt.get("subject")
+        if not isinstance(raw_subjects, list):
+            errors.append("DSSE statement subject must be a list")
+            subj_map: dict[str, str] = {}
+        else:
+            subj_map = {}
+            for entry in raw_subjects:
+                if (
+                    isinstance(entry, dict)
+                    and isinstance(entry.get("name"), str)
+                    and isinstance(entry.get("digest"), dict)
+                    and isinstance(entry["digest"].get("sha256"), str)
+                ):
+                    subj_map[entry["name"]] = entry["digest"]["sha256"]
+
+        sys_prefix = system_id.strip() if isinstance(system_id, str) else ""
+        if recomputed_events_sha is None or subj_map.get(f"{sys_prefix}/events.json") != recomputed_events_sha:
             errors.append("DSSE subject events.json digest mismatch")
-        if subj_map.get("trace_head") != bundle.get("trace_head_sha256"):
+        if subj_map.get(f"{sys_prefix}/trace_head") != bundle.get("trace_head_sha256"):
             errors.append("DSSE subject trace_head digest mismatch")
-        if subj_map.get("state_digest") != bundle.get("state_digest_sha256"):
+        if subj_map.get(f"{sys_prefix}/state_digest") != bundle.get("state_digest_sha256"):
             errors.append("DSSE subject state_digest mismatch")
+
+        predicate = stmt.get("predicate")
+        if not isinstance(predicate, dict):
+            errors.append("DSSE statement predicate must be a JSON object")
+        else:
+            if predicate.get("system_id") != system_id:
+                errors.append("DSSE predicate system_id mismatch")
+            if predicate.get("created_at") != created_at:
+                errors.append("DSSE predicate created_at mismatch")
+            finra = predicate.get("finra_rule_3110_worm")
+            if not isinstance(finra, dict):
+                errors.append("DSSE predicate missing finra_rule_3110_worm")
+            else:
+                if finra.get("policy_snapshot_sha256") != policy_sha256:
+                    errors.append("DSSE predicate policy_snapshot_sha256 mismatch")
+                if recomputed_events_sha is None or finra.get("worm_integrity_sha256") != recomputed_events_sha:
+                    errors.append("DSSE predicate worm_integrity_sha256 mismatch")
+            eu_ai = predicate.get("eu_ai_act_article_12")
+            if not isinstance(eu_ai, dict):
+                errors.append("DSSE predicate missing eu_ai_act_article_12")
+            elif eu_ai.get("total_events_logged") != len(events):
+                errors.append("DSSE predicate total_events_logged mismatch")
+            scitt_meta = predicate.get("ietf_scitt_rfc9943")
+            if not isinstance(scitt_meta, dict):
+                errors.append("DSSE predicate missing ietf_scitt_rfc9943")
+            elif scitt_meta.get("receipt_tree_size") != len(events):
+                errors.append("DSSE predicate receipt_tree_size mismatch")
     except Exception as exc:
         errors.append(f"DSSE verification failed: {exc}")
 
-    ok_rcpt, rcpt_errs = verify_ledger_receipt(bundle.get("scitt_merkle_receipt", {}), key=signing_key)
+    rcpt = bundle.get("scitt_merkle_receipt")
+    ok_rcpt, rcpt_errs = verify_ledger_receipt(rcpt if isinstance(rcpt, dict) else {}, key=signing_key)
     if not ok_rcpt:
         errors.extend(rcpt_errs)
+    elif isinstance(rcpt, dict):
+        if rcpt.get("tree_size") != len(events):
+            errors.append("SCITT receipt tree_size does not match events length")
+        leaf_idx = rcpt.get("leaf_index")
+        rcpt_rec = rcpt.get("record")
+        if not isinstance(leaf_idx, int) or isinstance(leaf_idx, bool) or not (0 <= leaf_idx < len(events)):
+            errors.append("SCITT receipt leaf_index out of range for events")
+        elif not isinstance(rcpt_rec, dict):
+            errors.append("SCITT receipt record missing")
+        else:
+            if rcpt_rec.get("created_at") != created_at:
+                errors.append("SCITT receipt record created_at mismatch")
+            if recomputed_events_sha is not None and isinstance(created_at, str) and created_at.strip():
+                try:
+                    escalations = [
+                        idx
+                        for idx, ev in enumerate(events)
+                        if ev.get("human_escalation_required") is True
+                        or ev.get("verdict") in {"ABSTAIN_TIE", "TRANSLATION_AMBIGUOUS"}
+                    ]
+                    refusals = [
+                        idx
+                        for idx, ev in enumerate(events)
+                        if ev.get("approved") is False or ev.get("status") == "error"
+                    ]
+                    expected_records = _build_regulatory_ledger_records(events, created_at, escalations, refusals)
+                    expected_merkle_root = merkle_tree_head([canonical_bytes(rec) for rec in expected_records])
+                    if rcpt.get("merkle_root_sha256") != expected_merkle_root:
+                        errors.append("SCITT receipt merkle_root_sha256 does not match events Merkle tree")
+                    expected_leaf_sha = hashlib.sha256(canonical_bytes(events[leaf_idx])).hexdigest()
+                    if rcpt_rec.get("event_sha256") != expected_leaf_sha:
+                        errors.append("SCITT receipt record event_sha256 mismatch")
+                except SheafError as exc:
+                    errors.append(f"SCITT receipt event canonicalization failed: {exc}")
 
     return len(errors) == 0, errors

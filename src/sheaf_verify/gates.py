@@ -464,7 +464,7 @@ HAL_GATES: tuple[Gate, ...] = (
     Gate("HAL3", "Kernel host-reference binding", ("kernel",), ("HAL2",), evaluate_hal3),
     Gate("HAL4", "Numeric parity vs float64 reference", ("log.parity", "kernel"), ("HAL3",), evaluate_hal4),
     Gate("HAL5", "Performance from raw timings", ("claim", "log.timings"), ("HAL0",), evaluate_hal5),
-    Gate("HAL6", "Thermal and power guards", ("log.guards", "environment"), ("HAL1",), evaluate_hal6),
+    Gate("HAL6", "Thermal and power guards", ("claim", "log.guards", "environment"), ("HAL1",), evaluate_hal6),
 )
 
 

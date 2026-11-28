@@ -61,11 +61,20 @@ def cce_mup_loss_f64(hidden, embedding, targets, mup_base_d: float) -> list[floa
     vocab = len(table)
     if any(label < 0 or label >= vocab for label in labels):
         raise PayloadError("target index is out of range")
+    if isinstance(mup_base_d, bool) or not isinstance(mup_base_d, (int, float)) or not math.isfinite(float(mup_base_d)):
+        raise PayloadError("mup_base_d must be a finite number")
     scale = float(mup_base_d) / float(width)
+    if not math.isfinite(scale):
+        raise PayloadError("muP scale is not finite")
     losses = []
     for row, label in zip(rows, labels, strict=True):
         logits = [scale * _dot(row, weight) for weight in table]
-        losses.append(_logsumexp(logits) - logits[label])
+        if any(not math.isfinite(x) for x in logits):
+            raise PayloadError("logit overflow in float64 reference")
+        loss = _logsumexp(logits) - logits[label]
+        if not math.isfinite(loss):
+            raise PayloadError("non-finite loss in float64 reference")
+        losses.append(loss)
     return losses
 
 
@@ -228,43 +237,68 @@ def evaluate_timings(document, claim) -> list[dict]:
     return criteria
 
 
-def evaluate_guards(document) -> list[dict]:
+def _finite_float(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        num = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return num if math.isfinite(num) else None
+
+
+def evaluate_guards(document, claim=None) -> list[dict]:
     """Thermal samples must stay strictly below stop; power is observed or explained."""
     if not isinstance(document, dict) or document.get("format") != HAL_GUARDS_FORMAT:
         return [bad("hal.guard.format", "guards log is not sheaf-verify.hal-guards.v1")]
     criteria = [ok("hal.guard.format", HAL_GUARDS_FORMAT)]
     thermal = document.get("thermal") if isinstance(document.get("thermal"), dict) else {}
-    stop = thermal.get("stop_celsius")
-    if isinstance(stop, bool) or not isinstance(stop, (int, float)) or float(stop) <= 0:
+    stop = _finite_float(thermal.get("stop_celsius"))
+    if stop is None or stop <= 0:
         criteria.append(bad("hal.guard.stop", "thermal stop_celsius is missing"))
         return criteria
+    if isinstance(claim, dict):
+        claim_guards = claim.get("guards")
+        if isinstance(claim_guards, dict) and claim_guards.get("thermal_stop_celsius") is not None:
+            claim_stop = _finite_float(claim_guards.get("thermal_stop_celsius"))
+            if claim_stop is None or claim_stop <= 0:
+                criteria.append(bad("hal.guard.stop", "claim thermal_stop_celsius is invalid"))
+                return criteria
+            if stop > claim_stop:
+                criteria.append(
+                    bad(
+                        "hal.guard.stop",
+                        f"thermal stop_celsius {stop} exceeds claim threshold {claim_stop}",
+                    )
+                )
+                return criteria
     samples = thermal.get("samples")
     temps = []
     if not isinstance(samples, list) or len(samples) < 2:
         criteria.append(bad("hal.guard.thermal", "at least two thermal samples are required"))
     else:
+        invalid_sample = False
         for item in samples:
-            if (
-                isinstance(item, dict)
-                and isinstance(item.get("celsius"), (int, float))
-                and not isinstance(item.get("celsius"), bool)
-            ):
-                temps.append(float(item["celsius"]))
-        if len(temps) < 2:
+            temp = _finite_float(item.get("celsius")) if isinstance(item, dict) else None
+            if temp is None:
+                invalid_sample = True
+                break
+            temps.append(temp)
+        if invalid_sample or len(temps) < 2:
             criteria.append(bad("hal.guard.thermal", "thermal samples must include numeric celsius readings"))
         else:
             peak = max(temps)
-            if peak >= float(stop):
-                criteria.append(bad("hal.guard.thermal", f"peak {peak} C reached the stop threshold {float(stop)} C"))
+            if peak >= stop:
+                criteria.append(bad("hal.guard.thermal", f"peak {peak} C reached the stop threshold {stop} C"))
             else:
-                criteria.append(ok("hal.guard.thermal", f"{len(temps)} samples, peak {peak} C < stop {float(stop)} C"))
+                criteria.append(ok("hal.guard.thermal", f"{len(temps)} samples, peak {peak} C < stop {stop} C"))
     power = document.get("power") if isinstance(document.get("power"), dict) else {}
     if power.get("observed") is True:
-        draw = power.get("draw_watts")
-        if isinstance(draw, bool) or not isinstance(draw, (int, float)):
+        draw = _finite_float(power.get("draw_watts"))
+        if draw is None:
             criteria.append(bad("hal.guard.power", "power was marked observed but draw_watts is missing"))
         else:
-            criteria.append(ok("hal.guard.power", f"{float(draw)} W"))
+            criteria.append(ok("hal.guard.power", f"{draw} W"))
     else:
         reason = power.get("reason")
         probe = power.get("probe")
@@ -309,18 +343,25 @@ def _parity_case(case, index: int, max_abs: float) -> list[dict]:
         count = _count_values(inputs) + _count_values(outputs)
         if count > MAX_PARITY_VALUES:
             raise PayloadError("parity case exceeds the value cap")
+        raw_mup = inputs.get("mup_base_d")
+        if isinstance(raw_mup, bool) or not isinstance(raw_mup, (int, float)) or not math.isfinite(float(raw_mup)):
+            raise PayloadError("mup_base_d must be a finite number")
         reference = cce_mup_loss_f64(
             inputs.get("H"),
             inputs.get("E"),
             inputs.get("y"),
-            float(inputs.get("mup_base_d")),
+            float(raw_mup),
         )
+        if any(not math.isfinite(val) for val in reference):
+            raise PayloadError("float64 reference contains a non-finite loss")
         reported = _float_vector(outputs.get("loss"), "loss")
         if len(reported) != len(reference):
             raise PayloadError("kernel loss length does not match the reference")
     except (PayloadError, TypeError, ValueError, OverflowError) as error:
         return [bad(f"hal.parity.{label}", str(error))]
     peak = max(abs(left - right) for left, right in zip(reported, reference, strict=True))
+    if not math.isfinite(peak):
+        return [bad(f"hal.parity.{label}", "non-finite error vs float64 reference")]
     if peak > max_abs:
         return [bad(f"hal.parity.{label}", f"max abs error {peak} exceeds {max_abs} vs float64 reference")]
     return [ok(f"hal.parity.{label}", f"max abs error {peak} vs float64 reference (cap {max_abs})")]

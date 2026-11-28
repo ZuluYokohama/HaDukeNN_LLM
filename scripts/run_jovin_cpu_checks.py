@@ -113,7 +113,7 @@ def render_live_section(documents: dict) -> str:
         "    assert failed == [], failed",
         "",
         "def test_live_guards_from_recorded_samples():",
-        "    failed = _failed(evaluate_guards(LIVE_GUARDS))",
+        "    failed = _failed(evaluate_guards(LIVE_GUARDS, LIVE_CLAIM))",
         "    assert failed == [], failed",
         "",
     ]

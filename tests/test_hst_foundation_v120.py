@@ -376,3 +376,15 @@ def test_t49_rejects_over_100_token_reduction_pct():
     ok_flag, criteria, _ = verify_t49_hst_foundation(broken)
     assert ok_flag is False
     assert any(c.id == "T49_HST_V1_STANDARD_AND_COMPRESSION" and not c.passed for c in criteria)
+
+
+def test_hst_manifest_rejects_tampered_merge_count():
+    manifest_path = ROOT / "iterations" / "t49-hst-foundation-stage" / "HST_V1_REFERENCE_MANIFEST.json"
+    doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+    tampered = json.loads(json.dumps(doc))
+    tampered["merges"][0]["count"] = int(tampered["merges"][0]["count"]) + 1
+    ok_bad, probs = verify_hst_manifest_integrity(tampered)
+    assert ok_bad is False
+    assert any("Merkle root mismatch" in msg for msg in probs)
+    with pytest.raises(ValueError, match="Merkle root mismatch"):
+        HSTTokenizer.from_manifest(tampered)
