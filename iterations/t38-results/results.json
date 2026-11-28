@@ -1,0 +1,412 @@
+{
+ "iteration": "t38-results",
+ "dataset": "fwedu32 (FineWeb-Edu subset, 540,570,430 unique train bytes; test 10,005,000 bytes)",
+ "tokenizer": "fwedu-bpe32k-s (plain 32k byte-level BPE, V=32,768) on both arms",
+ "metric": "test bpb_corpus (lower is better)",
+ "prereg": {
+  "sha256": "524fca093dc6c00e803b6f9998e69277f2804cc38e44ad71f94ffd0b88d63590",
+  "amendment_1_sha256": "87b570ced8ef6410636d7baf108af5924a8d1db72bcd839ee93fb4a48da5f160",
+  "addendum_paired_sha256": "34ffcbdc7fa2df0df2d8718ca5395b74dc873b727a87adb4b7d236486650bba1",
+  "addendum_flopmatch_sha256": "25f13f2df8f6d60d46da42b5ba5581405ae119afc75346c6046af2e72221bed4"
+ },
+ "arms": {
+  "P": "plain, flat output head, structure off",
+  "H": "HaDukeNN structure component: spectral clusters (182 x up to 181 units), compose mean, blocked factored head, rank-32 low-rank residual, no spectral init"
+ },
+ "stage1_headline": {
+  "rule": "T38_PREREG.json primary_rule_headline: delta = BPB_P - BPB_H; KILL is the mirror of PASS",
+  "cell": "M, 4 epochs (2,162,281,720 train bytes), seeds 13, 21, 34, 55, 89",
+  "verdict": "KILL",
+  "n_P": 5,
+  "n_H": 5,
+  "mean_P": 1.2093664611694936,
+  "mean_H": 1.228146034466542,
+  "gap_H_minus_P": 0.01877957329704838,
+  "welch_se": 0.0011110653352037693,
+  "welch_df": 7.207155431988096,
+  "p_H_worse_one_sided": 2.3081609277077416e-07,
+  "verdict_source": "recorded by the T-38 driver at Stage 1 close: delta_P_minus_H -0.01877957329704838, se 0.0011110653352037693, df 7.207155431988093, p_H_worse 2.3081609277077416e-07, upper bound of BPB_H - BPB_P 0.02208398869108019; recomputed here from per_seed.csv and matched",
+  "stage3_stop_threshold": 0.0117,
+  "stage3_stop_threshold_note": "3 x MDE80 (5 seeds) as written in the prereg"
+ },
+ "cells": [
+  {
+   "rung": "XS",
+   "data": "1ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.38475,
+   "mean_H": 1.423064,
+   "sd_P": 0.002138,
+   "sd_H": 0.002529,
+   "gap_H_minus_P": 0.038313,
+   "paired_se_shared_seeds": 0.000256,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.001912,
+   "welch_df": 3.892141,
+   "welch_p_two_sided": 4.5098121270675794e-05
+  },
+  {
+   "rung": "S",
+   "data": "1ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.321693,
+   "mean_H": 1.356107,
+   "sd_P": 0.002582,
+   "sd_H": 0.001937,
+   "gap_H_minus_P": 0.034415,
+   "paired_se_shared_seeds": 0.000473,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.001863,
+   "welch_df": 3.709664,
+   "welch_p_two_sided": 8.692325929502269e-05
+  },
+  {
+   "rung": "M",
+   "data": "1ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.27756,
+   "mean_H": 1.304991,
+   "sd_P": 0.001237,
+   "sd_H": 0.000206,
+   "gap_H_minus_P": 0.02743,
+   "paired_se_shared_seeds": 0.000732,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.000724,
+   "welch_df": 2.110829,
+   "welch_p_two_sided": 0.000501466959926864
+  },
+  {
+   "rung": "M+",
+   "data": "1ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.266576,
+   "mean_H": 1.289548,
+   "sd_P": 4.9e-05,
+   "sd_H": 0.001014,
+   "gap_H_minus_P": 0.022972,
+   "paired_se_shared_seeds": 0.000613,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.000586,
+   "welch_df": 2.009281,
+   "welch_p_two_sided": 0.0006326997523801119
+  },
+  {
+   "rung": "L",
+   "data": "1ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.264082,
+   "mean_H": 1.282692,
+   "sd_P": 0.001763,
+   "sd_H": 0.002115,
+   "gap_H_minus_P": 0.01861,
+   "paired_se_shared_seeds": 0.001706,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.00159,
+   "welch_df": 3.873974,
+   "welch_p_two_sided": 0.0003638701709691848
+  },
+  {
+   "rung": "XS",
+   "data": "4ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.333279,
+   "mean_H": 1.365327,
+   "sd_P": 0.001192,
+   "sd_H": 0.000497,
+   "gap_H_minus_P": 0.032048,
+   "paired_se_shared_seeds": 0.000849,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.000746,
+   "welch_df": 2.674027,
+   "welch_p_two_sided": 7.111395445068093e-05
+  },
+  {
+   "rung": "S",
+   "data": "4ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.260141,
+   "mean_H": 1.284864,
+   "sd_P": 0.001348,
+   "sd_H": 0.000265,
+   "gap_H_minus_P": 0.024723,
+   "paired_se_shared_seeds": 0.000916,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.000793,
+   "welch_df": 2.154648,
+   "welch_p_two_sided": 0.00067004906532643
+  },
+  {
+   "rung": "M",
+   "data": "4ep",
+   "n_P": 5,
+   "n_H": 5,
+   "mean_P": 1.209366,
+   "mean_H": 1.228146,
+   "sd_P": 0.001436,
+   "sd_H": 0.002027,
+   "gap_H_minus_P": 0.01878,
+   "paired_se_shared_seeds": 0.001365,
+   "shared_seeds": [
+    13,
+    21,
+    34,
+    55,
+    89
+   ],
+   "welch_se": 0.001111,
+   "welch_df": 7.207155,
+   "welch_p_two_sided": 4.616321855415483e-07
+  },
+  {
+   "rung": "M+",
+   "data": "4ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.194506,
+   "mean_H": 1.209772,
+   "sd_P": 0.00097,
+   "sd_H": 0.000474,
+   "gap_H_minus_P": 0.015266,
+   "paired_se_shared_seeds": 0.000499,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.000623,
+   "welch_df": 2.90207,
+   "welch_p_two_sided": 0.00018693780259379554
+  },
+  {
+   "rung": "L",
+   "data": "4ep",
+   "n_P": 3,
+   "n_H": 3,
+   "mean_P": 1.181805,
+   "mean_H": 1.195278,
+   "sd_P": 0.000351,
+   "sd_H": 0.001062,
+   "gap_H_minus_P": 0.013473,
+   "paired_se_shared_seeds": 0.000697,
+   "shared_seeds": [
+    13,
+    21,
+    34
+   ],
+   "welch_se": 0.000646,
+   "welch_df": 2.431749,
+   "welch_p_two_sided": 0.0008402685977637129
+  }
+ ],
+ "cells_note": "gap = mean_H - mean_P over all seeds in the cell (positive means H is worse). paired_se_shared_seeds is the SE of per-seed differences over the seeds both arms share. Welch columns are the unequal-variance two-sample test on all seeds. Computed from per_seed.csv by the script that built this record and matched to the campaign log for the six cells it quotes. Per-cell PASS/KILL labels and the Holm step are not computed in this record.",
+ "ladder_stage2_stage3": {
+  "cell_used": "4 epochs",
+  "rungs": [
+   {
+    "rung": "XS",
+    "N_body": 3213568,
+    "N_tot_P": 11602176,
+    "N_tot_H": 12705536,
+    "n_P": 3,
+    "n_H": 3,
+    "mean_P": 1.333279,
+    "mean_H": 1.365327,
+    "gap_H_minus_P": 0.032048
+   },
+   {
+    "rung": "S",
+    "N_body": 10621824,
+    "N_tot_P": 23204736,
+    "N_tot_H": 24335488,
+    "n_P": 3,
+    "n_H": 3,
+    "mean_P": 1.260141,
+    "mean_H": 1.284864,
+    "gap_H_minus_P": 0.024723
+   },
+   {
+    "rung": "M",
+    "N_body": 31860288,
+    "N_tot_P": 50734656,
+    "N_tot_H": 51906496,
+    "n_P": 5,
+    "n_H": 5,
+    "mean_P": 1.209366,
+    "mean_H": 1.228146,
+    "gap_H_minus_P": 0.01878
+   },
+   {
+    "rung": "M+",
+    "N_body": 49575040,
+    "N_tot_P": 70546560,
+    "N_tot_H": 71732096,
+    "n_P": 3,
+    "n_H": 3,
+    "mean_P": 1.194506,
+    "mean_H": 1.209772,
+    "gap_H_minus_P": 0.015266
+   },
+   {
+    "rung": "L",
+    "N_body": 84953856,
+    "N_tot_P": 110119680,
+    "N_tot_H": 111332608,
+    "n_P": 3,
+    "n_H": 3,
+    "mean_P": 1.181805,
+    "mean_H": 1.195278,
+    "gap_H_minus_P": 0.013473
+   }
+  ],
+  "spearman_gap_vs_N": {
+   "rho": -1.0,
+   "n_rungs": 5,
+   "p_two_sided_exact_permutation": 0.016666666666666666,
+   "note": "rho vs N_body and vs N_tot are identical. With 5 rungs and a perfectly monotone ordering, the exact two-sided permutation p is 2/5! = 0.0167 (the author output carries an asymptotic p that is not meaningful at rho = -1 with n = 5, so it is not copied). stage3_stop needs rho >= 0; it did not fire, so Stage 3 (L) ran. On the first four rungs (XS, S, M, M+) rho was also -1.0."
+  },
+  "N_primary": "N_body (non-embedding params), left in force by Amendment 1",
+  "bootstrap_power_law_N_body_5_rungs": {
+   "form": "L(N) = E + A * N^(-alpha) per arm, 2000-rep seed bootstrap",
+   "fit_P": {
+    "E": 1.097433495444162,
+    "A": 28.58812230783432,
+    "alpha": 0.32009254871549137
+   },
+   "fit_H": {
+    "E": 1.0861039596018287,
+    "A": 22.316922154186184,
+    "alpha": 0.2923067058101471
+   },
+   "alpha_H_minus_alpha_P": -0.02778584290534425,
+   "alpha_diff_ci95": [
+    -0.049280801375966334,
+    -0.0045789215053947405
+   ],
+   "E_diff_ci95": [
+    -0.021826032967631463,
+    0.00019622776202785633
+   ],
+   "reps": 2000,
+   "recorded_label": "H-scales-worse",
+   "reading": "alpha_H is smaller than alpha_P and the 95% CI is below 0, so the fit does not support H scaling better. PASS_scaling requires the CI to exclude 0 in H favour, which it does not.",
+   "source": "stage2_prelim_5rung_20261127.json on the author machine (sha256 506e4c108fec02c71529f7f0d33de3e0c0834826c8b232b3c110a039f05cb814); the fit script is not in this repository, so this fit is copied, not recomputed here"
+  },
+  "bootstrap_power_law_N_body_4_rungs_history": {
+   "alpha_H_minus_alpha_P": -0.030807491400142273,
+   "alpha_diff_ci95": [
+    -0.05988824108557338,
+    0.00016856470211550173
+   ],
+   "recorded_label": "INCONCLUSIVE",
+   "note": "preliminary, before the L rung finished"
+  },
+  "N_tot_contrast_sanity_only": {
+   "alpha_H_minus_alpha_P": 0.020092457947462172,
+   "alpha_diff_ci95": [
+    -0.014262045926985042,
+    0.05687191407208676
+   ],
+   "recorded_label": "INCONCLUSIVE",
+   "note": "P and H do not share N_tot, so this is not the prereg path. Sign is opposite and the CI includes 0. The conclusion above depends on N_body being the right size axis."
+  },
+  "amendment_1": {
+   "drop_L_from_primary_fit": false,
+   "reason": "neither arm fires",
+   "P": {
+    "gain_M": 0.06819387416164746,
+    "gain_L": 0.08227613062877825,
+    "gain_M_minus_gain_L": -0.014082256467130794,
+    "se_diff": 0.0014141751782899667,
+    "p_one_gainM_gt_gainL": 0.9999563728332638,
+    "fire": false
+   },
+   "H": {
+    "gain_M": 0.07684457106870135,
+    "gain_L": 0.08741348782758074,
+    "gain_M_minus_gain_L": -0.010568916758879388,
+    "se_diff": 0.0016444081280952735,
+    "p_one_gainM_gt_gainL": 0.9994965685424453,
+    "fire": false
+   }
+  }
+ },
+ "flopmatch_secondary": {
+  "addendum_sha256": "25f13f2df8f6d60d46da42b5ba5581405ae119afc75346c6046af2e72221bed4",
+  "what": "P only, M rung, seeds 13/21/34, trained natively to the analytic FLOPs of H Stage 1 (97,550,600,306,688,000; 24,925 steps; cosine to 0.1x). Welch of these 3 against the 5 Stage 1 H seeds.",
+  "status": "descriptive and secondary; does not change the T-38 headline verdict",
+  "n_H": 5,
+  "n_P": 3,
+  "mean_H": 1.2281460344665418,
+  "mean_P": 1.2238249903243414,
+  "sd_H": 0.002027256231995162,
+  "sd_P": 0.0008632922871249293,
+  "delta_H_minus_P": 0.004321044142200359,
+  "se_diff": 0.0010345907840151624,
+  "welch_t": 4.176573200691716,
+  "welch_df": 5.735449229684671,
+  "p_two_sided": 0.006442209862582232,
+  "p_one_sided_H_worse": 0.003221104931291116,
+  "p_one_sided_H_better": 0.9967788950687089,
+  "ci95_H_minus_P": [
+   0.0017609152748821614,
+   0.006881173009518556
+  ],
+  "alpha": 0.01,
+  "paired_shared_seeds_descriptive": {
+   "d_s": {
+    "13": 0.003389872414294892,
+    "21": 0.003410770441538258,
+    "34": 0.008839689642447857
+   },
+   "mean": 0.005213444166093669,
+   "sd": 0.0031404380861545533
+  },
+  "source": "t38_flopmatch_welch_3v5_t251u.json on the author machine (sha256 61a1a7aea535338e888c551c114883e07d969c8e0a6b0b29e4bc477b9dfab72e), computed 2026-11-28 5:05 AM CT; recomputed here from per_seed.csv and matched",
+  "per_seed_result_file_sha256": {
+   "H_seed_13": "84e4f58c2fe26fdb2e4d5dac02dcd4f930cd29426136c5889a349db58b7fc5c4",
+   "H_seed_21": "f903c53853b385853def9da7212f38c3a4609a57ab0743ec9fcee839486ec755",
+   "H_seed_34": "23a6cdd58b8514969f70c91d342ebaa25ad74397141264725fc8cebc6cd74769",
+   "H_seed_55": "aa53c3f9a15910afdd8560202777221f12c0ac8de699a9e0762ff88515ee6ad7",
+   "H_seed_89": "6db34870482a171ec17115cc3918a97c58e750e38fc19d5037b64c029dfe6308",
+   "P_flopmatch_seed_13": "74b554ac51774de0b3f24038b7774d4bf3ab7bba4e80fd3a0249d6eb2148155b",
+   "P_flopmatch_seed_21": "3611ea85843cf72abe08568d2a6199a2ab16ae1a53c76455d68b525a2a0057b2",
+   "P_flopmatch_seed_34": "a2c929c07a4801ae2af5a2ec0f8c97701d52b1b343b5c4e7a974b5fba7c6e900"
+  }
+ },
+ "source": "per-seed trainer result records and analysis files on the author machine; the trainer and analysis code are not in this repository"
+}
